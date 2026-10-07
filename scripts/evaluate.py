@@ -64,6 +64,58 @@ def summary(values):
             "p95": ordered[math.ceil(.95 * len(values)) - 1]}
 
 
+TOKEN_FIELDS = ("inputTokens", "outputTokens", "cachedInputTokens",
+                "cacheWriteInputTokens", "reasoningOutputTokens")
+
+
+def normalized_usage(row):
+    """Normalize declared provider counters without inventing missing counts."""
+    usage = row.get("usage")
+    if "usage" not in row:
+        return {}
+    if (not isinstance(usage, dict) or not all(nonempty(usage.get(k)) for k in ("provider", "model"))
+            or usage.get("accountingConvention") not in ("inclusive", "exclusive")
+            or usage.get("outputConvention") not in ("inclusive", "exclusive")):
+        raise InputError("Invalid usage declaration")
+    values = {}
+    for key in TOKEN_FIELDS:
+        value = usage.get(key)
+        if key in usage and (type(value) is not int or value < 0 or not metric(value)):
+            raise InputError("Usage counts must be observed nonnegative integers")
+        values[key] = value
+    input_count = values["inputTokens"]
+    cached, written = values["cachedInputTokens"], values["cacheWriteInputTokens"]
+    if usage["accountingConvention"] == "exclusive":
+        values["inputTokens"] = (input_count + cached + written
+                                 if all(v is not None for v in (input_count, cached, written)) else None)
+    elif input_count is not None:
+        if any(v is not None and v > input_count for v in (cached, written)):
+            raise InputError("Cache subset exceeds inclusive input")
+        if cached is not None and written is not None and cached + written > input_count:
+            raise InputError("Combined cache subsets exceed inclusive input")
+    output_count, reasoning = values["outputTokens"], values["reasoningOutputTokens"]
+    if usage["outputConvention"] == "exclusive":
+        output_count = output_count + reasoning if output_count is not None and reasoning is not None else None
+        values["outputTokens"] = output_count
+    elif reasoning is not None and output_count is not None and reasoning > output_count:
+        raise InputError("Reasoning subset exceeds output")
+    values["totalTokens"] = (values["inputTokens"] + output_count
+                             if values["inputTokens"] is not None and output_count is not None else None)
+    return values
+
+
+def usage_summary(observed, valid_trials):
+    result = {}
+    for field in (*TOKEN_FIELDS, "totalTokens"):
+        values = [r[field] for r in observed if r.get(field) is not None]
+        stats = summary(values)
+        result[field] = {"observedTrials": len(values), "missingTrials": valid_trials - len(values),
+                         "sumObserved": stats["total"] if values else None,
+                         "completeTotal": stats["total"] if values and len(values) == valid_trials else None}
+    return {"validTrials": valid_trials, "fields": result,
+            "scope": "Submitted counters only; input normalized to total, reasoning/cache are subsets, no price calculation."}
+
+
 def evaluate(dataset_bytes, results_text, target=.95, minimum_tasks=73,
              expected_dataset_sha256=None, baseline_results_text=None):
     if not metric(target) or not 0 < target < 1:
@@ -96,6 +148,7 @@ def evaluate(dataset_bytes, results_text, target=.95, minimum_tasks=73,
     invalid = []
     identities = set()
     latency, costs = [], []
+    usage_rows = []
     provenance_ok = True
     for line_number, line in enumerate(results_text.splitlines(), 1):
         if not line.strip():
@@ -116,6 +169,12 @@ def evaluate(dataset_bytes, results_text, target=.95, minimum_tasks=73,
                  and all(type(row.get(k)) is bool for k in
                          ("passed", "integrityPassed", "synthetic", "heldOut", "independentGrading"))
                  and all(metric(row.get(k)) for k in ("latencyMs", "costUsd")))
+        normalized = {}
+        if valid:
+            try:
+                normalized = normalized_usage(row)
+            except InputError:
+                valid = False
         identity = (task_id, row.get("runId")) if valid else None
         if valid and identity in identities:
             valid = False
@@ -132,6 +191,7 @@ def evaluate(dataset_bytes, results_text, target=.95, minimum_tasks=73,
         trials[task_id].append(row)
         latency.append(row["latencyMs"])
         costs.append(row["costUsd"])
+        usage_rows.append(normalized)
     def task_pass(task_id):
         return bool(trials[task_id]) and all(isinstance(r, dict) and r["passed"] for r in trials[task_id])
     def integrity_pass(task_id):
@@ -174,7 +234,8 @@ def evaluate(dataset_bytes, results_text, target=.95, minimum_tasks=73,
             "tasks": total, "observedTasks": observed, "missingTasks": missing,
             "passedTasks": passed, "pointRate": passed / total, "wilsonLower": lower,
             "integrityPassedTasks": integrity, "categories": categories,
-            "invalidRecords": invalid, "latencyMs": summary(latency), "costUsd": summary(costs)}
+            "invalidRecords": invalid, "latencyMs": summary(latency), "costUsd": summary(costs),
+            "usage": usage_summary(usage_rows, len(usage_rows))}
     if baseline_results_text is not None:
         baseline = evaluate(dataset_bytes, baseline_results_text, target, minimum_tasks,
                             expected_dataset_sha256)

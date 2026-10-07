@@ -4,6 +4,14 @@ A shared AI development environment built from our current Frank agents and skil
 
 The foundation keeps our four core skills and six Frank roles, adds three targeted domain skills, and provides a safe installer, strict review/commit evidence, task timing and offline benchmarking. Smaller changes get smaller review scope; substantive engineering still keeps independent correctness, QA and security.
 
+## Observed verification
+
+![Tool verification: regression counts, recipient integration checks and separately labeled synthetic confidence examples](docs/verification/2026-10-07/verification.png)
+
+Read the [verification report](docs/verification/2026-10-07/report.md) and inspect [machine-readable results](docs/verification/2026-10-07/results.json). These are actual tool/fixture checks; live AI accuracy, token savings and production speed remain unmeasured.
+
+Use the [resource catalog](docs/resources.md), [connection runbook](docs/connections.md) and [optimization guide](docs/optimization.md) to turn skills into repeatable work with actual tools and evidence.
+
 ## Start
 
 Prerequisites: Python 3.11+ and Git; a working Claude Code/Codex account for actual AI work; Docker for this repository's checks. The toolkit never installs credentials or selects a paid model.

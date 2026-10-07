@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Department connection fixture</title>
+<style>
+body { font: 18px system-ui; background: #eef3f8; color: #10223b; padding: 4rem 1rem; }
+main { max-width: 36rem; margin: auto; background: white; padding: 2rem; border-radius: 1rem; }
+button { background: #087f67; color: white; padding: .8rem 1.2rem; border: 0; border-radius: .4rem; font: inherit; cursor: pointer; }
+button:focus-visible { outline: 3px solid #10223b; outline-offset: 4px; }
+</style>
+<main>
+<h1>Browser connection check</h1>
+<p>This local fixture checks navigation, accessible element discovery and a real click.</p>
+<button type="button" id="verify">Verify connection</button>
+<p role="status" id="result">Awaiting browser action</p>
+</main>
+<script>
+document.getElementById('verify').addEventListener('click', () => {
+  document.getElementById('result').textContent = 'Connection verified';
+});
+</script>
+</html>

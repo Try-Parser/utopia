@@ -30,6 +30,100 @@ def score(dataset, rows, **kwargs):
 
 
 class EvaluationTests(unittest.TestCase):
+    def test_usage_inclusive_subsets_not_counted_twice(self):
+        dataset, rows = fixture(1)
+        rows[0]["usage"] = {"provider": "openai", "model": "documented-shape-fixture",
+                            "accountingConvention": "inclusive", "outputConvention": "inclusive", "inputTokens": 1000,
+                            "cachedInputTokens": 600, "cacheWriteInputTokens": 200,
+                            "outputTokens": 100, "reasoningOutputTokens": 40}
+        usage = score(dataset, rows)["usage"]["fields"]
+        self.assertEqual(1000, usage["inputTokens"]["completeTotal"])
+        self.assertEqual(1100, usage["totalTokens"]["completeTotal"])
+
+    def test_usage_exclusive_reads_larger_than_uncached_input(self):
+        dataset, rows = fixture(1)
+        rows[0]["usage"] = {"provider": "anthropic", "model": "documented-shape-fixture",
+                            "accountingConvention": "exclusive", "outputConvention": "inclusive", "inputTokens": 10,
+                            "cachedInputTokens": 2000, "cacheWriteInputTokens": 100,
+                            "outputTokens": 100}
+        report = score(dataset, rows)
+        self.assertEqual([], report["invalidRecords"])
+        self.assertEqual(2110, report["usage"]["fields"]["inputTokens"]["completeTotal"])
+        self.assertEqual(2210, report["usage"]["fields"]["totalTokens"]["completeTotal"])
+
+    def test_usage_missing_not_zero_and_complete_totals_require_coverage(self):
+        dataset, rows = fixture(2)
+        rows[0]["usage"] = {"provider": "fixture", "model": "fixture", "accountingConvention": "exclusive", "outputConvention": "inclusive",
+                            "inputTokens": 10, "cachedInputTokens": 2000, "outputTokens": 0}
+        fields = score(dataset, rows)["usage"]["fields"]
+        self.assertIsNone(fields["inputTokens"]["sumObserved"])
+        self.assertEqual(0, fields["outputTokens"]["sumObserved"])
+        self.assertIsNone(fields["outputTokens"]["completeTotal"])
+        self.assertEqual(1, fields["outputTokens"]["missingTrials"])
+        self.assertIsNone(fields["totalTokens"]["sumObserved"])
+
+    def test_usage_invalid_counts_and_subsets_reject_trials(self):
+        base = {"provider": "fixture", "model": "fixture", "accountingConvention": "inclusive", "outputConvention": "inclusive",
+                "inputTokens": 100, "outputTokens": 10, "cachedInputTokens": 60, "cacheWriteInputTokens": 20}
+        for change in ({"inputTokens": True}, {"outputTokens": -1}, {"cachedInputTokens": None},
+                       {"cacheWriteInputTokens": 50}, {"cachedInputTokens": 101},
+                       {"reasoningOutputTokens": 11}, {"accountingConvention": "guess"},
+                       {"provider": ""}, {"outputConvention": "guess"}, {"inputTokens": 10 ** 400},
+                       {"inputTokens": 1.5}, {"inputTokens": "1"}, {"inputTokens": float("nan")}):
+            with self.subTest(change=change):
+                dataset, rows = fixture(1)
+                rows[0]["usage"] = {**base, **change}
+                self.assertIn("invalid_results", score(dataset, rows)["reasons"])
+
+    def test_usage_retries_included_without_inflating_task_count(self):
+        dataset, rows = fixture(1)
+        rows[0]["usage"] = {"provider": "fixture", "model": "fixture", "accountingConvention": "inclusive", "outputConvention": "inclusive",
+                            "inputTokens": 100, "outputTokens": 10}
+        rows.append({**rows[0], "runId": "retry", "passed": False})
+        report = score(dataset, rows)
+        self.assertEqual(1, report["tasks"])
+        self.assertEqual(2, report["usage"]["validTrials"])
+        self.assertEqual(220, report["usage"]["fields"]["totalTokens"]["completeTotal"])
+
+    def test_usage_exclusive_reasoning_output_normalizes_and_missing_stays_unknown(self):
+        dataset, rows = fixture(1)
+        rows[0]["usage"] = {"provider": "google", "model": "documented-shape-fixture",
+                            "accountingConvention": "inclusive", "outputConvention": "exclusive",
+                            "inputTokens": 1000, "cachedInputTokens": 600,
+                            "outputTokens": 20, "reasoningOutputTokens": 100}
+        fields = score(dataset, rows)["usage"]["fields"]
+        self.assertEqual(120, fields["outputTokens"]["completeTotal"])
+        self.assertEqual(1120, fields["totalTokens"]["completeTotal"])
+        del rows[0]["usage"]["reasoningOutputTokens"]
+        fields = score(dataset, rows)["usage"]["fields"]
+        self.assertIsNone(fields["outputTokens"]["sumObserved"])
+        self.assertIsNone(fields["totalTokens"]["sumObserved"])
+
+    def test_usage_mixed_conventions_aggregate_normalized_totals(self):
+        dataset, rows = fixture(2)
+        rows[0]["usage"] = {"provider": "fixture-a", "model": "fixture", "accountingConvention": "inclusive",
+                            "outputConvention": "inclusive", "inputTokens": 1000, "outputTokens": 10}
+        rows[1]["usage"] = {"provider": "fixture-b", "model": "fixture", "accountingConvention": "exclusive",
+                            "outputConvention": "inclusive", "inputTokens": 10, "cachedInputTokens": 1000,
+                            "cacheWriteInputTokens": 100, "outputTokens": 10}
+        fields = score(dataset, rows)["usage"]["fields"]
+        self.assertEqual(2110, fields["inputTokens"]["completeTotal"])
+        self.assertEqual(2130, fields["totalTokens"]["completeTotal"])
+
+    def test_usage_partial_output_totals_expose_missing_trial(self):
+        dataset, rows = fixture(2)
+        base = {"provider": "fixture", "model": "fixture", "accountingConvention": "inclusive",
+                "outputConvention": "exclusive", "inputTokens": 100, "outputTokens": 20}
+        rows[0]["usage"] = {**base, "reasoningOutputTokens": 10}
+        rows[1]["usage"] = base
+        fields = score(dataset, rows)["usage"]["fields"]
+        self.assertEqual(30, fields["outputTokens"]["sumObserved"])
+        self.assertIsNone(fields["outputTokens"]["completeTotal"])
+        self.assertEqual(1, fields["outputTokens"]["observedTrials"])
+        self.assertEqual(1, fields["outputTokens"]["missingTrials"])
+        self.assertEqual(130, fields["totalTokens"]["sumObserved"])
+        self.assertIsNone(fields["totalTokens"]["completeTotal"])
+
     def test_72_insufficient(self):
         self.assertFalse(score(*fixture(72))["accepted"])
 

@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "recordedAtUtc": "2026-10-07T15:03:52.311378+00:00",
+  "package": "@playwright/mcp@0.0.83",
+  "serverInfo": {
+    "name": "Playwright",
+    "version": "1.64.0-alpha-1790635538000"
+  },
+  "checks": [
+    "MCP initialization",
+    "tool discovery",
+    "loopback fixture navigation",
+    "accessible button discovery",
+    "actual click and observed status",
+    "browser closed"
+  ],
+  "scope": "Local isolated Chrome MCP fixture; no live model or production application verification."
+}

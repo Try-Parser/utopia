@@ -17,3 +17,7 @@ Adopt now: concise sufficient context, independent outcome grading, reusable tes
 The 95%+ objective is a measured task-quality target; the lower two-sided 95% Wilson bound must meet it, and integrity/critical gates must all pass. No live accuracy result is claimed from implementation or synthetic fixtures.
 
 Changes are published to a feature branch. A push request does not imply merging main, enabling repository CI settings, deployment or external messaging.
+
+The follow-up verification/resource enhancement was consolidated through four additional read-only Claude consultations at the user's explicit request. Claude independently challenged token-accounting assumptions; input and output now declare their conventions separately, and summaries aggregate normalized totals with explicit missing coverage. Both parties agreed to conditional resources, honest connection statuses, pinned optional browser tooling and observed graphical results. Seven correlated recipient assertions are not sampled AI accuracy evidence. Claude's design consensus is not code or test verification; independent native reviews remain required.
+
+Deferred: mapping an absent reasoning counter to zero even for a supposedly non-thinking model. Any future mapping requires current provider/API evidence and regression fixtures. For now absence remains unknown. No paid model choice, hardcoded pricing, global account configuration or standards certification is inferred.

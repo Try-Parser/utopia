@@ -7,6 +7,8 @@ description: Design or improve product interfaces using user journeys, existing 
 
 Start with the user's task, audience, content and observable acceptance. Inspect existing components/tokens/screens and repository design rules. Use installed frontend-design/UI UX Pro Max when available; don't invent access to those plugins or vendor their caches.
 
+For UI acceptance use the [journey and state matrix](references/acceptance-matrix.md). It records implementation resources and observed interactions, including unavailable tools.
+
 Define information hierarchy and the main journey. For substantial new design create a reviewable mockup/prototype and explain decisions; seek approval only when the user's scope or project rules require it. Small corrections follow existing patterns and need no automatic design committee.
 
 Specify populated, loading, empty, error, disabled and permission states. Test long content, responsive layouts, keyboard navigation, focus visibility, semantics, contrast and reduced motion. Apply current WCAG requirements appropriate to the project's target; automated audits supplement manual interaction.

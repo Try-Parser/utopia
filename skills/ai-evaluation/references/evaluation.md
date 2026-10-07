@@ -2,6 +2,16 @@
 
 Accuracy is defined against an agreed task distribution, not a global promise about a model. The shared scorer is offline; it does not generate or independently verify your outcomes.
 
+Optional trial usage: include an object named usage with nonempty provider/model, accountingConvention (input) and outputConvention each inclusive or exclusive, and observed integer counters inputTokens, outputTokens, cachedInputTokens, cacheWriteInputTokens and reasoningOutputTokens. Omit unavailable counters; explicit nulls, booleans, negatives and fractional counts are invalid. Zero means actually observed zero.
+
+For inclusive input accounting inputTokens includes cache reads/writes, which are subsets and must not exceed the total, individually or together when both are reported. For exclusive input accounting inputTokens is uncached input; total input is known only if input/read/write are all reported, then their sum is used. Inclusive outputTokens includes reasoningOutputTokens as a subset. Exclusive outputTokens excludes reasoning; normalized total output is known only when both output/reasoning are reported, then their sum is used. Total tokens use normalized input plus normalized output from the same observed trial. All input/output summaries aggregate normalized totals across conventions; subsets are never added again.
+
+Usage summaries expose observedTrials, missingTrials, sumObserved and completeTotal for each counter. Complete totals are null when any schema-valid trial lacks that counter; an entirely unreported metric has null observed sum too. Counts include valid failed/retried trials, and invalid results remain reported separately. Provider/model labels and counters are submitted evidence, not verified billing. Existing costUsd remains observed submitted cost; no price table or cache savings is inferred.
+
+Map counters from [OpenAI usage/caching](https://developers.openai.com/api/docs/guides/prompt-caching) or [Anthropic usage/caching](https://platform.claude.com/docs/en/docs/build-with-claude/prompt-caching), checked 07 October 2026. Anthropic input_tokens is uncached input; cache_read_input_tokens and cache_creation_input_tokens map to the two cache fields. OpenAI input_tokens is inclusive; its cached_tokens/cache_write_tokens are subcategories. Other providers must declare the convention matching their documented counters.
+
+For [Gemini generateContent thinking usage](https://ai.google.dev/gemini-api/docs/thinking), candidate output and thought output can be separate counters; declare exclusive output when mapping candidatesTokenCount plus thoughtsTokenCount. Verify the current API's counter definitions rather than assigning conventions from a provider name alone. Official-document-shaped fixtures verify accounting arithmetic; they are fabricated test values, never live token or billing measurements.
+
 Predeclare the held-out dataset hash, rubric/grader, critical cases, model/configuration, expected trials, target, environment and latency/cost limits. Preserve development/regression tasks separately. When tuning after held-out feedback, use a new held-out set rather than pretending it remained unseen.
 
 Dataset JSON:
