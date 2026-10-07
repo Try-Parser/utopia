@@ -4,6 +4,14 @@
 #     https://www.atlassian.com/git/tutorials/saving-changes/gitignore
 
 # Node artifact files
+.ai-department/
+.claude/
+.agents/
+.codex/
+.env
+.env.*
+!.env.example
+__pycache__/
 node_modules/
 dist/
 

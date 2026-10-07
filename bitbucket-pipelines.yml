@@ -1,0 +1,14 @@
+image: docker:27.5.1-cli
+pipelines:
+  default:
+    - step:
+        name: Verify shared AI environment
+        services:
+          - docker
+        script:
+          - docker build -t ai-department-checks .
+          - docker run --rm --network none --entrypoint python -v "$BITBUCKET_CLONE_DIR:/workspace:ro" ai-department-checks scripts/check.py
+definitions:
+  services:
+    docker:
+      memory: 2048

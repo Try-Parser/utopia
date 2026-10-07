@@ -1,0 +1,9 @@
+.git
+.claude
+.agents
+.codex
+.ai-department
+__pycache__
+*.pyc
+.env
+.env.*

@@ -1,0 +1,13 @@
+{
+  "id": "synthetic-walkthrough",
+  "version": "1",
+  "synthetic": true,
+  "heldOut": false,
+  "distributionAgreed": false,
+  "tasks": [
+    {"id": "code-1", "category": "development", "critical": false},
+    {"id": "design-1", "category": "design", "critical": false},
+    {"id": "research-1", "category": "research", "critical": false},
+    {"id": "security-1", "category": "security", "critical": true}
+  ]
+}

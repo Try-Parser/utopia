@@ -1,0 +1,11 @@
+services:
+  tooling:
+    build: .
+    working_dir: /workspace
+    volumes:
+      - .:/workspace:ro
+    tmpfs:
+      - /tmp:exec,nosuid,nodev
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+    network_mode: none
