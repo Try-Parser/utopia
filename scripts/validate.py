@@ -8,7 +8,8 @@ ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_SKILLS = {"autonomous-development", "craftsman", "frank", "commit-pr-standard",
                    "research-workflow", "design-workflow", "ai-evaluation"}
 EXPECTED_AGENTS = {"frank-coder", "frank-reviewer", "frank-qa", "frank-security",
-                   "frank-debugger", "frank-scribe"}
+                   "frank-debugger", "frank-scribe", "frank-designer", "frank-product",
+                   "frank-architect", "frank-researcher", "frank-platform", "frank-data"}
 
 # Report locations/categories only, never candidate values.
 PATTERNS = {

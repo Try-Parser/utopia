@@ -7,6 +7,8 @@ description: Design or improve product interfaces using user journeys, existing 
 
 Start with the user's task, audience, content and observable acceptance. Inspect existing components/tokens/screens and repository design rules. Use installed frontend-design/UI UX Pro Max when available; don't invent access to those plugins or vendor their caches.
 
+For delegated design ownership, give frank-designer the brief and this skill using the assistant's native workers. Its canonical definition installs as a Claude agent and as an autonomous-development role reference for Codex. The designer hands testable journeys/states to the coder and independent QA; it does not approve its own implementation.
+
 For UI acceptance use the [journey and state matrix](references/acceptance-matrix.md). It records implementation resources and observed interactions, including unavailable tools.
 
 Define information hierarchy and the main journey. For substantial new design create a reviewable mockup/prototype and explain decisions; seek approval only when the user's scope or project rules require it. Small corrections follow existing patterns and need no automatic design committee.

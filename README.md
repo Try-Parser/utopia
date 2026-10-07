@@ -2,7 +2,7 @@
 
 A shared AI development environment built from our current Frank agents and skills, optimized for engineering, research, design and evidence-based AI evaluation. Works with Claude Code and Codex without copying private account settings or service-specific release configuration.
 
-The foundation keeps our four core skills and six Frank roles, adds three targeted domain skills, and provides a safe installer, strict review/commit evidence, task timing and offline benchmarking. Smaller changes get smaller review scope; substantive engineering still keeps independent correctness, QA and security.
+The foundation keeps our four core skills, adds three targeted domain skills and expands the six original Frank roles into twelve department roles, including a dedicated designer. It provides a safe installer, strict review/commit evidence, task timing and offline benchmarking. Smaller changes get smaller review scope; substantive engineering still keeps independent correctness, QA and security.
 
 ## Observed verification
 
@@ -10,7 +10,17 @@ The foundation keeps our four core skills and six Frank roles, adds three target
 
 Read the [verification report](docs/verification/2026-10-07/report.md) and inspect [machine-readable results](docs/verification/2026-10-07/results.json). These are actual tool/fixture checks; live AI accuracy, token savings and production speed remain unmeasured.
 
+The [department expansion checks](docs/verification/2026-10-07-department/report.md) verify the current twelve-role installation and global user-scope lifecycle. The earlier chart above describes its recorded earlier source inputs.
+
 Use the [resource catalog](docs/resources.md), [connection runbook](docs/connections.md) and [optimization guide](docs/optimization.md) to turn skills into repeatable work with actual tools and evidence.
+
+See the [department roles and handoffs](skills/frank/references/department.md) and [current tooling research](docs/tooling-landscape-2026-10.md). Extra roles run only when needed; installing role definitions does not prove live AI performance.
+
+Start with the [plain-language setup and usage guide](docs/getting-started.md).
+
+Download the [PDF guide](docs/ai-department-guide.pdf) to share or print.
+
+![How the AI department works: request, coordinator, specialists, implementation, independent checks and delivery](docs/workflow.png)
 
 ## Start
 
@@ -34,9 +44,18 @@ python scripts/install.py uninstall --assistant both --scope project --target <p
 
 For personal cross-project use set --scope user and --target to your own home directory. Project/user paths use .claude/skills and .claude/agents for Claude, .agents/skills for Codex. Ownership/backups stay under .ai-department within the explicit target. Files are copied, not symlinked; Windows paths with spaces work when quoted.
 
+Global setup uses the same installer with user scope:
+
+```text
+python scripts/install.py install --assistant both --scope user --target <home-directory>
+python scripts/install.py install --assistant both --scope user --target <home-directory> --apply
+```
+
+Replace the placeholder with your own home directory and quote paths containing spaces. Global skills/role references are available across projects after assistant discovery in a new session. Root global instructions still require the manual import described below. Keep shared methods global; retain project business rules, environment commands, permissions and private memory at project scope. Avoid installing duplicate copies at both scopes unless you deliberately manage precedence; project copies can shadow later global updates.
+
 Installer writes shared guidance into .claude/ai-department.md and .codex/ai-department.md. Manually import/merge it into your existing CLAUDE.md/AGENTS.md at the chosen scope; root instructions and account configuration are intentionally preserved. Fill templates/project-CLAUDE.md with your actual environment/commands/runbook, and use templates/project-memory-MEMORY.md for scoped knowledge. Native instruction/discovery paths were verified against official documentation on 07 October 2026; see docs/research-sources.md.
 
-Start a new assistant session in the target project and confirm seven skills and six Frank roles are available. Claude roles are native agent definitions; Codex uses native workers given the installed skill-contained role references. Account access, browser tools and third-party plugin availability require a recipient smoke check; deterministic installation tests cannot prove live model behavior.
+Start a new assistant session in the target project and confirm seven skills and twelve Frank role definitions are available. Claude roles are native agent definitions; Codex uses native workers given the installed skill-contained role references. Account access, browser tools and third-party plugin availability require a recipient smoke check; deterministic installation tests cannot prove live model behavior.
 
 ## Work
 

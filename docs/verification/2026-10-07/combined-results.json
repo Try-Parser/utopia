@@ -1,0 +1,536 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-10-07T15:35:50.213386+00:00",
+  "testedInputsSha256": "322a23409c0ef869027cea6a24362097b47a4604335476b107bb0db6a31c4361",
+  "requiredCases": 95,
+  "observedPassingCases": 95,
+  "unverifiedCases": 0,
+  "groups": {
+    "evaluate": {
+      "passed": 39,
+      "failed": 0,
+      "error": 0,
+      "skipped": 0
+    },
+    "install": {
+      "passed": 19,
+      "failed": 0,
+      "error": 0,
+      "skipped": 0
+    },
+    "validate": {
+      "passed": 5,
+      "failed": 0,
+      "error": 0,
+      "skipped": 0
+    },
+    "evidence": {
+      "passed": 25,
+      "failed": 0,
+      "error": 0,
+      "skipped": 0
+    },
+    "task_state": {
+      "passed": 7,
+      "failed": 0,
+      "error": 0,
+      "skipped": 0
+    }
+  },
+  "cases": {
+    "test_evaluate.EvaluationTests.test_72_insufficient": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_73_statistical_boundary": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_99_of_100_not_enough": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_attempts_not_samples": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_bad_dataset": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_blank_and_malformed_records": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_boolean_and_nonfinite_metrics": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_categories_and_metrics": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_cli_exit_and_safe_error": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_confidence_method": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_critical_failure_even_high_aggregate": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_dataset_provenance": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_digest_and_no_evidence_exposure": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_duplicate_dataset_id": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_duplicate_properties": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_duplicate_trial": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_expected_dataset_digest": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_independent_provenance": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_integrity_required": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_invalid_baseline_not_paired": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_invalid_record_shapes": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_metric_overflow_fails_safe": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_missing_task": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_nullable_flags_rejected": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_output_does_not_overwrite_input": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_paired_baseline_does_not_change_acceptance": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_required_fields": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_retry_failure_remains": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_synthetic_never_accepts": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_target_and_minimum": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_unknown_task": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_usage_exclusive_reads_larger_than_uncached_input": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_usage_exclusive_reasoning_output_normalizes_and_missing_stays_unknown": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_usage_inclusive_subsets_not_counted_twice": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_usage_invalid_counts_and_subsets_reject_trials": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_usage_missing_not_zero_and_complete_totals_require_coverage": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_usage_mixed_conventions_aggregate_normalized_totals": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_usage_partial_output_totals_expose_missing_trial": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evaluate.EvaluationTests.test_usage_retries_included_without_inflating_task_count": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_install.InstallerTests.test_backup_traversal_and_corruption_refused": {
+      "linux": "passed",
+      "windows": "passed",
+      "observedPass": true
+    },
+    "test_install.InstallerTests.test_both_adapters_install_roles_and_leave_account_files_untouched": {
+      "linux": "passed",
+      "windows": "passed",
+      "observedPass": true
+    },
+    "test_install.InstallerTests.test_busy_target_refuses_writer_then_releases_for_retry": {
+      "linux": "passed",
+      "windows": "passed",
+      "observedPass": true
+    },
+    "test_install.InstallerTests.test_cli_supports_every_assistant_and_scope": {
+      "linux": "passed",
+      "windows": "passed",
+      "observedPass": true
+    },
+    "test_install.InstallerTests.test_conflict_preflight_writes_nothing": {
+      "linux": "passed",
+      "windows": "passed",
+      "observedPass": true
+    },
+    "test_install.InstallerTests.test_default_dry_run_never_creates_target_or_manifest": {
+      "linux": "passed",
+      "windows": "passed",
+      "observedPass": true
+    },
+    "test_install.InstallerTests.test_explicit_replace_restores_exact_original_after_version_update": {
+      "linux": "passed",
+      "windows": "passed",
+      "observedPass": true
+    },
+    "test_install.InstallerTests.test_generated_scorer_matches_canonical_helper_and_rejects_source_symlink": {
+      "linux": "passed",
+      "windows": "skipped",
+      "observedPass": true
+    },
+    "test_install.InstallerTests.test_generated_scorer_refuses_destination_symlink": {
+      "linux": "passed",
+      "windows": "skipped",
+      "observedPass": true
+    },
+    "test_install.InstallerTests.test_manifest_traversal_and_non_adapter_paths_refused": {
+      "linux": "passed",
+      "windows": "passed",
+      "observedPass": true
+    },
+    "test_install.InstallerTests.test_midapply_failure_restores_overwrites_and_removes_new_files": {
+      "linux": "passed",
+      "windows": "passed",
+      "observedPass": true
+    },
+    "test_install.InstallerTests.test_miduninstall_failure_restores_installed_state": {
+      "linux": "passed",
+      "windows": "passed",
+      "observedPass": true
+    },
+    "test_install.InstallerTests.test_missing_installed_file_refuses_uninstall": {
+      "linux": "passed",
+      "windows": "passed",
+      "observedPass": true
+    },
+    "test_install.InstallerTests.test_modified_installed_file_refuses_uninstall_and_update_atomically": {
+      "linux": "passed",
+      "windows": "passed",
+      "observedPass": true
+    },
+    "test_install.InstallerTests.test_nested_source_junction_refuses_external_content": {
+      "linux": "skipped",
+      "windows": "passed",
+      "observedPass": true
+    },
+    "test_install.InstallerTests.test_overlapping_processes_preserve_both_adapter_ownership": {
+      "linux": "passed",
+      "windows": "passed",
+      "observedPass": true
+    },
+    "test_install.InstallerTests.test_removed_upstream_assets_restore_originals": {
+      "linux": "passed",
+      "windows": "passed",
+      "observedPass": true
+    },
+    "test_install.InstallerTests.test_repeated_install_is_idempotent_and_adapters_coexist": {
+      "linux": "passed",
+      "windows": "passed",
+      "observedPass": true
+    },
+    "test_install.InstallerTests.test_symlink_target_and_asset_ancestor_refused": {
+      "linux": "passed",
+      "windows": "skipped",
+      "observedPass": true
+    },
+    "test_validate.HygieneTests.test_allowlist_scoped_to_category_and_line": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_validate.HygieneTests.test_frontmatter_duplicate_missing_and_valid_fields": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_validate.HygieneTests.test_generic_documented_paths_not_private_paths": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_validate.HygieneTests.test_private_candidate_not_returned": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_validate.HygieneTests.test_private_host_path_and_session_export": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_active_filter_rejected_and_unset_filter_allowed": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_autocrlf_tree_consistency_supported": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_branch_change_invalidates": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_cli_roundtrip_and_invalid_json_do_not_leak_contents": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_concurrent_edit_during_snapshot_rejected": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_duplicate_agent_rejected": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_empty_duplicate_and_nonrepository_scopes_rejected": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_failed_missing_or_unperformed_checks_rejected": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_head_change_invalidates_even_with_same_tree": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_hidden_tracked_changes_rejected": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_ignored_file_is_outside_scope": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_missing_and_malformed_reviews_rejected": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_postcommit_matches_reviewed_index_and_strict_gate_rejects_new_head": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_postcommit_rejects_dirty_after_commit": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_postcommit_rejects_extra_commit_even_same_tree": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_postcommit_rejects_hook_changed_index_tree": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_postcommit_rejects_unstaged_review_scope": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_snapshot_output_inside_repository_rejected": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_staged_change_invalidates": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_subdirectory_scope_rejected": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_submodule_gitlink_rejected": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_tampered_snapshot_rejected": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_unstaged_change_invalidates": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_untracked_filename_and_content_invalidate": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_evidence.EvidenceTests.test_valid_reviews_pass_without_mutating_repository": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_task_state.TaskStateTests.test_atomic_write_failure_preserves_previous_state": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_task_state.TaskStateTests.test_counters_and_next_action": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_task_state.TaskStateTests.test_exclusive_lock_refuses_concurrent_writer": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_task_state.TaskStateTests.test_explicit_stale_lock_recovery": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_task_state.TaskStateTests.test_init_does_not_overwrite_existing_checkpoint": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_task_state.TaskStateTests.test_malformed_checkpoints_fail_with_safe_errors": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    },
+    "test_task_state.TaskStateTests.test_timing_and_tier_reason": {
+      "linux": "passed",
+      "windows": "not-run",
+      "observedPass": true
+    }
+  },
+  "runners": {
+    "linux": {
+      "report": "results.json",
+      "testsRun": 95,
+      "passed": 94,
+      "skipped": 1
+    },
+    "windows": {
+      "report": "windows-results.json",
+      "testsRun": 19,
+      "passed": 16,
+      "skipped": 3
+    }
+  },
+  "definition": "A distinct required case has an observed pass in at least one appropriate runner, with no failure in either recorded runner. Per-runner skips and unexecuted cases are retained.",
+  "limitations": [
+    "Not full code coverage or every case on every OS.",
+    "Not 100% live AI accuracy, future reliability or security certification."
+  ]
+}

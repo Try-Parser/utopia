@@ -101,8 +101,15 @@ def installer_demo(log):
             if len(list((target / adapter / "skills").glob("*/SKILL.md"))) != 7:
                 raise RuntimeError("Incomplete installed skill inventory")
             roles = target / adapter / "skills/autonomous-development/references/agents"
-            if len(list(roles.glob("*.md"))) != 6:
-                raise RuntimeError("Incomplete installed role references")
+            expected_roles = {path.name: path.read_bytes() for path in (ROOT / "agents").glob("*.md")}
+            installed_roles = {path.name: path.read_bytes() for path in roles.glob("*.md")}
+            if installed_roles != expected_roles:
+                raise RuntimeError("Installed role references differ from canonical source")
+            if adapter == ".claude":
+                native_roles = {path.name: path.read_bytes()
+                                for path in (target / adapter / "agents").glob("*.md")}
+                if native_roles != expected_roles:
+                    raise RuntimeError("Installed native roles differ from canonical source")
             scorer = target / adapter / "skills/ai-evaluation/scripts/evaluate.py"
             if scorer.read_bytes() != (ROOT / "scripts/evaluate.py").read_bytes():
                 raise RuntimeError("Installed scorer differs from canonical source")
@@ -121,7 +128,7 @@ def installer_demo(log):
         if inventory(target) != original:
             raise RuntimeError("Uninstall did not preserve recipient files")
     return {"passed": True, "checks": ["dry-run preserves files", "seven skills in each adapter",
-            "six role references in each adapter", "canonical scorer copied exactly",
+            "complete canonical role references and Claude native roles copied exactly", "canonical scorer copied exactly",
             "four recipient instruction/account files preserved", "modified-file uninstall refused atomically",
             "uninstall restores original recipient inventory"]}
 
