@@ -27,6 +27,6 @@ Keep shared methods global and project commands, permissions and private knowled
 
 ## Know the evidence boundary
 
-The helper verifies Git state and commit mapping, not reviewer honesty or external services. UI journeys need browser evidence; AI quality needs measured held-out outcomes. This diagram and passing helper tests do not certify live speed or 95% integrity.
+Every required acceptance check must pass. Failed, missing or required skipped checks and missing reviews block delivery. The helper verifies Git state and commit mapping, not reviewer honesty or external services. UI journeys need browser evidence; AI quality needs measured held-out outcomes. A perfect observed suite does not certify universal AI accuracy, integrity, security or live speed.
 
 For installation and example requests, see [getting started](getting-started.md). For timing and test reuse, see [optimization](optimization.md). Regenerate the graphics with `python docs/render-autonomous.py` and the PDF with `python docs/render-guide.py` in an environment with matplotlib.

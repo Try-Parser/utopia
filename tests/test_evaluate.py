@@ -130,8 +130,61 @@ class EvaluationTests(unittest.TestCase):
     def test_73_statistical_boundary(self):
         report = score(*fixture())
         self.assertTrue(report["accepted"])
+        self.assertTrue(report["allTasksPassed"])
+        self.assertEqual(1.0, report["requiredTaskPassRate"])
         self.assertGreaterEqual(report["wilsonLower"], .95)
         self.assertEqual(report["minimumTasks"], 73)
+
+    def test_noncritical_failure_rejects_despite_high_confidence(self):
+        dataset, rows = fixture(500)
+        rows[-1]["passed"] = False
+        for target in (.95, .5):
+            with self.subTest(target=target):
+                report = score(dataset, rows, target=target)
+                self.assertGreater(report["wilsonLower"], target)
+                self.assertFalse(report["accepted"])
+                self.assertFalse(report["allTasksPassed"])
+                self.assertEqual(1.0, report["requiredTaskPassRate"])
+                self.assertIn("task_failure", report["reasons"])
+                self.assertNotIn("critical_task_failure", report["reasons"])
+
+    def test_failed_retry_rejects_despite_high_aggregate(self):
+        dataset, rows = fixture(500)
+        rows.append(dict(rows[-1], runId="failed-retry", passed=False))
+        report = score(dataset, rows)
+        self.assertGreater(report["wilsonLower"], .95)
+        self.assertEqual(499, report["passedTasks"])
+        self.assertEqual(500, report["tasks"])
+        self.assertIn("task_failure", report["reasons"])
+        self.assertFalse(report["accepted"])
+
+    def test_all_pass_does_not_replace_sample_or_provenance_gates(self):
+        for size, synthetic, reason in ((72, False, "insufficient_distinct_tasks"),
+                                        (73, True, "noncertifying_provenance")):
+            with self.subTest(size=size, synthetic=synthetic):
+                dataset, rows = fixture(size)
+                dataset["synthetic"] = synthetic
+                report = score(dataset, rows)
+                self.assertTrue(report["allTasksPassed"])
+                self.assertNotIn("task_failure", report["reasons"])
+                self.assertIn(reason, report["reasons"])
+                self.assertFalse(report["accepted"])
+
+    def test_cli_noncritical_failure_cannot_lower_target_to_accept(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            data, results, output = [Path(tmp) / n for n in ("dataset.json", "results.jsonl", "report.json")]
+            dataset, rows = fixture(500)
+            rows[-1]["passed"] = False
+            data.write_text(json.dumps(dataset))
+            results.write_text("\n".join(json.dumps(r) for r in rows))
+            args = ["--dataset", str(data), "--results", str(results), "--output", str(output)]
+            for target in ("0.95", "0.5"):
+                with self.subTest(target=target):
+                    self.assertEqual(1, ev.main(args + ["--target", target]))
+                    report = json.loads(output.read_text())
+                    self.assertGreater(report["wilsonLower"], float(target))
+                    self.assertFalse(report["accepted"])
+                    self.assertIn("task_failure", report["reasons"])
 
     def test_99_of_100_not_enough(self):
         dataset, rows = fixture(100)

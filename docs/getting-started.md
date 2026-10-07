@@ -59,6 +59,8 @@ Say which repositories may change, what success looks like and whether delivery 
 
 The coordinator scopes your request and records impact tier. It loads specialist context only when needed; the coder implements and one QA owner coordinates final affected checks. For substantive engineering, separate correctness, QA and security workers review one staged, frozen version, including small changes with narrower scope. Findings become one repair brief. Each changed snapshot gets fresh attestations from all three lenses, while QA assesses reuse of valid executed test evidence. At most two automatic repair rounds precede diagnosis and replanning.
 
+Every required acceptance check must pass. Failed, missing or required skipped checks and missing reviews block delivery; do not omit failures or reduce requirements to report success. AI evaluation additionally requires every declared task and supplied trial to pass, while retaining statistical confidence and provenance gates. This 100% requirement covers observed checks, not every future AI answer.
+
 The coordinator delivers within your authorization. Local handoff can be the final target; authorized commits require postcommit verification against the reviewed tree, and authorized pushes require exact remote verification. Passing checks grants no automatic merge or deployment permission. Final reports start with the outcome, then include only relevant checks, delivery identity and remaining gaps.
 
 Simple questions and small design corrections do not need every department role. Ask for status if needed: "Show the current phase, active work versus waiting, completed checks and remaining blockers." A passing suite proves its tested cases, not universal AI accuracy or security.

@@ -1,5 +1,11 @@
 # Shared workflow decisions
 
+## Zero-failure acceptance (08 October 2026)
+
+Require every defined acceptance check and every supplied evaluation trial to pass. An ordinary task failure now blocks evaluation acceptance even if a large dataset meets the statistical target. Missing checks, required skips, invalid records, integrity failures and missing reviews remain blockers.
+
+Keep the default 0.95 Wilson lower-bound target and 95% confidence level as separate statistical quantities. Finite perfect samples cannot establish universal 100% AI accuracy. Reports show the observed zero-failure condition separately from complete acceptance, including sample size and provenance requirements. Historical verification artifacts retain their original policy and results.
+
 ## Focused skills and concise output (08 October 2026)
 
 Frank owns specialist routing; autonomous-development owns software delivery and gates; craftsman owns code standards with conditional data, security and interface references. Skill triggers explicitly exclude adjacent tasks that do not need the workflow, and each skill names its expected output. Delivery mechanics remain available before freeze/gate/postcommit operations; substantive engineering retains all three independent review lenses and the two-round repair limit.

@@ -212,6 +212,8 @@ def evaluate(dataset_bytes, results_text, target=.95, minimum_tasks=73,
         reasons.append("insufficient_distinct_tasks")
     if lower < target:
         reasons.append("wilson_lower_bound_below_target")
+    if passed != total:
+        reasons.append("task_failure")
     if integrity != total:
         reasons.append("integrity_failure")
     if any(not task_pass(t) or not integrity_pass(t) for t in tasks if tasks[t]["critical"]):
@@ -231,6 +233,7 @@ def evaluate(dataset_bytes, results_text, target=.95, minimum_tasks=73,
             "confidenceMethod": {"name": "wilson", "sidedness": "two-sided", "z": Z},
             "aggregation": "All supplied trials must pass per task (conservative pass^k); no mandatory trial count.",
             "target": target, "confidence": .95, "minimumTasks": minimum,
+            "requiredTaskPassRate": 1.0, "allTasksPassed": passed == total,
             "tasks": total, "observedTasks": observed, "missingTasks": missing,
             "passedTasks": passed, "pointRate": passed / total, "wilsonLower": lower,
             "integrityPassedTasks": integrity, "categories": categories,

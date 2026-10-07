@@ -1,4 +1,4 @@
-# Measuring the 95%+ target
+# Zero-failure acceptance and measured AI quality
 
 Accuracy is defined against an agreed task distribution, not a global promise about a model. The shared scorer is offline; it does not generate or independently verify your outcomes.
 
@@ -34,7 +34,11 @@ python scripts/evaluate.py --dataset <dataset.json> --results <results.jsonl> --
 
 The default uses the lower limit of a two-sided 95% Wilson interval (z approximately 1.96; the report records the precise value), not a one-sided 95% bound. At zero failures 73 distinct tasks is the statistical minimum: 72/72 does not meet the lower-bound target; 73/73 does; 99/100 also falls short. Sample size and independence still depend on the real corpus: templated/correlated tasks can overstate confidence.
 
-Acceptance additionally requires all declared tasks observed, no invalid data, all critical cases and integrity checks passing, non-synthetic held-out provenance and distinct producer/grader identities. Metadata is self-reported; hashes detect changed inputs, not fabricated outcomes. A statistically accepted provided dataset still needs independent review before any organizational reliability claim.
+Acceptance requires every declared task and every supplied trial to pass: any task failure blocks acceptance even when the statistical bound exceeds the target. It also requires all declared tasks observed, no invalid data, all integrity checks passing, non-synthetic held-out provenance and distinct producer/grader identities. Lowering --target changes only the statistical threshold; it cannot permit failed tasks. Metadata is self-reported; hashes detect changed inputs, not fabricated outcomes. A perfect observed dataset still needs independent review before any organizational reliability claim.
+
+The 100% requirement describes observed acceptance checks. The 95% confidence level and default 0.95 statistical target describe uncertainty about unseen tasks; they are separate quantities. Do not set --target to 1: a finite sample cannot establish a Wilson lower bound of 1. A small perfect suite or synthetic fixture still fails the remaining certification gates.
+
+Reports expose requiredTaskPassRate (1.0) and allTasksPassed (every declared task has supplied passing trials). allTasksPassed covers task outcomes only; accepted also requires integrity, validity, sample size and provenance. Read reasons when acceptance is false.
 
 Run the small synthetic demonstration with examples/evals/dataset.json and results.jsonl. Exit 1 means it is deliberately noncertifying, even with perfect raw results. Exit 0 means supplied records meet the scorer's policy; exit 2 means malformed input/output. CI helper tests and fake fixtures never count as live AI evaluations.
 

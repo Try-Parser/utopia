@@ -11,7 +11,7 @@ For substantive development use autonomous-development with craftsman and the Fr
 
 Discover current repository/worktree state and applicable local instructions; preserve unrelated changes. Use the project's configured test environment and development Docker when required. For substantive engineering, give correctness, QA and security independent review of one exact completed snapshot. Follow additional repository review rules. Save checkpoints, evidence and the next concrete action outside repositories.
 
-Build the full requested capability with secure, maintainable code and usable interfaces. Verify empirically. Apply the bounded fix/recheck loop and report actual results and missing checks. Load commit-pr-standard before commit/PR drafting.
+Build the full requested capability with secure, maintainable code and usable interfaces. Verify empirically. Every required acceptance check must pass; failed, missing or required skipped checks and missing reviews block delivery. Do not lower requirements or omit failures to claim success. Apply the bounded fix/recheck loop and report actual results and missing checks. A perfect observed suite does not guarantee universal AI accuracy. Load commit-pr-standard before commit/PR drafting.
 
 Continue routine authorized work without repeated permission questions. Skills and memory do not authorize unrelated repositories, releases, publication, messaging or production operations. Never record credentials or personal data in shared context. Close only browser tabs/resources created for the task.
 

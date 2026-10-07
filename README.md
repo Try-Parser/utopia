@@ -88,13 +88,13 @@ The autonomous skill includes snapshot, gate, postcommit and state commands. Kee
 
 Record tier/reason and active/waiting phases with the state CLI. Bound retries, batch fixes and preserve the requested target. Passing a JSON gate is not proof of tests, deployed behavior or truthful review.
 
-## Measure 95%+ honestly
+## Require every check to pass; measure AI quality honestly
 
 ```text
 python scripts/evaluate.py --dataset examples/evals/dataset.json --results examples/evals/results.jsonl
 ```
 
-The demonstration intentionally exits 1: synthetic data never certifies live accuracy. For real held-out, independently graded tasks, the default policy requires the lower two-sided 95% Wilson bound to reach 0.95, adequate distinct tasks, complete valid results and all critical/integrity checks passing. At zero failures the statistical minimum is 73 distinct tasks. This is scoped statistical acceptance, not universal reliability. See the [evaluation contract](skills/ai-evaluation/references/evaluation.md).
+The demonstration intentionally exits 1: synthetic data never certifies live accuracy. Acceptance requires 100% of declared tasks and every supplied trial to pass, complete valid results, independent grading and all integrity checks passing. Separately, the default lower two-sided 95% Wilson bound must reach 0.95 with adequate distinct held-out tasks; at zero failures the statistical minimum is 73. The 100% requirement covers observed checks, not every future AI answer. See the [evaluation contract](skills/ai-evaluation/references/evaluation.md).
 
 ## Development checks
 
