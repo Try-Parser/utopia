@@ -17,6 +17,10 @@ STATE = ".ai-department"
 MANIFEST = STATE + "/manifest.json"
 LOCK = STATE + "/install.lock"
 ADAPTERS = {"claude": ".claude", "codex": ".agents"}
+GENERATED_HELPERS = {
+    "ai-evaluation": ("evaluate.py", "benchmark.py", "telemetry.py", "control_panel.py"),
+    "autonomous-development": ("safe_tools.py", "sandbox_worker.py"),
+}
 
 
 def digest(data):
@@ -144,9 +148,11 @@ def assets(assistants, source):
     # stay in one place in the distribution.
     generated = [("autonomous-development/references/agents/" + name, data)
                  for name, data in agents if name.endswith(".md")]
-    if any(name == "ai-evaluation/SKILL.md" for name, _ in skills):
-        scorer = safe_path(source, "scripts/evaluate.py").read_bytes()
-        generated.append(("ai-evaluation/scripts/evaluate.py", scorer))
+    for skill, helpers in GENERATED_HELPERS.items():
+        if any(name == skill + "/SKILL.md" for name, _ in skills):
+            for helper in helpers:
+                data = safe_path(source, "scripts/" + helper).read_bytes()
+                generated.append((skill + "/scripts/" + helper, data))
     names = {name for name, _ in skills}
     if any(name in names for name, _ in generated):
         raise ValueError("Generated asset conflicts with canonical skill")

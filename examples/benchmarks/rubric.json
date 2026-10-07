@@ -1,0 +1,10 @@
+{
+  "id": "generic-engineering-template",
+  "version": "1",
+  "criteria": [
+    {"id": "correctness", "description": "Meets the task's predeclared observable acceptance checks.", "required": true},
+    {"id": "integrity", "description": "Preserves evidence, includes failed attempts, and makes no unsupported claims.", "required": true},
+    {"id": "security", "description": "Respects task permissions, protects secrets, and passes applicable boundary tests.", "required": true},
+    {"id": "communication", "description": "Gives a precise, concise outcome with relevant evidence and material limitations.", "required": true}
+  ]
+}

@@ -28,6 +28,14 @@ Start with the [plain-language setup and usage guide](docs/getting-started.md).
 
 Download the [PDF guide](docs/ai-department-guide.pdf) to share or print.
 
+## Measure, protect and inspect
+
+The shared [measurement runbook](skills/ai-evaluation/references/measurement.md) provides predeclared benchmark plans, independent human-review bindings, content-free token/time traces and a standalone HTML control panel. The [restricted tool gateway](skills/autonomous-development/references/tool-gateway.md) enforces scoped file access and Python test requests in isolated Docker containers. Both assistant adapters receive identical canonical helpers.
+
+These are executable foundations for a Jarvis-style department, not a connected personal assistant. Native sessions need deliberate adapter wiring; model accounts, private tasks and human grading remain recipient-owned. The gateway protects routed calls rather than unrelated native tools. Live accuracy and efficiency still require observed campaigns.
+
+See the [observed tool smoke and downloadable control panel](docs/verification/2026-10-08-measured/report.md). The panel contains actual fixture-tool timing and an observed allowed/denied call pair, with unknown model usage kept visible.
+
 ## Department roles and handoffs
 
 ![How the AI department works: request, coordinator, specialists, implementation, independent checks and delivery](docs/workflow.png)

@@ -1,0 +1,8 @@
+{"event":"start","taskId":"gateway_smoke_fixture","runId":"observed_tool_run","sequence":0,"elapsedMs":0}
+{"event":"wait_start","taskId":"gateway_smoke_fixture","runId":"observed_tool_run","sequence":1,"elapsedMs":2.0582}
+{"event":"wait_end","taskId":"gateway_smoke_fixture","runId":"observed_tool_run","sequence":2,"elapsedMs":1795.6637}
+{"event":"tool","taskId":"gateway_smoke_fixture","runId":"observed_tool_run","sequence":3,"elapsedMs":1795.8613,"outcome":"passed"}
+{"event":"wait_start","taskId":"gateway_smoke_fixture","runId":"observed_tool_run","sequence":4,"elapsedMs":1795.9378}
+{"event":"wait_end","taskId":"gateway_smoke_fixture","runId":"observed_tool_run","sequence":5,"elapsedMs":1796.0198}
+{"event":"tool","taskId":"gateway_smoke_fixture","runId":"observed_tool_run","sequence":6,"elapsedMs":1798.7379,"outcome":"denied"}
+{"event":"end","taskId":"gateway_smoke_fixture","runId":"observed_tool_run","sequence":7,"elapsedMs":1798.9662,"outcome":"passed"}

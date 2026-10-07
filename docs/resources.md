@@ -10,6 +10,8 @@ Skills provide decision instructions; resources provide reusable inputs and dete
 | Research | [evidence ledger](../skills/research-workflow/references/evidence-ledger.md), [primary-source catalog](research-sources.md) | Session web search/fetch or approved research connector |
 | Design | [journey/state acceptance matrix](../skills/design-workflow/references/acceptance-matrix.md) | Browser verification, project's components/assets; optional Figma |
 | AI evaluation | [schema and grading contract](../skills/ai-evaluation/references/evaluation.md), [synthetic examples](../examples/evals/README.md), offline scorer | Recipient-owned model access plus independently graded held-out outcomes |
+| Benchmark and telemetry | [measurement runbook](../skills/ai-evaluation/references/measurement.md), [golden test vectors](../skills/ai-evaluation/references/measurement-golden-cases.json) | Portable benchmark/trace helpers and standalone HTML control panel; deliberate adapter wiring |
+| Scoped tool execution | [gateway runbook](../skills/autonomous-development/references/tool-gateway.md), [shared contract](measurement-contract.md) | Docker-enforced read/list/Python-test interface for sanitized projects; native session permissions unchanged |
 | Shared knowledge | [global guidance](../templates/global-CLAUDE.md), [project guidance](../templates/project-CLAUDE.md), [scoped memory template](../templates/project-memory-MEMORY.md) | Fill with actual project commands and dated findings; no private memory copies |
 | Tool verification | [proof command](../scripts/prove.py), [graphical report](verification/2026-10-07/report.md) | Docker; optional matplotlib only to redraw the chart |
 

@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-10-08T00:36:34.351979</dc:date>
+    <dc:date>2026-10-08T00:55:49.951214</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -40,7 +40,7 @@ Q 52.956 84.5388 52.956 91.746
 L 52.956 144.414
 Q 52.956 151.6212 60.21 151.6212
 z
-" clip-path="url(#p273cbc92fc)" style="fill: #e7eef9; stroke: #294666; stroke-width: 1.5; stroke-linejoin: miter"/>
+" clip-path="url(#p154a0cc6bc)" style="fill: #e7eef9; stroke: #294666; stroke-width: 1.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_3">
     <path d="M 60.21 237.5532
@@ -53,7 +53,7 @@ Q 52.956 170.4708 52.956 177.678
 L 52.956 230.346
 Q 52.956 237.5532 60.21 237.5532
 z
-" clip-path="url(#p273cbc92fc)" style="fill: #e7eef9; stroke: #294666; stroke-width: 1.5; stroke-linejoin: miter"/>
+" clip-path="url(#p154a0cc6bc)" style="fill: #e7eef9; stroke: #294666; stroke-width: 1.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_4">
     <path d="M 60.21 323.4852
@@ -66,7 +66,7 @@ Q 52.956 256.4028 52.956 263.61
 L 52.956 316.278
 Q 52.956 323.4852 60.21 323.4852
 z
-" clip-path="url(#p273cbc92fc)" style="fill: #e7eef9; stroke: #294666; stroke-width: 1.5; stroke-linejoin: miter"/>
+" clip-path="url(#p154a0cc6bc)" style="fill: #e7eef9; stroke: #294666; stroke-width: 1.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_5">
     <path d="M 60.21 409.4172
@@ -79,7 +79,7 @@ Q 52.956 342.3348 52.956 349.542
 L 52.956 402.21
 Q 52.956 409.4172 60.21 409.4172
 z
-" clip-path="url(#p273cbc92fc)" style="fill: #e7eef9; stroke: #294666; stroke-width: 1.5; stroke-linejoin: miter"/>
+" clip-path="url(#p154a0cc6bc)" style="fill: #e7eef9; stroke: #294666; stroke-width: 1.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_6">
     <path d="M 60.21 500.8932
@@ -92,7 +92,7 @@ Q 52.956 428.2668 52.956 435.474
 L 52.956 493.686
 Q 52.956 500.8932 60.21 500.8932
 z
-" clip-path="url(#p273cbc92fc)" style="fill: #e7eef9; stroke: #294666; stroke-width: 1.5; stroke-linejoin: miter"/>
+" clip-path="url(#p154a0cc6bc)" style="fill: #e7eef9; stroke: #294666; stroke-width: 1.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_7">
     <path d="M 286.2 508.932
@@ -100,7 +100,7 @@ L 408.96 556.056
 L 286.2 603.18
 L 163.44 556.056
 z
-" clip-path="url(#p273cbc92fc)" style="fill: #fff1ce; stroke: #9e7422; stroke-width: 1.5; stroke-linejoin: miter"/>
+" clip-path="url(#p154a0cc6bc)" style="fill: #fff1ce; stroke: #9e7422; stroke-width: 1.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_8">
     <path d="M 60.21 686.6172
@@ -113,7 +113,7 @@ Q 52.956 619.5348 52.956 626.742
 L 52.956 679.41
 Q 52.956 686.6172 60.21 686.6172
 z
-" clip-path="url(#p273cbc92fc)" style="fill: #e1f3ea; stroke: #294666; stroke-width: 1.5; stroke-linejoin: miter"/>
+" clip-path="url(#p154a0cc6bc)" style="fill: #e1f3ea; stroke: #294666; stroke-width: 1.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_9">
     <path d="M 60.21 769.7772
@@ -126,7 +126,7 @@ Q 52.956 702.6948 52.956 709.902
 L 52.956 762.57
 Q 52.956 769.7772 60.21 769.7772
 z
-" clip-path="url(#p273cbc92fc)" style="fill: #e1f3ea; stroke: #294666; stroke-width: 1.5; stroke-linejoin: miter"/>
+" clip-path="url(#p154a0cc6bc)" style="fill: #e1f3ea; stroke: #294666; stroke-width: 1.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_10">
     <path d="M 556.83 511.9812
@@ -139,7 +139,7 @@ Q 549.576 428.2668 549.576 435.474
 L 549.576 504.774
 Q 549.576 511.9812 556.83 511.9812
 z
-" clip-path="url(#p273cbc92fc)" style="fill: #fff0e8; stroke: #294666; stroke-width: 1.5; stroke-linejoin: miter"/>
+" clip-path="url(#p154a0cc6bc)" style="fill: #fff0e8; stroke: #294666; stroke-width: 1.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_11">
     <path d="M 556.83 401.1012
@@ -152,7 +152,7 @@ Q 549.576 317.3868 549.576 324.594
 L 549.576 393.894
 Q 549.576 401.1012 556.83 401.1012
 z
-" clip-path="url(#p273cbc92fc)" style="fill: #fff0e8; stroke: #294666; stroke-width: 1.5; stroke-linejoin: miter"/>
+" clip-path="url(#p154a0cc6bc)" style="fill: #fff0e8; stroke: #294666; stroke-width: 1.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_12">
     <path d="M 556.83 671.3712
@@ -165,7 +165,7 @@ Q 549.576 579.3408 549.576 586.548
 L 549.576 664.164
 Q 549.576 671.3712 556.83 671.3712
 z
-" clip-path="url(#p273cbc92fc)" style="fill: #fff0e8; stroke: #294666; stroke-width: 1.5; stroke-linejoin: miter"/>
+" clip-path="url(#p154a0cc6bc)" style="fill: #fff0e8; stroke: #294666; stroke-width: 1.5; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
     <text style="font-weight: 700; font-size: 23px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: start; fill: #17304c" x="43.47" y="37.692" transform="rotate(-0 43.47 37.692)">AUTONOMOUS DEVELOPMENT FLOW</text>
@@ -189,7 +189,7 @@ z
     <text style="font-weight: 700; font-size: 13px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: middle; fill: #17304c" x="286.2" y="280.514821" transform="rotate(-0 286.2 280.514821)">3  Build and run focused Docker checks</text>
    </g>
    <g id="text_8">
-    <text style="font-size: 11px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: middle; fill: #263f59" x="286.2" y="302.293233" transform="rotate(-0 286.2 302.293233)">One QA owner plans checks; reuse valid evidence instead of duplicate suites</text>
+    <text style="font-size: 11px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: middle; fill: #263f59" x="286.2" y="302.728076" transform="rotate(-0 286.2 302.728076)">Restricted tools when routed; content-free traces + one QA owner</text>
    </g>
    <g id="text_9">
     <text style="font-weight: 700; font-size: 13px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: middle; fill: #17304c" x="286.2" y="366.446821" transform="rotate(-0 286.2 366.446821)">4  Stage and freeze a snapshot</text>
@@ -290,7 +290,7 @@ z
    </g>
    <g id="text_18">
     <text style="font-size: 11px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #263f59" transform="translate(108.331719 740.885233)">Local handoff OR authorized push + verify exact remote identity</text>
-    <text style="font-size: 11px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #263f59" transform="translate(116.054922 756.285233)">Concise report: outcome + relevant checks + remaining gaps</text>
+    <text style="font-size: 11px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #263f59" transform="translate(98.447188 756.285233)">Evidence panel + concise outcome; unknown metrics stay unknown</text>
    </g>
    <g id="patch_20">
     <path d="M 286.2 684.182834
@@ -406,7 +406,7 @@ z
   </g>
  </g>
  <defs>
-  <clipPath id="p273cbc92fc">
+  <clipPath id="p154a0cc6bc">
    <rect x="7.2" y="7.2" width="892.8" height="831.6"/>
   </clipPath>
  </defs>

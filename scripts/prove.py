@@ -110,9 +110,16 @@ def installer_demo(log):
                                 for path in (target / adapter / "agents").glob("*.md")}
                 if native_roles != expected_roles:
                     raise RuntimeError("Installed native roles differ from canonical source")
-            scorer = target / adapter / "skills/ai-evaluation/scripts/evaluate.py"
-            if scorer.read_bytes() != (ROOT / "scripts/evaluate.py").read_bytes():
-                raise RuntimeError("Installed scorer differs from canonical source")
+            for skill, names in {
+                "ai-evaluation": ("evaluate.py", "benchmark.py", "telemetry.py", "control_panel.py"),
+                "autonomous-development": ("safe_tools.py", "sandbox_worker.py"),
+            }.items():
+                for name in names:
+                    helper = target / adapter / "skills" / skill / "scripts" / name
+                    if helper.read_bytes() != (ROOT / "scripts" / name).read_bytes():
+                        raise RuntimeError("Installed helper differs from canonical source")
+                    if name != "sandbox_worker.py":
+                        invoke([sys.executable, str(helper), "--help"], log)
         for name in protected:
             if (target / name).read_bytes() != original[name]:
                 raise RuntimeError("Recipient account instructions changed")
@@ -128,7 +135,7 @@ def installer_demo(log):
         if inventory(target) != original:
             raise RuntimeError("Uninstall did not preserve recipient files")
     return {"passed": True, "checks": ["dry-run preserves files", "seven skills in each adapter",
-            "complete canonical role references and Claude native roles copied exactly", "canonical scorer copied exactly",
+            "complete canonical role references and Claude native roles copied exactly", "six canonical helpers copied exactly and public CLI imports exercised",
             "four recipient instruction/account files preserved", "modified-file uninstall refused atomically",
             "uninstall restores original recipient inventory"]}
 

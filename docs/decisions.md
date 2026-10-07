@@ -1,5 +1,13 @@
 # Shared workflow decisions
 
+## Measured department and restricted tools (08 October 2026)
+
+Consolidate Codex and Claude resources from one canonical source: install six portable helpers and the same measurement/tool-boundary runbooks into both adapters. Add predeclared dataset/rubric/model/trial bindings with human-review declarations; content-free structured telemetry preserves missing usage and failed attempts; a standalone local HTML panel makes imported evidence visible.
+
+Use a strict request gateway, with permissions selected outside model context and a fresh restricted Docker container per accepted operation. Its boundary covers routed read/list/Python-test calls, not every native tool or malicious host. Sanitized inputs remain essential because tests can read mounted project files. No models, paid APIs, live trace service or private human-graded campaign are activated automatically.
+
+The versioned [measurement contract](measurement-contract.md) and shared golden vectors define acceptance before implementation. Guidance follows [Anthropic agent evaluation](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents), [OWASP agent security](https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html) and [Docker isolation controls](https://docs.docker.com/engine/containers/run/), checked 08 October 2026. This implements scoped controls, not standards certification or universal reliability.
+
 ## Consistent visual acceptance rules (08 October 2026)
 
 Both current workflow diagrams and the shareable PDF show that every required check must pass, with failed or missing checks/reviews and required skips blocking delivery. The historical verification image gains an explicit historical label and current-policy caption while retaining its original counts, timestamp and synthetic confidence examples. Regenerating a chart does not create new verification evidence or establish universal AI accuracy.

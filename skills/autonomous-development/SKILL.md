@@ -22,6 +22,8 @@ Own substantive software implementation and unfinished engineering delivery. Que
 
 Use [checkpoints](references/checkpoint.md) when recording or resuming work. Before freeze/gate/postcommit operations, read [delivery mechanics](references/delivery.md) and [review contracts](references/reviews.md) for helper commands, snapshot identity and evidence handling. For authorized deployments read [release](references/release.md) and the project's actual runbook. Do not load release instructions for local-only work.
 
+For model-requested file access or Python test execution, load the [restricted tool gateway](references/tool-gateway.md). Its Docker boundary applies to routed calls, not every native assistant tool. Keep model access, credentials and approved connector configuration outside it.
+
 Workers receive the canonical installed role references from references/agents; they do not commit, publish or spawn workers. Account access, tools and paid runs are not granted by this skill. Shared knowledge excludes credentials, private account settings and raw transcripts.
 
 ## Output

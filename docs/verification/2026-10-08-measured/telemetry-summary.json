@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "scope": "Submitted content-free traces only; no automatic assistant instrumentation or savings claim.",
+  "runs": [
+    {
+      "taskId": "gateway_smoke_fixture",
+      "runId": "observed_tool_run",
+      "outcome": "passed",
+      "wallMs": 1798.9662,
+      "waitMs": 1793.6875000000002,
+      "remainderMs": 5.278699999999844,
+      "toolCalls": 2,
+      "toolErrors": 0,
+      "toolDenials": 1,
+      "usage": {
+        "inputTokens": null,
+        "outputTokens": null,
+        "cachedInputTokens": null,
+        "cacheWriteInputTokens": null,
+        "reasoningOutputTokens": null,
+        "totalTokens": null
+      },
+      "costUsd": null
+    }
+  ],
+  "outcomes": {
+    "passed": 1,
+    "failed": 0,
+    "cancelled": 0
+  },
+  "wallMs": 1798.9662,
+  "waitMs": 1793.6875000000002,
+  "remainderMs": 5.278699999999844,
+  "toolCalls": 2,
+  "toolErrors": 0,
+  "toolDenials": 1,
+  "usage": {
+    "validTrials": 1,
+    "fields": {
+      "inputTokens": {
+        "observedTrials": 0,
+        "missingTrials": 1,
+        "sumObserved": null,
+        "completeTotal": null
+      },
+      "outputTokens": {
+        "observedTrials": 0,
+        "missingTrials": 1,
+        "sumObserved": null,
+        "completeTotal": null
+      },
+      "cachedInputTokens": {
+        "observedTrials": 0,
+        "missingTrials": 1,
+        "sumObserved": null,
+        "completeTotal": null
+      },
+      "cacheWriteInputTokens": {
+        "observedTrials": 0,
+        "missingTrials": 1,
+        "sumObserved": null,
+        "completeTotal": null
+      },
+      "reasoningOutputTokens": {
+        "observedTrials": 0,
+        "missingTrials": 1,
+        "sumObserved": null,
+        "completeTotal": null
+      },
+      "totalTokens": {
+        "observedTrials": 0,
+        "missingTrials": 1,
+        "sumObserved": null,
+        "completeTotal": null
+      }
+    },
+    "scope": "Submitted counters only; input normalized to total, reasoning/cache are subsets, no price calculation."
+  },
+  "costUsd": {
+    "observedRuns": 0,
+    "missingRuns": 1,
+    "sumObserved": null,
+    "completeTotal": null
+  }
+}

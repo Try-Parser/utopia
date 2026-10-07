@@ -55,7 +55,22 @@ Copy an example and fill in the details:
 
 Say which repositories may change, what success looks like and whether delivery means local files, a branch push or an authorized deployment. Missing tool connections must be reported. Installing this toolkit does not connect Figma, enable CI, buy models or provide credentials.
 
-## What happens next
+## Measure actual work and inspect results
+
+Use the [measurement runbook](../skills/ai-evaluation/references/measurement.md) to predeclare a private benchmark campaign and import independently human-reviewed outcomes. Every declared trial must be recorded. The public examples test helper behavior; they are not real held-out AI results.
+
+An approved adapter can wrap actual operations with the content-free telemetry Recorder. Summarize its structured traces and generate a standalone local HTML control panel:
+
+```text
+python scripts/telemetry.py summarize --trace <actual-trace.jsonl> --output <fresh-summary.json>
+python scripts/control_panel.py --telemetry <summary.json> --benchmark <report.json> --output <fresh-panel.html>
+```
+
+Open the HTML in your browser. It shows supplied outcomes, token/cost coverage, wall/wait time and tool denials; it has no live connections or automatic uploads. Missing measurements remain unknown. For installed copies, use the ai-evaluation skill's scripts directory.
+
+For model-requested file reads or Python tests, use the [restricted tool gateway](../skills/autonomous-development/references/tool-gateway.md) with a trusted approved image and sanitized project. The model cannot choose arbitrary commands or Docker permissions. Other native tools retain their own permissions; installing the helper does not sandbox your entire assistant.
+
+## Development delivery
 
 The coordinator scopes your request and records impact tier. It loads specialist context only when needed; the coder implements and one QA owner coordinates final affected checks. For substantive engineering, separate correctness, QA and security workers review one staged, frozen version, including small changes with narrower scope. Findings become one repair brief. Each changed snapshot gets fresh attestations from all three lenses, while QA assesses reuse of valid executed test evidence. At most two automatic repair rounds precede diagnosis and replanning.
 

@@ -28,6 +28,11 @@ class InstallerTests(unittest.TestCase):
             "skills/craftsman/SKILL.md": b"craft\n",
             "skills/ai-evaluation/SKILL.md": b"evaluation\n",
             "scripts/evaluate.py": b"# canonical scorer\n",
+            "scripts/benchmark.py": b"# canonical benchmark\n",
+            "scripts/telemetry.py": b"# canonical telemetry\n",
+            "scripts/control_panel.py": b"# canonical panel\n",
+            "scripts/safe_tools.py": b"# canonical gateway\n",
+            "scripts/sandbox_worker.py": b"# canonical worker\n",
             "agents/frank-coder.md": b"builder role\n",
             "agents/frank-security.md": b"security role\n",
             "templates/global-CLAUDE.md": b"portable guidance\n",
@@ -97,6 +102,24 @@ class InstallerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Symlink traversal"):
             self.install()
         self.assertEqual(outside.read_bytes(), b"external code")
+
+    def test_measurement_and_gateway_helpers_travel_with_both_adapters(self):
+        self.install()
+        for prefix in (".claude/skills", ".agents/skills"):
+            for skill, names in installer.GENERATED_HELPERS.items():
+                for name in names:
+                    with self.subTest(adapter=prefix, helper=name):
+                        copied = self.target / prefix / skill / "scripts" / name
+                        self.assertEqual(copied.read_bytes(), (self.source / "scripts" / name).read_bytes())
+        self.uninstall()
+        self.assertFalse(any(self.target.rglob("benchmark.py")))
+
+    def test_missing_measurement_helper_refuses_before_recipient_mutation(self):
+        (self.source / "scripts/telemetry.py").unlink()
+        before = self.snapshot()
+        with self.assertRaises(OSError):
+            self.install()
+        self.assertEqual(self.snapshot(), before)
 
     def test_default_dry_run_never_creates_target_or_manifest(self):
         nonexistent = self.root / "absent home"

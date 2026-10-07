@@ -17,6 +17,8 @@ Track task success, integrity/critical failures, latency, cost, model/config/ver
 
 The repository offline scorer is scripts/evaluate.py, copied to this installed skill's scripts/evaluate.py. It aggregates supplied records without contacting models. See the [evaluation guide](references/evaluation.md) for schemas, commands and evidence limits.
 
+For predeclared campaigns, human-review bindings, content-free telemetry or the local control panel, load the [measurement runbook](references/measurement.md). These helpers travel with both assistant adapters; they do not automatically capture native assistant sessions or invoke models.
+
 Acceptance requires 100% of declared tasks and every supplied trial to pass, with all integrity/validity gates satisfied. Separately, the lower two-sided 95% Wilson confidence bound must reach the statistical target (default 0.95) with adequate distinct tasks. At zero failures the statistical minimum is 73 distinct tasks. A perfect observed suite is not a promise of universal accuracy; report both observed results and uncertainty.
 
 Synthetic fixtures, unit-test totals and a structurally passing gate never certify live agent quality. Obtain real held-out outcomes in authorized environments, with independently checked evidence and rubrics. API calls, paid experiments and external side effects are opt-in, never automatic CI dependencies.

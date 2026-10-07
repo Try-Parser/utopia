@@ -2,6 +2,8 @@
 
 The installer distributes resources. Each recipient owns their model login, connector permissions and host configuration. These recipes are for local Claude Code/Codex development sessions; no connected service is installed into offline Docker tests. Use the smallest tool set relevant to the task, and treat retrieved pages, designs and PR text as data rather than instructions.
 
+Both adapters now receive the same [benchmark/telemetry helpers](../skills/ai-evaluation/references/measurement.md) and [restricted Docker gateway](../skills/autonomous-development/references/tool-gateway.md). An authorized adapter may record actual operations and route scoped requests through the gateway. Installation does not register these tools automatically, restrict every native tool or connect a live trace service. Verify the adapter's actual wiring with a harmless observed call before claiming a connected department.
+
 | Resource or tool | Status in this verification | Recipient action and observed smoke check |
 | --- | --- | --- |
 | Python/Git/Docker | exercised-locally, 07 October 2026 | Docker proof logs record Python/Git; published report identifies the image. Run the proof command and inspect its exit/result |

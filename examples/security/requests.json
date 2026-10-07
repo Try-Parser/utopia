@@ -1,0 +1,17 @@
+{
+  "synthetic": true,
+  "purpose": "Boundary fixtures, not measured model attack resistance",
+  "allowed": [
+    {"tool": "read_file", "path": "README.md"},
+    {"tool": "list_files", "path": "."},
+    {"tool": "run_tests"}
+  ],
+  "denied": [
+    {"tool": "read_file", "path": "../outside"},
+    {"tool": "read_file", "path": ".env"},
+    {"tool": "read_file", "path": ".git/config"},
+    {"tool": "shell", "command": "arbitrary-command"},
+    {"tool": "run_tests", "network": "host"},
+    {"tool": "run_tests", "image": "unapproved"}
+  ]
+}

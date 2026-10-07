@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "scope": "Fabricated behavioral test vectors; never live AI evidence.",
+  "benchmark": [
+    {"id": "complete-boundary", "tasks": 73, "failedTasks": 0, "expectedTrials": 1, "actualTrials": 1, "accepted": true},
+    {"id": "ordinary-failure", "tasks": 500, "failedTasks": 1, "expectedTrials": 1, "actualTrials": 1, "accepted": false},
+    {"id": "missing-trial", "tasks": 73, "failedTasks": 0, "expectedTrials": 2, "actualTrials": 1, "accepted": false}
+  ],
+  "usage": [
+    {"id": "inclusive-subsets", "usage": {"provider": "fixture", "model": "fixture", "accountingConvention": "inclusive", "outputConvention": "inclusive", "inputTokens": 100, "cachedInputTokens": 60, "outputTokens": 20, "reasoningOutputTokens": 10}, "totalTokens": 120},
+    {"id": "exclusive-counters", "usage": {"provider": "fixture", "model": "fixture", "accountingConvention": "exclusive", "outputConvention": "exclusive", "inputTokens": 10, "cachedInputTokens": 60, "cacheWriteInputTokens": 30, "outputTokens": 5, "reasoningOutputTokens": 15}, "totalTokens": 120},
+    {"id": "missing-input", "usage": {"provider": "fixture", "model": "fixture", "accountingConvention": "inclusive", "outputConvention": "inclusive", "outputTokens": 20}, "totalTokens": null}
+  ],
+  "toolRequests": [
+    {"id": "parent-escape", "request": {"tool": "read_file", "path": "../outside.txt"}, "allowed": false},
+    {"id": "secret-read", "request": {"tool": "read_file", "path": ".env"}, "allowed": false},
+    {"id": "command-injection", "request": {"tool": "run_tests", "command": "arbitrary shell"}, "allowed": false},
+    {"id": "unknown-tool", "request": {"tool": "send_message"}, "allowed": false}
+  ]
+}
