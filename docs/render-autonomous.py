@@ -33,7 +33,7 @@ def main():
 
     axis.text(.65, 14.45, "AUTONOMOUS DEVELOPMENT FLOW", fontsize=23,
               weight="bold", color="#17304c")
-    axis.text(.65, 13.98, "Focused work, independent checks, bounded repairs and authorized delivery",
+    axis.text(.65, 13.98, "100% of required checks must pass | Independent reviews | Bounded repairs",
               fontsize=13, color="#496078")
     main_x = 5
     box(main_x, 13.0, 8.2, 1.05, "1  Agree the task", "Observable acceptance + allowed repositories + authorized target")
@@ -45,14 +45,14 @@ def main():
         arrow((main_x, first), (main_x, second))
     axis.add_patch(Polygon([(5, 5.95), (7.2, 5.1), (5, 4.25), (2.8, 5.1)],
                    facecolor="#fff1ce", edgecolor="#9e7422", linewidth=1.5))
-    axis.text(5, 5.1, "6  Gate decision\nPass or repair?",
+    axis.text(5, 5.1, "6  Every required\ncheck passed?",
               fontsize=12, ha="center", va="center", color="#543e14", linespacing=1.4)
     arrow((5, 6.175), (5, 5.95))
     box(main_x, 3.35, 8.2, 1.05, "7  Coordinator delivers the reviewed work", "Commit only when authorized; postcommit verifies the reviewed tree", "#e1f3ea")
     arrow((5, 4.25), (5, 3.875), "Pass", (5.3, 4.1))
     box(main_x, 1.85, 8.2, 1.05, "8  Finish at the requested target", "Local handoff OR authorized push + verify exact remote identity\nConcise report: outcome + relevant checks + remaining gaps", "#e1f3ea")
     arrow((5, 2.825), (5, 2.375))
-    box(12.3, 6.65, 5.0, 1.35, "One combined repair brief", "Batch findings; assign one focused fix\nAt most TWO automatic fix rounds", "#fff0e8")
+    box(12.3, 6.65, 5.0, 1.35, "Blocked: one repair brief", "Failed / missing checks or reviews; required skips\nAt most TWO automatic fix rounds", "#fff0e8")
     arrow((7.2, 5.1), (10.1, 5.98), "Blockers", (8.0, 5.55), "#a14d30")
     box(12.3, 8.65, 5.0, 1.35, "Changed content: review again", "New frozen snapshot + fresh delta attestations\nAll three lenses; QA decides test evidence reuse", "#fff0e8")
     arrow((12.3, 7.325), (12.3, 7.975))
@@ -61,7 +61,7 @@ def main():
     arrow((12.3, 5.975), (12.3, 4.6), "Limit / repeated failure", (12.55, 5.1), "#a14d30")
     axis.text(.65, .68, "Coordinator owns delivery. A passed gate grants no merge, deployment or publication authority.",
               fontsize=11, color="#496078")
-    axis.text(.65, .30, "The diagram describes the method. Live speed, accuracy and integrity require measured outcomes.",
+    axis.text(.65, .30, "100% means defined checks passed. Universal AI accuracy, security and speed are not guaranteed.",
               fontsize=11, color="#496078")
     for suffix in ("png", "svg"):
         destination = ROOT / ("autonomous-development-flow." + suffix)

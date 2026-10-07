@@ -28,7 +28,7 @@ def render(source, output):
                          "xtick.color": muted, "ytick.color": ink})
     fig = plt.figure(figsize=(14, 10), facecolor="#eef3f8")
     fig.text(.055, .945, "AI Department", fontsize=24, weight="bold")
-    fig.text(.055, .909, "Observed tool verification | engineering, installation and evaluation", fontsize=13, color=muted)
+    fig.text(.055, .909, "Historical tool verification | counts and dates describe the recorded run", fontsize=13, color=muted)
     timestamp = datetime.fromisoformat(data["recordedAtUtc"]).astimezone(timezone(timedelta(hours=8)))
     fig.text(.945, .947, timestamp.strftime("%d %b %Y  %H:%M SGT"), ha="right", color=muted, fontsize=10)
 
@@ -92,8 +92,8 @@ def render(source, output):
     ax.set_xlabel("Lower endpoint of the two-sided 95% Wilson interval (%)", fontsize=10)
     ax.set_title("Synthetic confidence-boundary checks | all three correctly refused certification", loc="left", pad=14, fontsize=12, weight="bold")
     ax.spines[["top", "right", "left"]].set_visible(False)
-    fig.text(.055, .068, "Evidence scope: tool tests and temporary-fixture demonstrations. Live AI accuracy and production speed are unmeasured.", fontsize=10, weight="bold")
-    fig.text(.055, .043, "Source: results.json | Linux Docker, read-only source, offline execution | Windows-only junction test is the documented skip.", fontsize=9, color=muted)
+    fig.text(.055, .068, "Current policy: 100% of required checks must pass. Historical results do not certify today's source.", fontsize=10, weight="bold")
+    fig.text(.055, .043, "Source: recorded results.json | Linux Docker; Windows-only skip | Live AI accuracy and speed remain unmeasured.", fontsize=9, color=muted)
     fig.savefig(output, dpi=160, facecolor=fig.get_facecolor(), metadata={"Title": "AI Department observed verification"})
     plt.close(fig)
 

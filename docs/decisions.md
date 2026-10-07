@@ -1,5 +1,9 @@
 # Shared workflow decisions
 
+## Consistent visual acceptance rules (08 October 2026)
+
+Both current workflow diagrams and the shareable PDF show that every required check must pass, with failed or missing checks/reviews and required skips blocking delivery. The historical verification image gains an explicit historical label and current-policy caption while retaining its original counts, timestamp and synthetic confidence examples. Regenerating a chart does not create new verification evidence or establish universal AI accuracy.
+
 ## Zero-failure acceptance (08 October 2026)
 
 Require every defined acceptance check and every supplied evaluation trial to pass. An ordinary task failure now blocks evaluation acceptance even if a large dataset meets the statistical target. Missing checks, required skips, invalid records, integrity failures and missing reviews remain blockers.

@@ -10,11 +10,11 @@ The foundation keeps our four core skills, adds three targeted domain skills and
 
 Open the [full autonomous pipeline PNG](docs/autonomous-development-flow.png) or [vector SVG](docs/autonomous-development-flow.svg) if the inline image does not display. Read the [step-by-step process](docs/autonomous-development.md) and its [owning skill](skills/autonomous-development/SKILL.md).
 
-Context loads only when needed. One QA owner coordinates affected checks; small substantive changes keep three independent review lenses with focused scope. Blockers become one repair brief, with at most two automatic fix rounds before diagnosis and replanning. Delivery stops at the authorized local or remote target.
+Context loads only when needed. One QA owner coordinates affected checks; small substantive changes keep three independent review lenses with focused scope. Every required check must pass; failures, missing checks or reviews and required skips block delivery. Blockers become one repair brief, with at most two automatic fix rounds before diagnosis and replanning. Delivery stops at the authorized local or remote target.
 
 ## Observed verification
 
-![Tool verification: regression counts, recipient integration checks and separately labeled synthetic confidence examples](docs/verification/2026-10-07/verification.png)
+![Historical tool verification with original counts and date; current policy requires every defined check to pass](docs/verification/2026-10-07/verification.png)
 
 Read the [verification report](docs/verification/2026-10-07/report.md) and inspect [machine-readable results](docs/verification/2026-10-07/results.json). These are actual tool/fixture checks; live AI accuracy, token savings and production speed remain unmeasured.
 
