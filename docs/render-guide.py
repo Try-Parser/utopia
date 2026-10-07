@@ -34,24 +34,27 @@ def readable_lines(markdown):
 
 def main():
     destination = ROOT / "docs/ai-department-guide.pdf"
-    sections = [("Setup and usage", ROOT / "docs/getting-started.md"),
+    sections = [("Autonomous delivery process", ROOT / "docs/autonomous-development.md"),
+                ("Setup and usage", ROOT / "docs/getting-started.md"),
                 ("Department roles", ROOT / "skills/frank/references/department.md"),
                 ("Reusable resources", ROOT / "docs/resources.md"),
                 ("Tools and trial priorities", ROOT / "docs/tooling-landscape-2026-10.md")]
     with PdfPages(destination, metadata={"Title": "AI department setup and workflow guide",
                   "Author": "AI Department", "Subject": "Shared skills, roles and workflow"}) as pdf:
-        figure, axis = plt.subplots(figsize=(11.7, 8.3))
-        axis.imshow(plt.imread(ROOT / "docs/workflow.png"))
-        axis.axis("off")
-        pdf.savefig(figure, bbox_inches="tight")
-        plt.close(figure)
+        for image, size in (("autonomous-development-flow.png", (11.7, 11.7)),
+                            ("workflow.png", (11.7, 8.3))):
+            figure, axis = plt.subplots(figsize=size)
+            axis.imshow(plt.imread(ROOT / "docs" / image))
+            axis.axis("off")
+            pdf.savefig(figure, bbox_inches="tight")
+            plt.close(figure)
         skill_lines = ["Shared skills", ""]
         for path in sorted((ROOT / "skills").glob("*/SKILL.md")):
             skill_lines.extend([path.parent.name, "Source: skills/" + path.parent.name + "/SKILL.md", ""])
         content = [("Skills catalog", skill_lines)]
         content += [(title, readable_lines(path.read_text(encoding="utf-8")))
                     for title, path in sections]
-        page = 2
+        page = 3
         for title, lines in content:
             for start in range(0, len(lines), 39):
                 figure = plt.figure(figsize=(8.3, 11.7), facecolor="white")

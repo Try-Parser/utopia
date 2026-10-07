@@ -4,6 +4,14 @@ A shared AI development environment built from our current Frank agents and skil
 
 The foundation keeps our four core skills, adds three targeted domain skills and expands the six original Frank roles into twelve department roles, including a dedicated designer. It provides a safe installer, strict review/commit evidence, task timing and offline benchmarking. Smaller changes get smaller review scope; substantive engineering still keeps independent correctness, QA and security.
 
+## Autonomous development flow
+
+![Autonomous development: scoped task, focused checks, frozen snapshot, three independent reviews, bounded fixes and authorized delivery](docs/autonomous-development-flow.png)
+
+Open the [full autonomous pipeline PNG](docs/autonomous-development-flow.png) or [vector SVG](docs/autonomous-development-flow.svg) if the inline image does not display. Read the [step-by-step process](docs/autonomous-development.md) and its [owning skill](skills/autonomous-development/SKILL.md).
+
+Context loads only when needed. One QA owner coordinates affected checks; small substantive changes keep three independent review lenses with focused scope. Blockers become one repair brief, with at most two automatic fix rounds before diagnosis and replanning. Delivery stops at the authorized local or remote target.
+
 ## Observed verification
 
 ![Tool verification: regression counts, recipient integration checks and separately labeled synthetic confidence examples](docs/verification/2026-10-07/verification.png)
@@ -19,6 +27,8 @@ See the [department roles and handoffs](skills/frank/references/department.md) a
 Start with the [plain-language setup and usage guide](docs/getting-started.md).
 
 Download the [PDF guide](docs/ai-department-guide.pdf) to share or print.
+
+## Department roles and handoffs
 
 ![How the AI department works: request, coordinator, specialists, implementation, independent checks and delivery](docs/workflow.png)
 

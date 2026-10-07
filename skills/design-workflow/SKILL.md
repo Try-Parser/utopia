@@ -5,6 +5,10 @@ description: Design or improve product interfaces using user journeys, existing 
 
 # Design workflow
 
+## Use and skip
+
+Use for product journeys, interface design, prototypes and substantive UI improvements. Backend-only changes, generic research and code review without a design question do not need this skill. Small visual corrections follow existing patterns and relevant acceptance checks.
+
 Start with the user's task, audience, content and observable acceptance. Inspect existing components/tokens/screens and repository design rules. Use installed frontend-design/UI UX Pro Max when available; don't invent access to those plugins or vendor their caches.
 
 For delegated design ownership, give frank-designer the brief and this skill using the assistant's native workers. Its canonical definition installs as a Claude agent and as an autonomous-development role reference for Codex. The designer hands testable journeys/states to the coder and independent QA; it does not approve its own implementation.
@@ -17,4 +21,6 @@ Specify populated, loading, empty, error, disabled and permission states. Test l
 
 Implementation belongs in autonomous-development with craftsman and risk-scoped reviews. Verify in an actual browser at relevant viewports, including overflow/clipping, interaction and persisted readback. A screenshot alone does not prove interaction or accessibility.
 
-Deliver decisions, source/prototype, observed acceptance journeys and unresolved limitations. Design-quality evaluation uses an explicit rubric with independently judged task success, hierarchy, state coverage and accessibility; don't present taste consensus as a reliability percentage.
+## Output
+
+Lead with the design artifact and decision. Include only relevant rationale, observed acceptance and unresolved gaps; keep the detailed matrix in the artifact. Design-quality evaluation uses an explicit rubric with independently judged task success, hierarchy, state coverage and accessibility; don't present taste consensus as a reliability percentage.

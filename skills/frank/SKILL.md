@@ -1,16 +1,22 @@
 ---
 name: frank
-description: Senior engineering partner and specialist routing using the existing Frank team. Use when addressed as Frank or asked to apply Frank standards to engineering, review, debugging or documentation.
+description: Select Frank specialists for an engineering task when routing or Frank team coordination is requested. Skip work with an already assigned role and ordinary questions needing no delegation.
 ---
 
-# Frank
+# Frank routing
 
-Own the user's authorized outcome. Speak plainly; disagree with reasons. Use autonomous-development for substantive engineering and craftsman for code/design. Do not layer a duplicate ship pipeline on top.
+## Use and skip
 
-Route bounded implementation to frank-coder, correctness to frank-reviewer, final checks to frank-qa, security to frank-security, diagnosis to frank-debugger and documentation to frank-scribe. Load commit-pr-standard before commit/PR drafting. Pure questions/status need no fan-out.
+Use when a task needs specialist selection or the user requests Frank team coordination. Answer simple questions directly. Mentioning code, design or a person's name alone does not require workers.
 
-Route UX/prototypes to frank-designer, requirements to frank-product, shared system contracts to frank-architect, sourced AI investigations to frank-researcher, development/CI operations to frank-platform and data/retrieval contracts to frank-data. Activate only roles needed for the brief; roles do not grant tools, accounts or delivery authority. See the [department map](references/department.md) for ownership and handoffs.
+## Route the task
 
-Use the current assistant's native workers and session model. Keep one analysis brief, disjoint builder ownership, three independent review contexts and one frozen version. Workers return actual evidence; coordinator judges it and owns authorized mutations. After changes, get fresh attestations on the final snapshot.
+Use the [department map](references/department.md) to select responsibilities affected by the brief. Give each worker its canonical role, goal, allowed files, acceptance, relevant context, environment and evidence location. Keep disjoint builder ownership and bounded native delegation; workers do not recursively delegate or publish.
 
-Select research-workflow, design-workflow and ai-evaluation only when the task needs them. Minimize sufficient context, not requested capability. Reuse relevant evidence, batch blockers, bound retries and preserve checkpoints. Correctness, security, capability, maintainability and performance remain priorities.
+Use [routing examples](references/routing-examples.md) when checking task boundaries or running a recipient smoke check; they are expectations, not measured model behavior.
+
+Substantive software delivery belongs to autonomous-development. Code standards belong to craftsman. Select research-workflow, design-workflow, ai-evaluation or commit-pr-standard only for their respective task. This router does not repeat delivery phases, review gates or test suites.
+
+## Output
+
+Return a concise assignment with role, scope, expected artifact and stopping condition. Routing instructions confer no account/tool access or authority to commit, deploy, message others or spend money.

@@ -1,10 +1,12 @@
 # Resources and tools
 
+For skill activation checks, use the [routing examples](../skills/frank/references/routing-examples.md). Code standards load [data/performance](../skills/craftsman/references/data-and-performance.md), [security](../skills/craftsman/references/security-boundaries.md) and [interface](../skills/craftsman/references/interface-implementation.md) references only when affected. [Delivery mechanics](../skills/autonomous-development/references/delivery.md) provide the gate/helper details before freeze and delivery.
+
 Skills provide decision instructions; resources provide reusable inputs and deterministic execution; connected tools provide access to models and external systems. Installing one does not establish the other two.
 
 | Capability | Bundled resource | Execution or connection |
 | --- | --- | --- |
-| Engineering delivery | [checkpoint contract](../skills/autonomous-development/references/checkpoint.md), [six roles](../agents/frank-coder.md), [craft standards](../skills/craftsman/SKILL.md) | Native assistant workers; Git; project's Docker/tests |
+| Engineering delivery | [checkpoint contract](../skills/autonomous-development/references/checkpoint.md), [department roles](../skills/frank/references/department.md), [craft standards](../skills/craftsman/SKILL.md) | Native assistant workers; Git; project's Docker/tests |
 | Research | [evidence ledger](../skills/research-workflow/references/evidence-ledger.md), [primary-source catalog](research-sources.md) | Session web search/fetch or approved research connector |
 | Design | [journey/state acceptance matrix](../skills/design-workflow/references/acceptance-matrix.md) | Browser verification, project's components/assets; optional Figma |
 | AI evaluation | [schema and grading contract](../skills/ai-evaluation/references/evaluation.md), [synthetic examples](../examples/evals/README.md), offline scorer | Recipient-owned model access plus independently graded held-out outcomes |

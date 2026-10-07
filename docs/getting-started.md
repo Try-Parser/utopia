@@ -2,9 +2,13 @@
 
 Give your AI assistant a clear task. It uses shared skills to follow the team's methods and assigns specialist roles when needed. You remain responsible for business decisions and access; the coordinator manages the work and reports actual evidence.
 
-![AI department workflow from request to verified delivery](workflow.png)
+## Autonomous development flow
 
-Open the [full workflow image](workflow.png) or [editable vector](workflow.svg). See [all twelve roles](../skills/frank/references/department.md).
+![Autonomous development from scoped request through independent review and bounded repairs to authorized delivery](autonomous-development-flow.png)
+
+Open the [full autonomous pipeline PNG](autonomous-development-flow.png) or [vector SVG](autonomous-development-flow.svg). Read the [delivery process](autonomous-development.md) and [autonomous-development skill](../skills/autonomous-development/SKILL.md).
+
+The separate [department image](workflow.png) and [department vector](workflow.svg) show [all twelve available roles](../skills/frank/references/department.md).
 
 Download the [printable PDF guide](ai-department-guide.pdf) for setup, skills, department roles and resources.
 
@@ -53,6 +57,8 @@ Say which repositories may change, what success looks like and whether delivery 
 
 ## What happens next
 
-The coordinator scopes your request. Relevant specialists prepare the brief, design or contracts; the coder implements. For substantive engineering, separate correctness, QA and security workers review one frozen version. Findings become one repair brief, followed by bounded rechecks. The coordinator delivers within your authorization and the scribe records reusable knowledge.
+The coordinator scopes your request and records impact tier. It loads specialist context only when needed; the coder implements and one QA owner coordinates final affected checks. For substantive engineering, separate correctness, QA and security workers review one staged, frozen version, including small changes with narrower scope. Findings become one repair brief. Each changed snapshot gets fresh attestations from all three lenses, while QA assesses reuse of valid executed test evidence. At most two automatic repair rounds precede diagnosis and replanning.
+
+The coordinator delivers within your authorization. Local handoff can be the final target; authorized commits require postcommit verification against the reviewed tree, and authorized pushes require exact remote verification. Passing checks grants no automatic merge or deployment permission. Final reports start with the outcome, then include only relevant checks, delivery identity and remaining gaps.
 
 Simple questions and small design corrections do not need every department role. Ask for status if needed: "Show the current phase, active work versus waiting, completed checks and remaining blockers." A passing suite proves its tested cases, not universal AI accuracy or security.

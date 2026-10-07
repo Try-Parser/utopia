@@ -1,72 +1,29 @@
 ---
 name: autonomous-development
-description: Own substantive software development from scoped implementation through independent review and the authorized delivery target. Use for features, fixes and unfinished engineering delivery; ordinary questions need no agent pipeline.
+description: Deliver substantive software features or fixes through scoped implementation, independent review and the authorized target. Skip ordinary questions, pure research, prose-only edits and isolated design exploration.
 ---
 
 # Autonomous development
 
-Build on the existing Frank team and craftsman standards. The main session owns completion, evidence and delivery. Use the current assistant's native delegation/tools and supported session model. Claude agents inherit it; Codex workers receive the canonical specialist instructions. Do not run a second legacy ship/review pipeline on the same change.
+## Use and skip
 
-## Scope once
+Own substantive software implementation and unfinished engineering delivery. Questions/status, pure research, prose-only edits and design exploration use their own relevant workflow; follow repository review requirements when those artifacts change shared behavior.
 
-Read the goal, acceptance criteria, authorization and repository instructions. Discover actual worktrees, branches, HEADs, existing edits, callers and configured runtime. Protect unrelated changes. Select the requested target (local or explicitly authorized environment) and preserve it on resume.
+## Essential flow
 
-Classify behavioral risk, recording tier and reason. File count is context, not the classifier:
+1. Confirm goal, observable acceptance, allowed repositories and delivery target. Discover actual branch/worktree/runtime and existing edits. Record impact tier and external checkpoint; preserve unrelated work.
+2. Build within assigned scope using craftsman. Load design-workflow for affected UX, research-workflow for sourced investigations and ai-evaluation for AI behavior. Activate only necessary specialists through native workers; do not run a duplicate legacy pipeline.
+3. Verify affected behavior in the configured development environment. Builders own focused checks; QA owns final affected suites. Do not repeat identical tests merely to create another report.
+4. Stage completed task changes and freeze source/index. For substantive engineering require independent correctness, QA and security on this snapshot at every tier. Smaller changes narrow their scope. Missing or failed reviews remain incomplete.
+5. Combine blockers into one repair brief. After a fix, capture a fresh snapshot and obtain all three fresh delta attestations. Reuse performed checks only when QA verifies relevant input/runtime validity. Maximum two automatic fix rounds per unchanged approach, then diagnose and re-plan; never reset counters to hide looping.
+6. Coordinator gates and performs authorized delivery. Commit/push/merge/deploy only within task authorization; verify committed and remote content matches the reviewed tree. Report actual results and limitations.
 
-| Tier | Behavior | Review depth |
-| --- | --- | --- |
-| Small | Local behavior correction without persistence, shared contracts, trust boundaries or money/permission rules | Diff, relevant callers, focused regression and affected runtime journey |
-| Medium | New surface or endpoint, wider feature, behavior across components | Contracts, integration/failure paths and affected suites |
-| Large | Schema, authorization, payments, secrets, cross-repository rules or multi-feature release | Written contracts/threat cases, migration/rollback and broader affected suites |
+## Load mechanics when needed
 
-Every substantive tier keeps independent correctness, QA and security; reduce their scope, not their number. Follow stricter repository requirements. Shared rules get one contract and common test vectors before parallel implementation; tiny local fixes do not need a large design document.
+Use [checkpoints](references/checkpoint.md) when recording or resuming work. Before freeze/gate/postcommit operations, read [delivery mechanics](references/delivery.md) and [review contracts](references/reviews.md) for helper commands, snapshot identity and evidence handling. For authorized deployments read [release](references/release.md) and the project's actual runbook. Do not load release instructions for local-only work.
 
-Create an external task-run directory. Use [checkpoints](references/checkpoint.md) for tier, reason, phase intervals, waits, acceptance, ownership and next action. Keep personal data, credentials and transcripts out.
+Workers receive the canonical installed role references from references/agents; they do not commit, publish or spawn workers. Account access, tools and paid runs are not granted by this skill. Shared knowledge excludes credentials, private account settings and raw transcripts.
 
-## Build and integrate
+## Output
 
-Analyze the affected surface once and hand workers bounded briefs: goal, files, criteria, contracts, existing edits and evidence location. Builders have disjoint ownership. They do not commit, push, merge, deploy or spawn workers.
-
-Apply craftsman. Builders own quick compile/type/focused regressions. QA owns final affected suite and runtime checks; don't independently repeat an identical suite merely to generate another report. Confirm mounted checkout and dependencies; application checks use the project's configured development Docker when required. Do not overlap builds against one checkout/container.
-
-For UI work activate design-workflow when relevant, use existing components/tokens, and exercise actual interaction/states. For model/prompt/retrieval changes activate ai-evaluation and verify observed outcomes, not just generated prose. Research-workflow applies when source research is needed.
-
-## Freeze and independently verify
-
-Stage only completed task changes. Inspect source, index and untracked task files; stop source/index writes. Keep ignored task code/config out of ignored scope. Create a snapshot with scripts/evidence.py (paths below are relative to this skill):
-
-```text
-python <skill-directory>/scripts/evidence.py snapshot --repo <repository-root> --output <external-run>/snapshot.json
-```
-
-Give three distinct workers the snapshot, acceptance criteria, changed paths, risk and evidence directory. Read [review contracts](references/reviews.md).
-
-- frank-reviewer: actual code/callers and correctness; read-only.
-- frank-qa: final affected tests/runtime in the configured environment; no source/test edits during review.
-- frank-security: reachable boundary, ownership, injection and exposure risks; read-only.
-
-Claude agent definitions are installed into its native agents directory. For Codex, read the installed references/agents/<role>.md and pass that role to native workers. These copies come from canonical agents/, not a second policy source.
-
-Collect actual responses in reviews.json. Missing/failed/partial/cancelled reviews are incomplete, never passed. Run the strict gate and inspect evidence: JSON structure is not proof of a test execution.
-
-```text
-python <skill-directory>/scripts/evidence.py gate --snapshot <external-run>/snapshot.json --reviews <external-run>/reviews.json
-```
-
-## Fix without redundant work
-
-Wait for the in-flight lenses, triage concrete blockers, then send one combined fix brief. After a fix, create a fresh snapshot and all three reviewers issue fresh results for it. They inspect the delta and affected callers, referencing prior findings in basedOn; never relabel an old result's snapshotId.
-
-QA may reuse performed checks only when their relevant source, configuration, dependencies, fixtures and runtime inputs remain valid. It assesses relevance to the final version and records provenance. Rerun affected checks for changed inputs; run broader suites when changed risk or repository rules require them. Keep the test rig across rounds when isolation remains sound.
-
-At most two automatic fix rounds per unchanged approach. Remaining blockers require diagnosis and a materially changed plan, not reset counters or a fabricated pass. Cosmetic preferences do not justify another review loop; real behavioral/security failures do.
-
-## Recover and deliver
-
-Transient read/connectivity failures get at most two retries with short appropriate backoff, then diagnosis. Permission denial and deterministic failures need a decision or changed approach. Before retrying any mutation, reconcile its remote identity/result to avoid duplicate pushes/jobs/actions. Continue independent authorized work while blocked.
-
-Resume from checkpoint and actual Git/remote state, never saved phase alone. Every long wait records a reason; unexplained elapsed time triggers a concise progress update and diagnosis.
-
-For local delivery prove acceptance and final reviews. For an authorized release read [release](references/release.md) plus the actual project runbook. Gate immediately before coordinator commit. Then use postcommit to verify committed content equals the reviewed staged tree; a changed HEAD alone is not changed content. No force-push or gate bypass. Verify the delivered revision and target behavior.
-
-Report changed behavior, actual checks, identities, elapsed work/wait and limitations. Never claim browser E2E from mocks/health checks or 95% accuracy from unit tests. Skills confer no unrelated repository, deployment, publication, messaging or payment authority.
+Lead with the delivered outcome and artifact link. Include relevant observed checks, exact delivery identity and material gaps. Report active/waiting time when requested or when investigating delays. Keep detailed logs in evidence artifacts; unit tests and synthetic fixtures do not establish live AI accuracy or deployed browser behavior.

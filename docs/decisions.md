@@ -1,5 +1,11 @@
 # Shared workflow decisions
 
+## Focused skills and concise output (08 October 2026)
+
+Frank owns specialist routing; autonomous-development owns software delivery and gates; craftsman owns code standards with conditional data, security and interface references. Skill triggers explicitly exclude adjacent tasks that do not need the workflow, and each skill names its expected output. Delivery mechanics remain available before freeze/gate/postcommit operations; substantive engineering retains all three independent review lenses and the two-round repair limit.
+
+Shared guidance leads with the result and relevant evidence, keeps detailed logs in artifacts and avoids repeated plans or explanations. Brevity must preserve material failures and security findings. Shorter entrypoints and scoped activation are instruction changes, not measured live token savings or routing accuracy. The autonomous-development process has a dedicated visible image and plain-text explanation alongside the department map.
+
 Status: accepted for this implementation, 07 October 2026.
 
 The starting repository contained only .gitignore. Canonical sources come from the team's existing autonomous-development, craftsman, frank, commit-pr-standard and six Frank specialist definitions. Portability changes remove private model pins, personal personas, service-specific release assumptions and account data. The four core skills remain; research/design/evaluation are conditional additions.
