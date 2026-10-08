@@ -38,6 +38,7 @@ def main():
                 ("Setup and usage", ROOT / "docs/getting-started.md"),
                 ("Department roles", ROOT / "skills/frank/references/department.md"),
                 ("Reusable resources", ROOT / "docs/resources.md"),
+                ("Architecture decisions", ROOT / "skills/autonomous-development/references/architecture-decisions.md"),
                 ("Measurement and control panel", ROOT / "skills/ai-evaluation/references/measurement.md"),
                 ("Restricted tool gateway", ROOT / "skills/autonomous-development/references/tool-gateway.md"),
                 ("Tools and trial priorities", ROOT / "docs/tooling-landscape-2026-10.md")]

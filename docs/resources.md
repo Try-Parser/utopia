@@ -7,6 +7,7 @@ Skills provide decision instructions; resources provide reusable inputs and dete
 | Capability | Bundled resource | Execution or connection |
 | --- | --- | --- |
 | Engineering delivery | [checkpoint contract](../skills/autonomous-development/references/checkpoint.md), [department roles](../skills/frank/references/department.md), [craft standards](../skills/craftsman/SKILL.md) | Native assistant workers; Git; project's Docker/tests |
+| Architecture decisions | [ADR guide](../skills/autonomous-development/references/architecture-decisions.md), [portable template](../skills/autonomous-development/assets/adr-template.md), [department ADR index](adr/README.md) | Architect drafts material choices; coordinator follows the project's decision process and maintains the index |
 | Research | [evidence ledger](../skills/research-workflow/references/evidence-ledger.md), [primary-source catalog](research-sources.md) | Session web search/fetch or approved research connector |
 | Design | [journey/state acceptance matrix](../skills/design-workflow/references/acceptance-matrix.md) | Browser verification, project's components/assets; optional Figma |
 | AI evaluation | [schema and grading contract](../skills/ai-evaluation/references/evaluation.md), [synthetic examples](../examples/evals/README.md), offline scorer | Recipient-owned model access plus independently graded held-out outcomes |

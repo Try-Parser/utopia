@@ -50,6 +50,8 @@ This [PNG preview](docs/evidence-panel-preview.png) is rendered from the publish
 
 ## Start
 
+Architecture choices are recorded in the [numbered ADR index](docs/adr/README.md). The shared [ADR guide](skills/autonomous-development/references/architecture-decisions.md) and [template](skills/autonomous-development/assets/adr-template.md) install with both assistant adapters. Existing [decision history](docs/decisions.md) remains available.
+
 Prerequisites: Python 3.11+ and Git; a working Claude Code/Codex account for actual AI work; Docker for this repository's checks. The toolkit never installs credentials or selects a paid model.
 
 Clone this repository and preview installation into your project:

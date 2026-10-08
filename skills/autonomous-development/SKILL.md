@@ -20,6 +20,8 @@ Own substantive software implementation and unfinished engineering delivery. Que
 
 ## Load mechanics when needed
 
+For material architectural choices, read [architecture decisions](references/architecture-decisions.md) and use its portable template when the project has no ADR convention. Read existing decisions before changing the design; routine fixes reuse them.
+
 Use [checkpoints](references/checkpoint.md) when recording or resuming work. Before freeze/gate/postcommit operations, read [delivery mechanics](references/delivery.md) and [review contracts](references/reviews.md) for helper commands, snapshot identity and evidence handling. For authorized deployments read [release](references/release.md) and the project's actual runbook. Do not load release instructions for local-only work.
 
 For model-requested file access or Python test execution, load the [restricted tool gateway](references/tool-gateway.md). Its Docker boundary applies to routed calls, not every native assistant tool. Keep model access, credentials and approved connector configuration outside it.

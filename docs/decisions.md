@@ -1,5 +1,7 @@
 # Shared workflow decisions
 
+Current numbered records are in the [ADR index](adr/README.md). This document preserves the earlier decision history. New material choices use the [portable ADR workflow](../skills/autonomous-development/references/architecture-decisions.md); routine fixes reuse accepted decisions.
+
 ## Measured department and restricted tools (08 October 2026)
 
 Consolidate Codex and Claude resources from one canonical source: install six portable helpers and the same measurement/tool-boundary runbooks into both adapters. Add predeclared dataset/rubric/model/trial bindings with human-review declarations; content-free structured telemetry preserves missing usage and failed attempts; a standalone local HTML panel makes imported evidence visible.

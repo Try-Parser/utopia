@@ -2,7 +2,7 @@
 Fill in these fields before substantive implementation or delivery. Remove unused fields; never put secrets here.
 
 - Goal and repository boundaries: <allowed repositories and reference-only repositories>
-- Architecture and contracts: <decision records and important interfaces>
+- Architecture and contracts: <existing ADR index, accepted decisions and important interfaces; docs/adr/ if no convention exists>
 - Local environment: <Docker/other configured environment, mount paths, launch instructions>
 - Verification: <build, typecheck, focused regression, affected suite and runtime/E2E commands>
 - Fixtures: <approved test data/authentication method; secret-store references only>

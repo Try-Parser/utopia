@@ -8,4 +8,4 @@ Run tests in the development Docker environment: docker compose run --rm tooling
 
 Python standard library is the runtime. scripts/install.py owns installation; skills/autonomous-development/scripts/evidence.py owns snapshot/gate/postcommit/state; scripts/evaluate.py scores provided evaluation records. Run python scripts/check.py in Docker. Changes to these helpers require behavioral regression tests.
 
-No main-branch merges, production deployments or external messages are implied by passing checks. Record exact verification and publication identities. Architecture and workflow decisions belong in docs/decisions.md.
+No main-branch merges, production deployments or external messages are implied by passing checks. Record exact verification and publication identities. Material architecture and workflow decisions belong in docs/adr/ with an updated index; docs/decisions.md preserves earlier history. Routine changes under an existing decision do not need another ADR.

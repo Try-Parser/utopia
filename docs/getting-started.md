@@ -72,6 +72,8 @@ For model-requested file reads or Python tests, use the [restricted tool gateway
 
 ## Development delivery
 
+For material architecture choices, read the project's ADR index first. This toolkit's [ADR index](adr/README.md) explains its own decisions. Use the [portable ADR guide](../skills/autonomous-development/references/architecture-decisions.md) and [template](../skills/autonomous-development/assets/adr-template.md) when your project has no convention. Record context, alternatives and consequences; a proposed record does not authorize execution. Routine fixes reuse existing accepted decisions.
+
 The coordinator scopes your request and records impact tier. It loads specialist context only when needed; the coder implements and one QA owner coordinates final affected checks. For substantive engineering, separate correctness, QA and security workers review one staged, frozen version, including small changes with narrower scope. Findings become one repair brief. Each changed snapshot gets fresh attestations from all three lenses, while QA assesses reuse of valid executed test evidence. At most two automatic repair rounds precede diagnosis and replanning.
 
 Every required acceptance check must pass. Failed, missing or required skipped checks and missing reviews block delivery; do not omit failures or reduce requirements to report success. AI evaluation additionally requires every declared task and supplied trial to pass, while retaining statistical confidence and provenance gates. This 100% requirement covers observed checks, not every future AI answer.

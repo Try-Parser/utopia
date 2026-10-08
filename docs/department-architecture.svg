@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-10-08T09:40:18.245008</dc:date>
+    <dc:date>2026-10-08T12:09:50.216679</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -40,7 +40,7 @@ Q 37.332 109.2096 37.332 117.5256
 L 37.332 187.9344
 Q 37.332 196.2504 45.702 196.2504
 z
-" clip-path="url(#p379cb2a7b9)" style="fill: #e7eefb; stroke: #a8bfd4; stroke-width: 1.3; stroke-linejoin: miter"/>
+" clip-path="url(#p8d7d9860cc)" style="fill: #e7eefb; stroke: #a8bfd4; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="patch_3">
     <path d="M 347.022 196.2504
@@ -53,7 +53,7 @@ Q 338.652 109.2096 338.652 117.5256
 L 338.652 187.9344
 Q 338.652 196.2504 347.022 196.2504
 z
-" clip-path="url(#p379cb2a7b9)" style="fill: #e7eefb; stroke: #a8bfd4; stroke-width: 1.3; stroke-linejoin: miter"/>
+" clip-path="url(#p8d7d9860cc)" style="fill: #e7eefb; stroke: #a8bfd4; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="patch_4">
     <path d="M 648.342 196.2504
@@ -66,7 +66,7 @@ Q 639.972 109.2096 639.972 117.5256
 L 639.972 187.9344
 Q 639.972 196.2504 648.342 196.2504
 z
-" clip-path="url(#p379cb2a7b9)" style="fill: #e1f3ea; stroke: #a8bfd4; stroke-width: 1.3; stroke-linejoin: miter"/>
+" clip-path="url(#p8d7d9860cc)" style="fill: #e1f3ea; stroke: #a8bfd4; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="patch_5">
     <path d="M 45.702 362.5704
@@ -79,7 +79,7 @@ Q 37.332 247.8096 37.332 256.1256
 L 37.332 354.2544
 Q 37.332 362.5704 45.702 362.5704
 z
-" clip-path="url(#p379cb2a7b9)" style="fill: #e1f3ea; stroke: #a8bfd4; stroke-width: 1.3; stroke-linejoin: miter"/>
+" clip-path="url(#p8d7d9860cc)" style="fill: #e1f3ea; stroke: #a8bfd4; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="patch_6">
     <path d="M 330.282 362.5704
@@ -92,7 +92,7 @@ Q 321.912 247.8096 321.912 256.1256
 L 321.912 354.2544
 Q 321.912 362.5704 330.282 362.5704
 z
-" clip-path="url(#p379cb2a7b9)" style="fill: #e1f3ea; stroke: #a8bfd4; stroke-width: 1.3; stroke-linejoin: miter"/>
+" clip-path="url(#p8d7d9860cc)" style="fill: #e1f3ea; stroke: #a8bfd4; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="patch_7">
     <path d="M 614.862 362.5704
@@ -105,7 +105,7 @@ Q 606.492 247.8096 606.492 256.1256
 L 606.492 354.2544
 Q 606.492 362.5704 614.862 362.5704
 z
-" clip-path="url(#p379cb2a7b9)" style="fill: #fff1ce; stroke: #a8bfd4; stroke-width: 1.3; stroke-linejoin: miter"/>
+" clip-path="url(#p8d7d9860cc)" style="fill: #fff1ce; stroke: #a8bfd4; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="patch_8">
     <path d="M 45.702 520.5744
@@ -118,7 +118,7 @@ Q 37.332 405.8136 37.332 414.1296
 L 37.332 512.2584
 Q 37.332 520.5744 45.702 520.5744
 z
-" clip-path="url(#p379cb2a7b9)" style="fill: #e7eefb; stroke: #a8bfd4; stroke-width: 1.3; stroke-linejoin: miter"/>
+" clip-path="url(#p8d7d9860cc)" style="fill: #e7eefb; stroke: #a8bfd4; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="patch_9">
     <path d="M 472.572 520.5744
@@ -131,12 +131,12 @@ Q 464.202 405.8136 464.202 414.1296
 L 464.202 512.2584
 Q 464.202 520.5744 472.572 520.5744
 z
-" clip-path="url(#p379cb2a7b9)" style="fill: #e7eefb; stroke: #a8bfd4; stroke-width: 1.3; stroke-linejoin: miter"/>
+" clip-path="url(#p8d7d9860cc)" style="fill: #e7eefb; stroke: #a8bfd4; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="line2d_1">
     <path d="M 169.02 228.96
 L 754.92 228.96
-" clip-path="url(#p379cb2a7b9)" style="fill: none; stroke: #52779c; stroke-width: 1.7; stroke-linecap: square"/>
+" clip-path="url(#p8d7d9860cc)" style="fill: none; stroke: #52779c; stroke-width: 1.7; stroke-linecap: square"/>
    </g>
    <g id="text_1">
     <text style="font-weight: 700; font-size: 24px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: start; fill: #15304b" x="40.68" y="37.692" transform="rotate(-0 40.68 37.692)">YOUR AI DEPARTMENT</text>
@@ -148,7 +148,7 @@ L 754.92 228.96
     <text style="font-weight: 700; font-size: 14px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: middle; fill: #15304b" x="152.28" y="137.074146" transform="rotate(-0 152.28 137.074146)">One shared toolkit</text>
    </g>
    <g id="text_4">
-    <text style="font-size: 11px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #38516b" transform="translate(55.52125 164.658538)">Skills + role definitions + runbooks</text>
+    <text style="font-size: 11px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #38516b" transform="translate(68.441953 164.658538)">Skills + roles + ADR resources</text>
     <text style="font-size: 11px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #38516b" transform="translate(74.408594 180.092913)">Global or project installation</text>
    </g>
    <g id="text_5">
@@ -291,7 +291,7 @@ z
   </g>
  </g>
  <defs>
-  <clipPath id="p379cb2a7b9">
+  <clipPath id="p8d7d9860cc">
    <rect x="7.2" y="7.2" width="892.8" height="554.4"/>
   </clipPath>
  </defs>
