@@ -30,11 +30,19 @@ Download the [PDF guide](docs/ai-department-guide.pdf) to share or print.
 
 ## Measure, protect and inspect
 
+![Current AI department architecture: shared toolkit, assistant adapters, coordinator, specialists, tools and local evidence](docs/department-architecture.png)
+
+Visuals refreshed 08 October 2026. Open the [architecture PNG](docs/department-architecture.png) or [SVG](docs/department-architecture.svg). Background metrics uploads are deferred; evidence remains local.
+
 The shared [measurement runbook](skills/ai-evaluation/references/measurement.md) provides predeclared benchmark plans, independent human-review bindings, content-free token/time traces and a standalone HTML control panel. The [restricted tool gateway](skills/autonomous-development/references/tool-gateway.md) enforces scoped file access and Python test requests in isolated Docker containers. Both assistant adapters receive identical canonical helpers.
 
 These are executable foundations for a Jarvis-style department, not a connected personal assistant. Native sessions need deliberate adapter wiring; model accounts, private tasks and human grading remain recipient-owned. The gateway protects routed calls rather than unrelated native tools. Live accuracy and efficiency still require observed campaigns.
 
 See the [observed tool smoke and downloadable control panel](docs/verification/2026-10-08-measured/report.md). The panel contains actual fixture-tool timing and an observed allowed/denied call pair, with unknown model usage kept visible.
+
+![Static preview of observed local evidence: run outcomes, tool calls, elapsed time and unknown model measurements](docs/evidence-panel-preview.png)
+
+This [PNG preview](docs/evidence-panel-preview.png) is rendered from the published fixture summary, rather than a browser screenshot or live dashboard.
 
 ## Department roles and handoffs
 
@@ -102,7 +110,7 @@ Record tier/reason and active/waiting phases with the state CLI. Bound retries, 
 python scripts/evaluate.py --dataset examples/evals/dataset.json --results examples/evals/results.jsonl
 ```
 
-The demonstration intentionally exits 1: synthetic data never certifies live accuracy. Acceptance requires 100% of declared tasks and every supplied trial to pass, complete valid results, independent grading and all integrity checks passing. Separately, the default lower two-sided 95% Wilson bound must reach 0.95 with adequate distinct held-out tasks; at zero failures the statistical minimum is 73. The 100% requirement covers observed checks, not every future AI answer. See the [evaluation contract](skills/ai-evaluation/references/evaluation.md).
+The demonstration intentionally exits 1: synthetic data never certifies live accuracy. Acceptance requires 100% of declared tasks and every supplied trial to pass, complete valid results, independent grading and all integrity checks passing. The measured quality target is **99%**: the lower two-sided Wilson bound must reach 0.99, using a separate 95% confidence level. At zero failures the statistical minimum is 381 distinct held-out tasks. The 100% requirement covers observed checks, not every future AI answer. See the [evaluation contract](skills/ai-evaluation/references/evaluation.md).
 
 ## Development checks
 

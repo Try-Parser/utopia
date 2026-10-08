@@ -15,7 +15,7 @@ def main():
     axis.axis("off")
     axis.text(7.5, 11.65, "How the AI department works", ha="center", va="center",
               fontsize=25, weight="bold", color="#17304c")
-    axis.text(7.5, 11.2, "One coordinator. Relevant specialists. 100% of required checks must pass.",
+    axis.text(7.5, 11.2, "08 October 2026 | Quality target 99% | Required checks 100% | Shared roles",
               ha="center", fontsize=13, color="#496078")
 
     def box(x, y, width, height, title, detail, color="#ffffff"):
@@ -39,7 +39,7 @@ def main():
     box(.35, 7.05, 3.85, .95, "Specialists when needed", "Researcher, data, platform\nProvide evidence and contracts", "#e8f5ef")
     arrow((4.25, 7.52), (4.75, 7.52))
     arrow((7.5, 6.98), (7.5, 6.58))
-    box(4.8, 5.55, 5.4, .95, "4  Coder implements", "Restricted tools + content-free traces when wired\nVerify and freeze the completed change")
+    box(4.8, 5.55, 5.4, .95, "4  Coder implements", "Restricted routed tools + optional local traces\nVerify and freeze the completed change")
     arrow((7.5, 5.48), (7.5, 5.0))
     axis.text(7.5, 4.83, "5  Independent checks for substantive engineering", ha="center",
               fontsize=13, weight="bold", color="#17304c")
@@ -57,7 +57,7 @@ def main():
     arrow((.05, 5.95), (4.72, 5.95), "#b76761")
     arrow((7.5, 1.88), (7.5, 1.45))
     box(4.8, .45, 5.4, .9, "7  Scribe records the handoff", "Local evidence panel, results and limitations")
-    axis.text(7.5, .03, "100% covers defined checks. It does not guarantee universal AI accuracy or security.",
+    axis.text(7.5, .03, "Every required check must pass. Evidence stays local; background metrics uploads deferred.",
               ha="center", fontsize=11, color="#496078")
     for suffix in ("png", "svg"):
         output = destination / ("workflow." + suffix)

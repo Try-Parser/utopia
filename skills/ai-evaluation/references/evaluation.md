@@ -29,14 +29,14 @@ Every JSONL result includes:
 This schema example is not measured data. Results need actual observed outcomes and independently calibrated graders. Unknown, missing or invalid results block acceptance; nobody can silently omit failures. Distinct task IDs form the denominator. All recorded attempts for a task must pass; repeated trials do not increase sample size.
 
 ```text
-python scripts/evaluate.py --dataset <dataset.json> --results <results.jsonl> --expected-dataset-sha256 <predeclared-sha256> --target 0.95 --output <external-report.json>
+python scripts/evaluate.py --dataset <dataset.json> --results <results.jsonl> --expected-dataset-sha256 <predeclared-sha256> --target 0.99 --output <external-report.json>
 ```
 
-The default uses the lower limit of a two-sided 95% Wilson interval (z approximately 1.96; the report records the precise value), not a one-sided 95% bound. At zero failures 73 distinct tasks is the statistical minimum: 72/72 does not meet the lower-bound target; 73/73 does; 99/100 also falls short. Sample size and independence still depend on the real corpus: templated/correlated tasks can overstate confidence.
+The default quality target is 99%, using the lower limit of a two-sided 95% Wilson confidence interval (z approximately 1.96; the report records the precise value). At zero failures 381 distinct tasks is the statistical minimum: 380/380 does not meet the lower-bound target; 381/381 does; 99/100 also falls short. Sample size and independence still depend on the real corpus: templated/correlated tasks can overstate confidence.
 
 Acceptance requires every declared task and every supplied trial to pass: any task failure blocks acceptance even when the statistical bound exceeds the target. It also requires all declared tasks observed, no invalid data, all integrity checks passing, non-synthetic held-out provenance and distinct producer/grader identities. Lowering --target changes only the statistical threshold; it cannot permit failed tasks. Metadata is self-reported; hashes detect changed inputs, not fabricated outcomes. A perfect observed dataset still needs independent review before any organizational reliability claim.
 
-The 100% requirement describes observed acceptance checks. The 95% confidence level and default 0.95 statistical target describe uncertainty about unseen tasks; they are separate quantities. Do not set --target to 1: a finite sample cannot establish a Wilson lower bound of 1. A small perfect suite or synthetic fixture still fails the remaining certification gates.
+The 100% requirement describes observed acceptance checks. The 95% confidence level and default 99% quality target are separate quantities. Do not set --target to 1: a finite sample cannot establish a Wilson lower bound of 1. A small perfect suite or synthetic fixture still fails the remaining certification gates. Explicit historical statistical targets remain configurable; they do not relax the zero-failure or integrity requirements.
 
 Reports expose requiredTaskPassRate (1.0) and allTasksPassed (every declared task has supplied passing trials). allTasksPassed covers task outcomes only; accepted also requires integrity, validity, sample size and provenance. Read reasons when acceptance is false.
 

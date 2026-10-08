@@ -33,12 +33,12 @@ def main():
 
     axis.text(.65, 14.45, "AUTONOMOUS DEVELOPMENT FLOW", fontsize=23,
               weight="bold", color="#17304c")
-    axis.text(.65, 13.98, "100% of required checks must pass | Independent reviews | Bounded repairs",
+    axis.text(.65, 13.98, "08 October 2026 | Quality target 99% | Required checks 100% | Shared toolkit",
               fontsize=13, color="#496078")
     main_x = 5
     box(main_x, 13.0, 8.2, 1.05, "1  Agree the task", "Observable acceptance + allowed repositories + authorized target")
     box(main_x, 11.45, 8.2, 1.05, "2  Choose impact tier and needed context", "Small / medium / large set depth; load specialist skills only when needed")
-    box(main_x, 9.9, 8.2, 1.05, "3  Build and run focused Docker checks", "Restricted tools when routed; content-free traces + one QA owner")
+    box(main_x, 9.9, 8.2, 1.05, "3  Build and run focused Docker checks", "Restricted tools for routed calls; optional LOCAL traces + one QA owner")
     box(main_x, 8.35, 8.2, 1.05, "4  Stage and freeze a snapshot", "Keep evidence outside the repositories; stop writers during review")
     box(main_x, 6.75, 8.2, 1.15, "5  Three independent review lenses", "Correctness   |   QA / coverage   |   Security\nAll three attest to this snapshot, including small substantive changes")
     for first, second in ((12.475, 11.975), (10.925, 10.425), (9.375, 8.875), (7.825, 7.325)):
@@ -61,7 +61,7 @@ def main():
     arrow((12.3, 5.975), (12.3, 4.6), "Limit / repeated failure", (12.55, 5.1), "#a14d30")
     axis.text(.65, .68, "Coordinator owns delivery. A passed gate grants no merge, deployment or publication authority.",
               fontsize=11, color="#496078")
-    axis.text(.65, .30, "100% means defined checks passed. Universal AI accuracy, security and speed are not guaranteed.",
+    axis.text(.65, .30, "Local evidence only; background uploads deferred. Defined checks do not guarantee all future AI answers.",
               fontsize=11, color="#496078")
     for suffix in ("png", "svg"):
         destination = ROOT / ("autonomous-development-flow." + suffix)

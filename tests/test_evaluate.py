@@ -13,7 +13,7 @@ ev = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ev)
 
 
-def fixture(n=73):
+def fixture(n=381):
     dataset = {"id": "fabricated-test-only", "version": "1", "synthetic": False,
                "heldOut": True, "distributionAgreed": True,
                "tasks": [{"id": str(i), "category": "code" if i % 2 else "research", "critical": i == 0}
@@ -124,21 +124,50 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(130, fields["totalTokens"]["sumObserved"])
         self.assertIsNone(fields["totalTokens"]["completeTotal"])
 
-    def test_72_insufficient(self):
-        self.assertFalse(score(*fixture(72))["accepted"])
+    def test_380_insufficient(self):
+        self.assertFalse(score(*fixture(380))["accepted"])
 
-    def test_73_statistical_boundary(self):
+    def test_381_statistical_boundary(self):
         report = score(*fixture())
         self.assertTrue(report["accepted"])
         self.assertTrue(report["allTasksPassed"])
         self.assertEqual(1.0, report["requiredTaskPassRate"])
-        self.assertGreaterEqual(report["wilsonLower"], .95)
-        self.assertEqual(report["minimumTasks"], 73)
+        self.assertGreaterEqual(report["wilsonLower"], .99)
+        self.assertEqual(.99, report["target"])
+        self.assertEqual(.95, report["confidence"])
+        self.assertEqual(report["minimumTasks"], 381)
+
+    def test_explicit_legacy_target_and_computed_minimum(self):
+        report = score(*fixture(73), target=.95, minimum_tasks=73)
+        self.assertTrue(report["accepted"])
+        self.assertEqual(.95, report["target"])
+        self.assertEqual(73, report["minimumTasks"])
+        self.assertEqual(.95, report["confidence"])
+        for target, size, minimum in ((.99, 380, 381), (.95, 72, 73)):
+            report = score(*fixture(size), target=target, minimum_tasks=1)
+            self.assertFalse(report["accepted"])
+            self.assertEqual(minimum, report["minimumTasks"])
+            self.assertIn("insufficient_distinct_tasks", report["reasons"])
+
+    def test_cli_default_boundary_keeps_confidence_distinct_from_target(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            data, results, output = [Path(tmp) / n for n in ("dataset.json", "results.jsonl", "report.json")]
+            for size, expected in ((380, 1), (381, 0)):
+                dataset, rows = fixture(size)
+                data.write_text(json.dumps(dataset))
+                results.write_text("\n".join(json.dumps(r) for r in rows))
+                self.assertEqual(expected, ev.main(["--dataset", str(data), "--results", str(results),
+                                                   "--output", str(output)]))
+                report = json.loads(output.read_text())
+                self.assertEqual(.99, report["target"])
+                self.assertEqual(381, report["minimumTasks"])
+                self.assertEqual(.95, report["confidence"])
+                self.assertEqual(expected == 0, report["accepted"])
 
     def test_noncritical_failure_rejects_despite_high_confidence(self):
-        dataset, rows = fixture(500)
+        dataset, rows = fixture(1000)
         rows[-1]["passed"] = False
-        for target in (.95, .5):
+        for target in (.99, .95, .5):
             with self.subTest(target=target):
                 report = score(dataset, rows, target=target)
                 self.assertGreater(report["wilsonLower"], target)
@@ -149,18 +178,18 @@ class EvaluationTests(unittest.TestCase):
                 self.assertNotIn("critical_task_failure", report["reasons"])
 
     def test_failed_retry_rejects_despite_high_aggregate(self):
-        dataset, rows = fixture(500)
+        dataset, rows = fixture(1000)
         rows.append(dict(rows[-1], runId="failed-retry", passed=False))
         report = score(dataset, rows)
-        self.assertGreater(report["wilsonLower"], .95)
-        self.assertEqual(499, report["passedTasks"])
-        self.assertEqual(500, report["tasks"])
+        self.assertGreater(report["wilsonLower"], .99)
+        self.assertEqual(999, report["passedTasks"])
+        self.assertEqual(1000, report["tasks"])
         self.assertIn("task_failure", report["reasons"])
         self.assertFalse(report["accepted"])
 
     def test_all_pass_does_not_replace_sample_or_provenance_gates(self):
-        for size, synthetic, reason in ((72, False, "insufficient_distinct_tasks"),
-                                        (73, True, "noncertifying_provenance")):
+        for size, synthetic, reason in ((380, False, "insufficient_distinct_tasks"),
+                                        (381, True, "noncertifying_provenance")):
             with self.subTest(size=size, synthetic=synthetic):
                 dataset, rows = fixture(size)
                 dataset["synthetic"] = synthetic
@@ -173,12 +202,12 @@ class EvaluationTests(unittest.TestCase):
     def test_cli_noncritical_failure_cannot_lower_target_to_accept(self):
         with tempfile.TemporaryDirectory() as tmp:
             data, results, output = [Path(tmp) / n for n in ("dataset.json", "results.jsonl", "report.json")]
-            dataset, rows = fixture(500)
+            dataset, rows = fixture(1000)
             rows[-1]["passed"] = False
             data.write_text(json.dumps(dataset))
             results.write_text("\n".join(json.dumps(r) for r in rows))
             args = ["--dataset", str(data), "--results", str(results), "--output", str(output)]
-            for target in ("0.95", "0.5"):
+            for target in ("0.99", "0.95", "0.5"):
                 with self.subTest(target=target):
                     self.assertEqual(1, ev.main(args + ["--target", target]))
                     report = json.loads(output.read_text())
@@ -201,7 +230,7 @@ class EvaluationTests(unittest.TestCase):
     def test_retry_failure_remains(self):
         dataset, rows = fixture()
         rows.append(dict(rows[-1], runId="2", passed=False))
-        self.assertEqual(score(dataset, rows)["passedTasks"], 72)
+        self.assertEqual(score(dataset, rows)["passedTasks"], 380)
 
     def test_unknown_task(self):
         dataset, rows = fixture()
@@ -211,7 +240,7 @@ class EvaluationTests(unittest.TestCase):
     def test_missing_task(self):
         dataset, rows = fixture()
         report = score(dataset, rows[:-1])
-        self.assertEqual(report["tasks"], 73)
+        self.assertEqual(report["tasks"], 381)
         self.assertEqual(report["missingTasks"], 1)
         self.assertFalse(report["accepted"])
 
@@ -282,10 +311,10 @@ class EvaluationTests(unittest.TestCase):
         self.assertIn("integrity_failure", score(dataset, rows)["reasons"])
 
     def test_critical_failure_even_high_aggregate(self):
-        dataset, rows = fixture(500)
+        dataset, rows = fixture(1000)
         rows[0]["passed"] = False
         report = score(dataset, rows)
-        self.assertGreater(report["wilsonLower"], .95)
+        self.assertGreater(report["wilsonLower"], .99)
         self.assertIn("critical_task_failure", report["reasons"])
 
     def test_digest_and_no_evidence_exposure(self):
@@ -298,9 +327,9 @@ class EvaluationTests(unittest.TestCase):
 
     def test_categories_and_metrics(self):
         report = score(*fixture())
-        self.assertEqual(sum(c["tasks"] for c in report["categories"].values()), 73)
+        self.assertEqual(sum(c["tasks"] for c in report["categories"].values()), 381)
         self.assertEqual(report["latencyMs"]["p95"], 100)
-        self.assertEqual(report["costUsd"]["count"], 73)
+        self.assertEqual(report["costUsd"]["count"], 381)
 
     def test_expected_dataset_digest(self):
         dataset, rows = fixture()
@@ -330,7 +359,7 @@ class EvaluationTests(unittest.TestCase):
         report = score(dataset, candidate, baseline_results_text="\n".join(json.dumps(r) for r in baseline))
         self.assertFalse(report["accepted"])
         self.assertEqual(report["pairedComparison"]["regressed"], 1)
-        self.assertEqual(report["pairedComparison"]["unchanged"], 71)
+        self.assertEqual(report["pairedComparison"]["unchanged"], 379)
 
     def test_invalid_baseline_not_paired(self):
         dataset, candidate = fixture()
@@ -367,8 +396,8 @@ class EvaluationTests(unittest.TestCase):
         for target in (True, 0, 1, float("nan")):
             with self.assertRaises(ev.InputError):
                 score(*fixture(), target=target)
-        self.assertFalse(score(*fixture(), minimum_tasks=100)["accepted"])
-        self.assertEqual(score(*fixture(), minimum_tasks=1)["minimumTasks"], 73)
+        self.assertFalse(score(*fixture(), minimum_tasks=382)["accepted"])
+        self.assertEqual(score(*fixture(), minimum_tasks=1)["minimumTasks"], 381)
 
     def test_cli_exit_and_safe_error(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -13,6 +13,8 @@ import sys
 from pathlib import Path
 
 Z = 1.959963984540054
+DEFAULT_TARGET = .99
+DEFAULT_MINIMUM_TASKS = 381
 
 
 class InputError(ValueError):
@@ -116,7 +118,7 @@ def usage_summary(observed, valid_trials):
             "scope": "Submitted counters only; input normalized to total, reasoning/cache are subsets, no price calculation."}
 
 
-def evaluate(dataset_bytes, results_text, target=.95, minimum_tasks=73,
+def evaluate(dataset_bytes, results_text, target=DEFAULT_TARGET, minimum_tasks=DEFAULT_MINIMUM_TASKS,
              expected_dataset_sha256=None, baseline_results_text=None):
     if not metric(target) or not 0 < target < 1:
         raise InputError("Target must be between zero and one")
@@ -269,8 +271,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset", required=True, type=Path)
     parser.add_argument("--results", required=True, type=Path)
-    parser.add_argument("--target", type=float, default=.95)
-    parser.add_argument("--minimum-tasks", type=int, default=73)
+    parser.add_argument("--target", type=float, default=DEFAULT_TARGET)
+    parser.add_argument("--minimum-tasks", type=int, default=DEFAULT_MINIMUM_TASKS)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--expected-dataset-sha256")
     parser.add_argument("--baseline-results", type=Path)

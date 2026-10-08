@@ -13,7 +13,8 @@ from pathlib import Path
 import re
 import sys
 
-from evaluate import InputError, evaluate, strict_json as evaluator_json, TOKEN_FIELDS
+from evaluate import (DEFAULT_MINIMUM_TASKS, DEFAULT_TARGET, InputError, evaluate,
+                      strict_json as evaluator_json, TOKEN_FIELDS)
 
 PLAN_KEYS = {"schemaVersion", "createdAt", "datasetSha256", "rubricSha256",
              "modelConfigId", "campaignId", "producerId", "graderId",
@@ -87,7 +88,7 @@ def validate_plan(plan):
 
 
 def prepare(dataset_bytes, rubric_bytes, *, model_config_id, campaign_id, producer_id,
-            grader_id, human_calibration_id, expected_trials=1, target=.95, minimum_tasks=73):
+            grader_id, human_calibration_id, expected_trials=1, target=DEFAULT_TARGET, minimum_tasks=DEFAULT_MINIMUM_TASKS):
     plan = {"schemaVersion": 1, "createdAt": datetime.now(timezone.utc).isoformat(),
             "datasetSha256": digest(dataset_bytes), "rubricSha256": digest(rubric_bytes),
             "modelConfigId": model_config_id, "campaignId": campaign_id,
@@ -187,8 +188,8 @@ def main(argv=None):
     for option in ("model-config-id", "campaign-id", "producer-id", "grader-id", "human-calibration-id"):
         start.add_argument("--" + option, required=True)
     start.add_argument("--expected-trials", type=int, default=1)
-    start.add_argument("--target", type=float, default=.95)
-    start.add_argument("--minimum-tasks", type=int, default=73)
+    start.add_argument("--target", type=float, default=DEFAULT_TARGET)
+    start.add_argument("--minimum-tasks", type=int, default=DEFAULT_MINIMUM_TASKS)
     finish.add_argument("--plan", type=Path, required=True)
     finish.add_argument("--results", type=Path, required=True)
     args = parser.parse_args(argv)

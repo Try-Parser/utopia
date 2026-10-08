@@ -7,6 +7,7 @@ import argparse
 from contextlib import redirect_stdout
 from datetime import datetime, timezone
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -16,6 +17,12 @@ import sys
 import tempfile
 import time
 import unittest
+
+_spec = importlib.util.spec_from_file_location("_proof_evaluate", Path(__file__).with_name("evaluate.py"))
+_ev = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_ev)
+DEFAULT_MINIMUM_TASKS = _ev.DEFAULT_MINIMUM_TASKS
+DEFAULT_TARGET = _ev.DEFAULT_TARGET
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -144,7 +151,7 @@ def evaluation_demo(log):
     with tempfile.TemporaryDirectory() as scratch:
         base = Path(scratch)
         scenarios = []
-        for count, failures in ((72, 0), (73, 0), (100, 1)):
+        for count, failures in ((380, 0), (381, 0), (500, 1), (1000, 1)):
             dataset = {"id": "synthetic-boundary-demo", "version": "1", "synthetic": True,
                        "heldOut": False, "distributionAgreed": True,
                        "tasks": [{"id": str(i), "category": "demo", "critical": False} for i in range(count)]}
@@ -160,9 +167,14 @@ def evaluation_demo(log):
             report = json.loads(result.stdout)
             if report["accepted"] or "noncertifying_provenance" not in report["reasons"]:
                 raise RuntimeError("Synthetic data wrongly certified")
-            expected_statistical = count == 73
-            if (report["wilsonLower"] >= .95) != expected_statistical:
+            expected_statistical = count in (381, 1000)
+            if (report["wilsonLower"] >= DEFAULT_TARGET) != expected_statistical:
                 raise RuntimeError("Unexpected confidence boundary")
+            if (report["target"] != DEFAULT_TARGET
+                    or report["minimumTasks"] != DEFAULT_MINIMUM_TASKS
+                    or report["confidence"] != .95
+                    or (failures and "task_failure" not in report["reasons"])):
+                raise RuntimeError("Unexpected default target or required-check gate")
             scenarios.append({"label": f"{count - failures}/{count}", "synthetic": True,
                               "wilsonLower": report["wilsonLower"], "accepted": report["accepted"],
                               "statisticalThresholdMet": expected_statistical})

@@ -31,7 +31,7 @@ class ControlPanelTests(unittest.TestCase):
         invalid = [empty]
         for target in (0, 1):
             edited = copy.deepcopy(valid); edited["target"] = target; invalid.append(edited)
-        edited = copy.deepcopy(valid); edited["minimumTasks"] = 72; invalid.append(edited)
+        edited = copy.deepcopy(valid); edited["minimumTasks"] = 380; invalid.append(edited)
         for report in invalid:
             with self.assertRaises(ValueError):
                 p.render(summary(), report)
@@ -82,13 +82,13 @@ class ControlPanelTests(unittest.TestCase):
 
     def test_contradictory_accepted_headline_rejected(self):
         dataset = {"id": "fabricated-test-only", "version": "1", "synthetic": False, "heldOut": True, "distributionAgreed": True,
-                   "tasks": [{"id": str(i), "category": "fixture", "critical": False} for i in range(73)]}
+                   "tasks": [{"id": str(i), "category": "fixture", "critical": False} for i in range(381)]}
         rows = [{"taskId": str(i), "runId": "r", "producerId": "p", "graderId": "g", "evidence": "fabricated fixture",
-                 "passed": True, "integrityPassed": True, "latencyMs": 0, "costUsd": 0, "synthetic": False, "heldOut": True, "independentGrading": True} for i in range(73)]
+                 "passed": True, "integrityPassed": True, "latencyMs": 0, "costUsd": 0, "synthetic": False, "heldOut": True, "independentGrading": True} for i in range(381)]
         report = p.telemetry._ev.evaluate(json.dumps(dataset).encode(), "\n".join(json.dumps(r) for r in rows))
         self.assertTrue(report["accepted"])
         self.assertIn("Accepted for submitted dataset", p.render(summary(), report))
-        for key, value in (("passedTasks", 72), ("missingTasks", 1), ("integrityPassedTasks", 72), ("reasons", ["task_failure"]), ("wilsonLower", 1)):
+        for key, value in (("passedTasks", 380), ("missingTasks", 1), ("integrityPassedTasks", 380), ("reasons", ["task_failure"]), ("wilsonLower", 1)):
             changed = copy.deepcopy(report); changed[key] = value
             with self.assertRaises(ValueError):
                 p.render(summary(), changed)

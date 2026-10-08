@@ -6,7 +6,7 @@ This walkthrough is synthetic and must never certify. The scorer makes no API or
 python3 scripts/evaluate.py --dataset examples/evals/dataset.json --results examples/evals/results.jsonl
 ```
 
-Exit codes: `0` means the supplied evidence meets the gate, `1` means it does not, and `2` means an input/output or usage error. `--output PATH` writes a JSON report; input files cannot be overwritten. Defaults are `--target .95 --minimum-tasks 73`.
+Exit codes: `0` means the supplied evidence meets the gate, `1` means it does not, and `2` means an input/output or usage error. `--output PATH` writes a JSON report; input files cannot be overwritten. Defaults are `--target .99 --minimum-tasks 381`.
 
 Use `--expected-dataset-sha256 HEX` to enforce a previously frozen dataset digest; a mismatch or malformed digest is an input error. Optional `--baseline-results PATH` compares candidate and baseline outcomes on this same dataset: improved, regressed and unchanged task counts. Pairing requires complete valid records on both sides. A task succeeds for comparison only if all trials pass both correctness and integrity. This descriptive comparison does not change candidate acceptance or claim statistical significance; baseline provenance still needs independent verification.
 
@@ -18,7 +18,7 @@ Every declared task remains in the denominator. A task passes only if every supp
 
 This is conservative `pass^k` aggregation across supplied trials, with no mandatory three paid trials or other minimum repeated-attempt count. The report exposes the Wilson confidence method and its two-sided critical value explicitly.
 
-The statistical gate uses the lower endpoint of a two-sided 95% Wilson score interval (`z = 1.959963984540054`). Distinct tasks must meet both the configured minimum and `ceil(z² × target / (1 − target))`; at 95% this is 73. Thus 72/72 does not pass, 73/73 can pass the statistical gate, and 99/100 does not pass. This interval assumes a representative task sample with defensible independence. Metadata and distinct IDs alone cannot establish those assumptions; duplicated or correlated tasks need an evaluation design review. Category counts and point rates make the declared distribution visible; they do not assert 95% reliability separately for each category.
+The statistical gate uses the lower endpoint of a two-sided 95% Wilson score interval (`z = 1.959963984540054`). Distinct tasks must meet both the configured minimum and `ceil(z² × target / (1 − target))`; at the 99% quality target this is 381. Thus 380/380 does not pass, 381/381 can pass the statistical gate, and 99/100 does not pass. This interval assumes a representative task sample with defensible independence. Metadata and distinct IDs alone cannot establish those assumptions; duplicated or correlated tasks need an evaluation design review. Category counts and point rates make the declared distribution visible; they do not establish reliability separately for each category.
 
 Latency and cost include schema-valid trials, including failed trials; invalid trials are reported separately. P50 is the median; P95 is the nearest-rank percentile. Units are milliseconds and US dollars. These measure only the submitted observations.
 

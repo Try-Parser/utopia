@@ -6,6 +6,8 @@ This is the delivery process developers use for a feature, fix or unfinished eng
 
 Open the [full PNG](autonomous-development-flow.png) or [vector SVG](autonomous-development-flow.svg). The [department diagram](workflow.png) separately explains the available roles.
 
+The diagrams were refreshed on 08 October 2026. See the [shared department architecture](department-architecture.png) for global resources and recipient wiring, and the [observed local panel preview](evidence-panel-preview.png) for actual fixture-tool evidence. Background metrics uploads are deferred.
+
 ## Follow the process
 
 1. Agree acceptance, allowed repositories and the authorized target. Inspect the actual branch, edits and runtime; preserve unrelated work.

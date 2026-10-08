@@ -43,8 +43,10 @@ def main():
                 ("Tools and trial priorities", ROOT / "docs/tooling-landscape-2026-10.md")]
     with PdfPages(destination, metadata={"Title": "AI department setup and workflow guide",
                   "Author": "AI Department", "Subject": "Shared skills, roles and workflow"}) as pdf:
-        for image, size in (("autonomous-development-flow.png", (11.7, 11.7)),
-                            ("workflow.png", (11.7, 8.3))):
+        for image, size in (("department-architecture.png", (11.7, 8.3)),
+                            ("autonomous-development-flow.png", (11.7, 11.7)),
+                            ("workflow.png", (11.7, 8.3)),
+                            ("evidence-panel-preview.png", (11.7, 8.3))):
             figure, axis = plt.subplots(figsize=size)
             axis.imshow(plt.imread(ROOT / "docs" / image))
             axis.axis("off")
@@ -56,7 +58,7 @@ def main():
         content = [("Skills catalog", skill_lines)]
         content += [(title, readable_lines(path.read_text(encoding="utf-8")))
                     for title, path in sections]
-        page = 3
+        page = 5
         for title, lines in content:
             for start in range(0, len(lines), 39):
                 figure = plt.figure(figsize=(8.3, 11.7), facecolor="white")

@@ -22,6 +22,8 @@ Changes to inputs, wrong identities, absent human review or extra/missing trials
 
 ## Trace without content
 
+The default measured quality target is 99% (Wilson lower bound 0.99 at two-sided 95% confidence); zero failures require at least 381 distinct tasks. Every task/trial and integrity check must pass. See the evaluation contract for sample assumptions. Background metrics uploads are deferred; traces and the panel remain local.
+
 An authorized adapter may import Recorder from telemetry.py and call its structured API around actual work. It observes elapsed time with its own monotonic clock; automatic native-session instrumentation is not provided. Do not send prompts, responses, tool arguments, credentials or private paths. Unknown fields are rejected. Provider counters must be observed and use the existing documented accounting conventions.
 
 ```text

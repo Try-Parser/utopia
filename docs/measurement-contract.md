@@ -10,7 +10,9 @@ Each imported trial retains the scorer schema and additionally declares datasetS
 
 The plan also predeclares humanCalibrationId; each trial binds campaignId. Canonical fabricated acceptance/accounting/denial vectors live in skills/ai-evaluation/references/measurement-golden-cases.json and are consumed by behavioral tests.
 
-Golden acceptance cases: a complete 73-task genuine-declared fixture with matching bindings and independent human-reviewed records meets the scorer policy; a high-sample failed trial, extra/missing trial, changed rubric/dataset/model identity or absent human review rejects. Fabricated fixtures test the helper, not live quality.
+Default policy updated 08 October 2026: the measured quality target is a Wilson lower bound of 0.99, using the separate two-sided 95% confidence level. At zero failures the default minimum is 381 distinct tasks; 380 does not meet the bound. Every declared task and trial and integrity check still must pass (100% observed acceptance). No finite sample establishes universal 100% accuracy. Explicit historical targets remain supported.
+
+Golden acceptance cases: a complete 381-task genuine-declared fixture with matching bindings and independent human-reviewed records meets the scorer policy; a 380-task fixture, high-sample failed trial, extra/missing trial, changed rubric/dataset/model identity or absent human review rejects. Fabricated fixtures test the helper, not live quality.
 
 ## Content-free telemetry
 

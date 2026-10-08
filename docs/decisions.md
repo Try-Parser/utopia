@@ -16,7 +16,7 @@ Both current workflow diagrams and the shareable PDF show that every required ch
 
 Require every defined acceptance check and every supplied evaluation trial to pass. An ordinary task failure now blocks evaluation acceptance even if a large dataset meets the statistical target. Missing checks, required skips, invalid records, integrity failures and missing reviews remain blockers.
 
-Keep the default 0.95 Wilson lower-bound target and 95% confidence level as separate statistical quantities. Finite perfect samples cannot establish universal 100% AI accuracy. Reports show the observed zero-failure condition separately from complete acceptance, including sample size and provenance requirements. Historical verification artifacts retain their original policy and results.
+Historical policy, superseded by the 99% target below: the default 0.95 Wilson lower-bound target and 95% confidence level were separate statistical quantities. Finite perfect samples cannot establish universal 100% AI accuracy. Reports show the observed zero-failure condition separately from complete acceptance, including sample size and provenance requirements. Historical verification artifacts retain their original policy and results.
 
 ## Focused skills and concise output (08 October 2026)
 
@@ -38,7 +38,13 @@ Claude and Codex discussed the design through multiple bounded read-only consult
 
 Adopt now: concise sufficient context, independent outcome grading, reusable test evidence, observable checkpoints, role ownership, held-out dataset provenance, conservative repeated-trial aggregation and measured latency/cost. Defer hash-chained evidence logs, fixed token ceilings, mandatory repeated paid trials and additional interval methods until measured need justifies their complexity. Hash chains alone do not prove honest evidence.
 
-The 95%+ objective is a measured task-quality target; the lower two-sided 95% Wilson bound must meet it, and integrity/critical gates must all pass. No live accuracy result is claimed from implementation or synthetic fixtures.
+The original 95%+ objective was a measured task-quality target; it is superseded by the 99% default below. The separate two-sided 95% confidence level remains unchanged. No live accuracy result is claimed from implementation or synthetic fixtures.
+
+## Current quality target and visible diagrams (08 October 2026)
+
+At the user's request, raise the default measured quality target to a Wilson lower bound of 0.99. Keep the two-sided 95% confidence level and 100% observed task/trial/integrity acceptance requirements. At zero failures the statistical minimum rises from 73 to 381 distinct tasks. Preserve explicitly configured historical plans and their original evidence; do not rewrite history or claim the target has been achieved without genuine independent evaluation.
+
+Expose the current architecture and observed local panel preview directly in README, refresh both workflow PNG/SVG pairs and the PDF, and label the revision. The preview derives from the previously published actual fixture-tool summary; it is not a browser capture, new measurement or live AI result. Background metrics uploads are deferred at the user's request; no reporter, enrollment or background process is included.
 
 Changes are published to a feature branch. A push request does not imply merging main, enabling repository CI settings, deployment or external messaging.
 

@@ -23,7 +23,7 @@ finally:
     sys.path.pop(0)
 
 
-def fixture(size=73, trials=1):
+def fixture(size=381, trials=1):
     dataset = {"id": "fabricated-software-test", "version": "1", "synthetic": False,
                "heldOut": True, "distributionAgreed": True,
                "tasks": [{"id": str(i), "category": "engineering", "critical": i == 0}
@@ -51,7 +51,7 @@ class BenchmarkTests(unittest.TestCase):
     def test_shared_golden_vectors_and_checksum(self):
         golden_path = SCRIPTS.parent / "skills/ai-evaluation/references/measurement-golden-cases.json"
         raw = golden_path.read_bytes()
-        self.assertEqual("82bc94a47590131519aee11c39a3aca924b8e28cb9356aab3f57f84ffa67fb5b",
+        self.assertEqual("d828a2c255663e8b94c90f06179f1bf885b8cbe7cf2e24e8d8e8ab8ed588e079",
                          hashlib.sha256(raw).hexdigest())
         for vector in json.loads(raw)["benchmark"]:
             with self.subTest(vector=vector["id"]):
@@ -66,14 +66,17 @@ class BenchmarkTests(unittest.TestCase):
         parts = fixture()
         report = finish(parts)
         self.assertTrue(report["accepted"])
+        self.assertEqual(.99, parts[0]["target"])
+        self.assertEqual(381, parts[0]["minimumTasks"])
+        self.assertEqual(.95, report["confidence"])
         self.assertTrue(report["benchmark"]["exactTrialCounts"])
-        self.assertEqual(73, report["tasks"])
+        self.assertEqual(381, report["tasks"])
         self.assertEqual([], report["reasons"])
         self.assertIn("Self-reported", report["benchmark"]["humanReview"])
         self.assertNotIn("fabricated test assertion", json.dumps(report))
 
     def test_sample_size_and_synthetic_declarations_still_reject(self):
-        self.assertIn("insufficient_distinct_tasks", finish(fixture(72))["reasons"])
+        self.assertIn("insufficient_distinct_tasks", finish(fixture(380))["reasons"])
         plan, data, rules, rows = fixture()
         dataset = json.loads(data)
         dataset["synthetic"] = True
@@ -83,16 +86,31 @@ class BenchmarkTests(unittest.TestCase):
             row["datasetSha256"] = plan["datasetSha256"]
         self.assertIn("noncertifying_provenance", finish((plan, data, rules, rows))["reasons"])
 
+    def test_explicit_legacy_plan_and_minimum_floor(self):
+        parts = fixture(73)
+        plan = parts[0]
+        plan.update(target=.95, minimumTasks=73)
+        report = finish(parts)
+        self.assertTrue(report["accepted"])
+        self.assertEqual(.95, report["target"])
+        self.assertEqual(73, report["minimumTasks"])
+        parts = fixture(380)
+        parts[0]["minimumTasks"] = 1
+        report = finish(parts)
+        self.assertFalse(report["accepted"])
+        self.assertEqual(381, report["minimumTasks"])
+        self.assertIn("insufficient_distinct_tasks", report["reasons"])
+
     def test_failed_trial_rejects_despite_high_sample(self):
-        parts = fixture(500)
+        parts = fixture(1000)
         parts[3][-1]["passed"] = False
         report = finish(parts)
-        self.assertGreater(report["wilsonLower"], .95)
+        self.assertGreater(report["wilsonLower"], .99)
         self.assertFalse(report["accepted"])
         self.assertIn("task_failure", report["reasons"])
 
     def test_failed_retry_remains_failure(self):
-        parts = fixture(73, 2)
+        parts = fixture(381, 2)
         parts[3][-1]["passed"] = False
         report = finish(parts)
         self.assertTrue(report["benchmark"]["exactTrialCounts"])
@@ -226,6 +244,9 @@ class BenchmarkTests(unittest.TestCase):
                     "--producer-id", "producer", "--grader-id", "grader",
                     "--human-calibration-id", "cal-1", "--output", str(plan)]
             self.assertEqual(0, benchmark.main(args))
+            prepared = json.loads(plan.read_text())
+            self.assertEqual(.99, prepared["target"])
+            self.assertEqual(381, prepared["minimumTasks"])
             final = ["finalize", "--plan", str(plan), "--dataset", str(paths["dataset"]),
                      "--rubric", str(paths["rubric"]), "--results", str(paths["results"]), "--output"]
             self.assertEqual(0, benchmark.main(final + [str(directory / "report.json")]))

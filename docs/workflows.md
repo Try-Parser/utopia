@@ -8,7 +8,7 @@ Start with observable acceptance, actual scope and a target. Use a project profi
 
 **Design:** design-workflow uses existing components/tokens, accessible states and a reviewable prototype for substantial changes. Approval follows the user's scope/project rules. Actual browser acceptance includes realistic content, responsive behavior and interactions. Optional design plugins add guidance, not authorization or guaranteed quality.
 
-**AI behavior/evaluation:** ai-evaluation separates development, regression and held-out tasks, grades observed outcomes and reports task success/confidence/latency/cost. The scorer is offline; real model runs need local account access and explicit scope. No invented 95%+ result.
+**AI behavior/evaluation:** ai-evaluation separates development, regression and held-out tasks, grades observed outcomes and reports task success/confidence/latency/cost. The scorer is offline; real model runs need local account access and explicit scope. The default quality target is 99%, with 100% of observed acceptance checks passing; neither is an achieved live result without measured evidence.
 
 **Resume/delivery:** external checkpoints preserve phases, waits, blockers and remote action IDs. Inspect actual files and jobs before retries. Gate staged content before commit, map committed tree afterwards, then push/deploy only to the authorized target and verify actual delivered behavior.
 
