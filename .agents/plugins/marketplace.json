@@ -1,6 +1,6 @@
 {
-  "name": "legalmatch-ai-department",
-  "interface": {"displayName": "LegalMatch AI Department"},
+  "name": "ai-department",
+  "interface": {"displayName": "AI Department"},
   "plugins": [{
     "name": "ai-department",
     "source": {"source": "local", "path": "./plugins/ai-department"},

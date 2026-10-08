@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "ai-department",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Shared development, design, research and evaluation workflows with independent reviews and reusable resources.",
   "author": {"name": "LegalMatch AI Department"},
   "repository": "https://bitbucket.org/legalmatch/ai-department.git",

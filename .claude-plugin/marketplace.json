@@ -1,5 +1,5 @@
 {
-  "name": "legalmatch-ai-department",
+  "name": "ai-department",
   "owner": {"name": "LegalMatch AI Department"},
   "plugins": [{
     "name": "ai-department",
