@@ -24,7 +24,7 @@ Frank owns specialist routing; autonomous-development owns software delivery and
 
 Shared guidance leads with the result and relevant evidence, keeps detailed logs in artifacts and avoids repeated plans or explanations. Brevity must preserve material failures and security findings. Shorter entrypoints and scoped activation are instruction changes, not measured live token savings or routing accuracy. The autonomous-development process has a dedicated visible image and plain-text explanation alongside the department map.
 
-Status: accepted for this implementation, 07 October 2026.
+## Initial toolkit and evaluation design (07 October 2026, historical)
 
 The starting repository contained only .gitignore. Canonical sources come from the team's existing autonomous-development, craftsman, frank, commit-pr-standard and six Frank specialist definitions. Portability changes remove private model pins, personal personas, service-specific release assumptions and account data. The four core skills remain; research/design/evaluation are conditional additions.
 
@@ -46,12 +46,14 @@ At the user's request, raise the default measured quality target to a Wilson low
 
 Expose the current architecture and observed local panel preview directly in README, refresh both workflow PNG/SVG pairs and the PDF, and label the revision. The preview derives from the previously published actual fixture-tool summary; it is not a browser capture, new measurement or live AI result. Background metrics uploads are deferred at the user's request; no reporter, enrollment or background process is included.
 
-Changes are published to a feature branch. A push request does not imply merging main, enabling repository CI settings, deployment or external messaging.
+Publication follows the authorized target. This toolkit is now published on main; passing checks alone does not authorize publication, repository CI changes, deployment or external messaging.
+
+## Follow-up verification and resources (07 October 2026, historical)
 
 The follow-up verification/resource enhancement was consolidated through four additional read-only Claude consultations at the user's explicit request. Claude independently challenged token-accounting assumptions; input and output now declare their conventions separately, and summaries aggregate normalized totals with explicit missing coverage. Both parties agreed to conditional resources, honest connection statuses, pinned optional browser tooling and observed graphical results. Seven correlated recipient assertions are not sampled AI accuracy evidence. Claude's design consensus is not code or test verification; independent native reviews remain required.
 
 Deferred: mapping an absent reasoning counter to zero even for a supposedly non-thinking model. Any future mapping requires current provider/API evidence and regression fixtures. For now absence remains unknown. No paid model choice, hardcoded pricing, global account configuration or standards certification is inferred.
-# Department expansion and tooling research (07 October 2026)
+## Department expansion and tooling research (07 October 2026, historical)
 
 Add explicit designer, product, architect, researcher, platform and data roles alongside the six original Frank roles. A role definition sets responsibility, not runtime capacity or access. Route only affected responsibilities, keep independent final review, and retain coordinator ownership of delivery. Existing installer discovery distributes canonical roles to both adapters; proof compares installed role names and bytes with source rather than a fixed count.
 

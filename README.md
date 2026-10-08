@@ -14,11 +14,11 @@ Context loads only when needed. One QA owner coordinates affected checks; small 
 
 ## Observed verification
 
-![Historical tool verification with original counts and date; current policy requires every defined check to pass](docs/verification/2026-10-07/verification.png)
+See the [current observed tool demonstration](docs/verification/2026-10-08-measured/report.md) and the visual panel preview below. These are actual tool/fixture checks; live AI accuracy, token savings and production speed remain unmeasured.
 
-Read the [verification report](docs/verification/2026-10-07/report.md) and inspect [machine-readable results](docs/verification/2026-10-07/results.json). These are actual tool/fixture checks; live AI accuracy, token savings and production speed remain unmeasured.
+Earlier results remain in the [historical verification report](docs/verification/2026-10-07/report.md), [chart](docs/verification/2026-10-07/verification.png) and [machine-readable archive](docs/verification/2026-10-07/results.json).
 
-The [department expansion checks](docs/verification/2026-10-07-department/report.md) verify the current twelve-role installation and global user-scope lifecycle. The earlier chart above describes its recorded earlier source inputs.
+The [department expansion checks](docs/verification/2026-10-07-department/report.md) verify the current twelve-role installation and global user-scope lifecycle. The archived chart describes its recorded earlier source inputs.
 
 Use the [resource catalog](docs/resources.md), [connection runbook](docs/connections.md) and [optimization guide](docs/optimization.md) to turn skills into repeatable work with actual tools and evidence.
 
