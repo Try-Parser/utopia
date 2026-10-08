@@ -35,6 +35,7 @@ def readable_lines(markdown):
 def main():
     destination = ROOT / "docs/ai-department-guide.pdf"
     sections = [("Autonomous delivery process", ROOT / "docs/autonomous-development.md"),
+                ("Plugin installation", ROOT / "docs/plugin.md"),
                 ("Setup and usage", ROOT / "docs/getting-started.md"),
                 ("Department roles", ROOT / "skills/frank/references/department.md"),
                 ("Reusable resources", ROOT / "docs/resources.md"),

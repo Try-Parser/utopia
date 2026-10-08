@@ -1,0 +1,19 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "ai-department",
+  "version": "0.1.0",
+  "description": "Shared development, design, research and evaluation workflows with independent reviews and reusable resources.",
+  "author": {"name": "LegalMatch AI Department"},
+  "repository": "https://bitbucket.org/legalmatch/ai-department.git",
+  "extensions": {
+    "com.openai": {
+      "onboardingSkill": "./skills/setup/SKILL.md",
+      "interface": {
+        "displayName": "AI Department",
+        "shortDescription": "Development, design, research and evaluation workflows",
+        "developerName": "LegalMatch AI Department",
+        "category": "Productivity"
+      }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "legalmatch-ai-department",
+  "interface": {"displayName": "LegalMatch AI Department"},
+  "plugins": [{
+    "name": "ai-department",
+    "source": {"source": "local", "path": "./plugins/ai-department"},
+    "policy": {"installation": "AVAILABLE", "authentication": "ON_INSTALL"},
+    "category": "Productivity"
+  }]
+}

@@ -4,6 +4,8 @@ A shared AI development environment built from our current Frank agents and skil
 
 The foundation keeps our four core skills, adds three targeted domain skills and expands the six original Frank roles into twelve department roles, including a dedicated designer. It provides a safe installer, strict review/commit evidence, task timing and offline benchmarking. Smaller changes get smaller review scope; substantive engineering still keeps independent correctness, QA and security.
 
+Install the [AI Department plugin](docs/plugin.md) for Claude Code or Codex. It bundles all seven workflow skills, twelve roles, helper tools and ADR resources, plus guided setup. Choose user scope to use it across projects. The existing file installer remains available for clients without plugin support.
+
 ## Autonomous development flow
 
 ![Autonomous development: scoped task, focused checks, frozen snapshot, three independent reviews, bounded fixes and authorized delivery](docs/autonomous-development-flow.png)

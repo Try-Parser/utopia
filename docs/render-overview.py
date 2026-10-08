@@ -49,7 +49,7 @@ def save(figure, name):
 def architecture():
     figure, axis = canvas("YOUR AI DEPARTMENT", "Updated 08 October 2026 | Shared global resources + project context | Service independent")
     card(axis, .6, 6.65, 4.0, 1.45, "One shared toolkit",
-         "Skills + roles + ADR resources\nGlobal or project installation", "#e7eefb")
+         "Skills + roles + ADR resources\nPlugin or file installation", "#e7eefb")
     card(axis, 6.0, 6.65, 4.0, 1.45, "Codex / Claude Code",
          "Same canonical helpers\nRecipient owns login and tool wiring", "#e7eefb")
     card(axis, 11.4, 6.65, 4.0, 1.45, "Coordinator",

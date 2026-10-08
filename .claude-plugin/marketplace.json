@@ -1,0 +1,9 @@
+{
+  "name": "legalmatch-ai-department",
+  "owner": {"name": "LegalMatch AI Department"},
+  "plugins": [{
+    "name": "ai-department",
+    "source": "./plugins/ai-department",
+    "description": "Shared AI development, design, research and evaluation workflows"
+  }]
+}

@@ -9,6 +9,7 @@ root = Path(__file__).resolve().parents[1]
 environment = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
 commands = [
     [sys.executable, "scripts/validate.py"],
+    [sys.executable, "scripts/package_plugin.py", "--check"],
     [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"],
     [sys.executable, "-m", "unittest", "discover", "-s",
      "skills/autonomous-development/scripts", "-p", "test_*.py", "-v"],

@@ -1,7 +1,10 @@
 # Local assistant state, credentials and build artifacts
 .ai-department/
 .claude/
-.agents/
+.agents/*
+!.agents/plugins/
+.agents/plugins/*
+!.agents/plugins/marketplace.json
 .codex/
 .env
 .env.*
