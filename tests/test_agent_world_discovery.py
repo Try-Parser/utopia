@@ -46,6 +46,55 @@ class DiscoveryTests(unittest.TestCase):
         with path.open("a") as stream:
             stream.write(json.dumps(row) + "\n")
 
+    def test_selected_transcript_exposes_exact_session_text_only_through_token_endpoint(self):
+        path = self.record("Claude Code")
+        now = D.timestamp()
+        self.append_event(path, {"type": "assistant", "sessionId": SESSION, "timestamp": now,  # ai-department-allow: session-export (synthetic transcript fixture)
+                                 "message": {"content": [{"type": "text", "text": "I am editing the login form"},
+                                                         {"type": "tool_use", "name": "Edit", "input": {"file": "login.py"}}]}})
+        self.append_event(path, {"type": "assistant", "sessionId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "timestamp": now,  # ai-department-allow: session-export (synthetic cross-session fixture)
+                                 "message": {"content": [{"type": "text", "text": "WRONG_SESSION_SECRET"}]}})
+        scanner = self.scanner([{"pid": 23, "name": "claude", "args": ["claude", "--session-id", SESSION]}])
+        entry = next(e for e in scanner.view()["entries"] if e["kind"] == "session")
+        self.assertNotIn("I am editing", json.dumps(scanner.view()))
+        result = scanner.transcript(entry["id"])
+        self.assertTrue(result["available"])
+        self.assertEqual([e["speaker"] for e in result["entries"]], ["Assistant", "Tool call"])
+        self.assertIn("login.py", result["entries"][1]["text"])
+        self.assertNotIn("WRONG_SESSION_SECRET", json.dumps(result))
+        server = world.make_server(self.root, port=0, session_discovery=scanner)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        base = f"http://127.0.0.1:{server.server_address[1]}"
+        try:
+            route = base + f"/api/sessions/{entry['id']}/transcript"
+            with self.assertRaises(HTTPError) as denied:
+                urlopen(route)
+            self.assertEqual(denied.exception.code, 403)
+            with urlopen(Request(route, headers={"X-Agent-World-Token": scanner.token})) as response:
+                served = json.load(response)
+            self.assertEqual(served["entries"], result["entries"])
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
+
+    def test_codex_rollout_transcript_shows_assistant_and_tool_output_when_file_updates(self):
+        path = self.record("Codex")
+        now = D.timestamp()
+        self.append_event(path, {"type": "response_item", "timestamp": now,
+                                 "payload": {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "I found the failing test."}]}})
+        self.append_event(path, {"type": "response_item", "timestamp": now,
+                                 "payload": {"type": "function_call_output", "output": "2 tests failed"}})
+        scanner = self.scanner()
+        entry = next(e for e in scanner.view()["entries"] if e["kind"] == "session")
+        transcript = scanner.transcript(entry["id"])
+        self.assertTrue(transcript["available"])
+        self.assertEqual([(e["speaker"], e["text"]) for e in transcript["entries"]],
+                         [("Assistant", "I found the failing test."), ("Tool result", "2 tests failed")])
+        os.utime(path, (time.time() - 600, time.time() - 600))
+        self.assertFalse(scanner.transcript(entry["id"])["available"])
+
     def test_live_claude_tool_events_assign_activity_department_without_private_content(self):
         path = self.record("Claude Code")
         rows = [{"pid": 23, "name": "claude", "args": ["claude", "--session-id", SESSION]}]

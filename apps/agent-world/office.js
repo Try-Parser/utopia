@@ -3,7 +3,7 @@ window.OfficeWorldView=(()=>{
   'use strict';
   const O=window.OfficeWorld,M=window.OfficeGameModel,$=id=>document.getElementById(id);
   const actors=new Map(),packets=new Map(),seen=new Set(),routeQueue=new Map(),reduced=matchMedia('(prefers-reduced-motion: reduce)');
-  let view='isometric',angle=0,mode='',selected=null,selectedPinned=false,last=performance.now(),lastStage=null,sequence=0,paused=false;
+  let view='isometric',angle=0,mode='',selected=null,selectedPinned=false,last=performance.now(),lastStage=null,sequence=0,paused=false,transcriptGeneration=0;
   let motionOverride=null,workstations=[],geometry=O.layout(),geometryKey='',physicalGeometryKey='',sceneGeometry=O.sceneLayout(geometry),sceneWithOccupants=null;
   const svg=document.querySelector('svg.office'),original=document.createElementNS('http://www.w3.org/2000/svg','g');
   for(const child of [...svg.children])if(child.tagName.toLowerCase()!=='defs')original.append(child);
@@ -133,6 +133,9 @@ window.OfficeWorldView=(()=>{
   function inspect(actor,manual=false) {
     const focusedChild=document.activeElement?.dataset?.relatedAgent;
     const focusedHeading=selected===actor.id&&document.activeElement===$('agent-detail').querySelector('h3');
+    const previousBody=selected===actor.id?$('agent-detail').querySelector('.session-output pre'):null;
+    const previousOutput=previousBody?.textContent,previousScroll=previousBody?.scrollTop||0;
+    const generation=++transcriptGeneration;
     selected=actor.id;
     if(manual)selectedPinned=true;
     const role=window.AgentWorld.ROLES.find(r=>r.id===actor.role);
@@ -144,6 +147,16 @@ window.OfficeWorldView=(()=>{
     const sources=[actor,...[...actors.values()].map(a=>a.data).filter(a=>a.parentId===actor.sourceId&&a.working)];
     const recent=sources.flatMap(source=>(source.recentEvents||[]).map(event=>({...event,source:source===actor?'':source.label}))).sort((a,b)=>Date.parse(b.at)-Date.parse(a.at)).slice(0,12);
     if(recent.length){const timeline=node('section','agent-activity'),title=node('h4','',`Live activity · ${recent.length} recent event${recent.length===1?'':'s'}`),list=node('ol');timeline.append(title,list);for(const event of recent){const item=node('li');item.append(node('time','',new Date(event.at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'})),node('span','',`${event.source?event.source+' · ':''}${event.label}`));list.append(item);}$('agent-detail').append(timeline);}
+    if(actor.id.startsWith('session-')){
+      const output=node('section','session-output'),title=node('h4','',`Session output · ${actor.provider}`),body=node('pre','',previousOutput||'Reading local session output…');
+      output.append(title,body);$('agent-detail').append(output);body.scrollTop=previousScroll;
+      window.LocalSessions.transcript(actor.sourceId).then(value=>{
+        if(!output.isConnected||selected!==actor.id||generation!==transcriptGeneration)return;
+        title.textContent=value.available?`Session output · ${value.live?'Live':'Last recorded'}`:`Session output · Unavailable`;
+        const next=value.available?(value.entries.map(e=>`[${new Date(e.at).toLocaleTimeString()}] ${e.speaker}\n${e.text}`).join('\n\n')||'No text has been recorded for this session yet.'):value.reason;
+        if(body.textContent!==next){const scroll=body.scrollTop,follow=body.scrollHeight-body.clientHeight-scroll<30;body.textContent=next;body.scrollTop=follow?body.scrollHeight:scroll;}
+      });
+    }
     if(focusedChild){const replacement=[...$('agent-detail').querySelectorAll('[data-related-agent]')].find(button=>button.dataset.relatedAgent===focusedChild);(replacement||heading).focus({preventScroll:true});}
     else if(focusedHeading)heading.focus({preventScroll:true});
     if(actor.state==='running'&&!actor.action&&!actor.taskLabel&&!actor.activeChildCount)$('agent-detail').append(node('p','connection-hint','No current task or tool event is visible for this open session. It may be idle; process presence alone cannot reveal work.'));

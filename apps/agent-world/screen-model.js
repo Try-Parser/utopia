@@ -11,7 +11,7 @@
     }
     if(mode==='office'||mode==='sessions') {
       const entries=sessions.entries.filter(e=>(occupant===undefined?e.role===role:occupant?.id===`session-${e.id}`)&&['event-working','event-waiting','adapter-working','adapter-waiting','adapter-idle','adapter-ended'].includes(e.status));
-      if(entries.length)return {source:entries[0].status.startsWith('event-')?'Local session tool events':'Adapter-reported metadata',status:entries[0].status.replace('adapter-','').replace('event-',''),title:entries[0].taskLabel||entries[0].label,activity:`${entries[0].action||(entries[0].status.startsWith('event-')?'Turn ended':'Task role reported')}. Code and terminal output are not supplied by this metadata source.`,events:[],result:'',changes:[],jobId:null};
+      if(entries.length){const recorded=entries[0].status.startsWith('event-');return {source:recorded?'Local session transcript':'Adapter-reported metadata',status:entries[0].status.replace('adapter-','').replace('event-',''),title:entries[0].taskLabel||entries[0].label,activity:recorded?(entries[0].action||'Recent session activity'):`${entries[0].action||'Task role reported'}. Code and terminal output are not supplied by this metadata source.`,events:(entries[0].recentEvents||[]).map(e=>({at:e.at,text:e.label})),result:'',changes:[],jobId:null,sessionId:entries[0].id};}
     }
     return {source:mode==='observed'?'Read-only checkpoints / no per-agent screen':'No task screen connected',status:'Unmapped',title:'No assigned computer activity',activity:'Process presence alone does not reveal code, terminal output or a computer screen.',events:[],result:'',changes:[],jobId:null};
   }

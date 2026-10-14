@@ -180,6 +180,101 @@ def safe_path(path, root):
 ACTIVITY_TTL = 300
 ACTIVITY_FILES = 24
 ACTIVITY_BYTES = 262144
+TRANSCRIPT_BYTES = 524288
+TRANSCRIPT_TEXT = 4000
+
+
+def session_transcript(record, root, now=None):
+    """Read a bounded, exact-session transcript tail for an explicitly selected worker."""
+    now = time.time() if now is None else now
+    path = record["path"]
+    if record["provider"] not in ("Codex", "Claude Code") or not safe_path(path, root):
+        return {"available": False, "reason": "This provider has no readable local transcript."}
+    flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        with os.fdopen(os.open(path, flags), "rb") as stream:
+            info = os.fstat(stream.fileno())
+            if not stat.S_ISREG(info.st_mode):
+                raise OSError("Not a regular transcript")
+            if now - info.st_mtime > 300:
+                return {"available": False, "reason": "This provider has not written current session text to its local transcript."}
+            offset = max(0, info.st_size - TRANSCRIPT_BYTES)
+            stream.seek(offset)
+            raw = stream.read(TRANSCRIPT_BYTES)
+        if offset:
+            raw = raw.partition(b"\n")[2]
+        rows = raw.split(b"\n")[:-1]  # Ignore a line still being written.
+        entries = []
+        def add(at, speaker, body):
+            if not isinstance(body, str) or not body.strip():
+                return
+            entries.append({"at": at, "speaker": speaker, "text": body[:TRANSCRIPT_TEXT]})
+            del entries[:-80]
+        for line in rows[-512:]:
+            if len(line) > 131072:
+                continue
+            try:
+                row = json.loads(line)
+            except (ValueError, RecursionError):
+                continue
+            if not isinstance(row, dict):
+                continue
+            at = row.get("timestamp")
+            if not isinstance(at, str) or len(at) > 40:
+                continue
+            try:
+                datetime.fromisoformat(at.replace("Z", "+00:00"))
+            except ValueError:
+                continue
+            if record["provider"] == "Claude Code":
+                identity = row.get("sessionId")
+                if not isinstance(identity, str) or identity.lower() != record["session"]:
+                    continue
+                message = row.get("message")
+                if not isinstance(message, dict) or row.get("type") not in ("assistant", "user"):
+                    continue
+                speaker = "Assistant" if row["type"] == "assistant" else "You / tool"
+                blocks = message.get("content")
+                if isinstance(blocks, str):
+                    add(at, speaker, blocks)
+                elif isinstance(blocks, list):
+                    for block in blocks[:24]:
+                        if not isinstance(block, dict):
+                            continue
+                        kind = block.get("type")
+                        if kind == "text":
+                            add(at, speaker, block.get("text"))
+                        elif kind == "tool_use":
+                            name = block.get("name")
+                            if isinstance(name, str) and len(name) <= 80:
+                                detail = block.get("input")
+                                add(at, "Tool call", name + "\n" + json.dumps(detail, ensure_ascii=False, default=str)[:TRANSCRIPT_TEXT])
+                        elif kind == "tool_result":
+                            value = block.get("content")
+                            add(at, "Tool result", value if isinstance(value, str) else json.dumps(value, ensure_ascii=False, default=str))
+            else:
+                payload = row.get("payload")
+                if not isinstance(payload, dict):
+                    continue
+                kind = payload.get("type")
+                if row.get("type") == "event_msg" and kind == "user_message":
+                    add(at, "You", payload.get("message"))
+                elif row.get("type") == "response_item":
+                    if kind == "message" and payload.get("role") == "assistant":
+                        for block in (payload.get("content") or [])[:24]:
+                            if isinstance(block, dict) and block.get("type") in ("output_text", "text"):
+                                add(at, "Assistant", block.get("text"))
+                    elif kind in ("function_call", "custom_tool_call"):
+                        name = payload.get("name") or payload.get("namespace")
+                        detail = payload.get("arguments") or payload.get("input")
+                        if isinstance(name, str) and len(name) <= 80:
+                            add(at, "Tool call", name + "\n" + (detail if isinstance(detail, str) else json.dumps(detail, ensure_ascii=False, default=str)))
+                    elif kind in ("function_call_output", "custom_tool_call_output"):
+                        add(at, "Tool result", payload.get("output"))
+        return {"available": True, "live": 0 <= now - info.st_mtime <= 30,
+                "updatedAt": timestamp(info.st_mtime), "entries": entries}
+    except (OSError, ValueError, TypeError, RecursionError):
+        return {"available": False, "reason": "The local transcript cannot be read."}
 TOOL_ACTIVITY = {
     "Edit": ("builder", "coding", "Editing files"), "Write": ("builder", "coding", "Editing files"),
     "MultiEdit": ("builder", "coding", "Editing files"), "NotebookEdit": ("builder", "coding", "Editing files"),
@@ -706,6 +801,18 @@ class Discovery:
             self._live_stop.set()
         if self._inventory_thread is not None:
             self._inventory_thread.join(timeout=1)
+
+    def transcript(self, entry_id):
+        """Return only the selected exact session's local file tail."""
+        if not isinstance(entry_id, str) or not re.fullmatch(r"[a-f0-9]{32}", entry_id):
+            return {"available": False, "reason": "Unknown session."}
+        with self.lock:
+            record = next((item for item in self._records
+                           if opaque(item["provider"], item["key"]) == entry_id), None)
+            root = self.roots[record["provider"]] if record else None
+        if record is None:
+            return {"available": False, "reason": "This session has no readable transcript. Its provider may still be streaming only to the extension."}
+        return session_transcript(record, root)
 
     def view(self):
         with self.lock:

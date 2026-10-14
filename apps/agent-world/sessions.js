@@ -13,9 +13,25 @@ window.LocalSessions = (() => {
   const eventLabels=new Set(['New turn','Turn started','Turn finished','Turn activity','Tool activity','Assistant responding','Using tool',
     'Editing files','Using terminal','Reading project files','Planning work','Coordinating agents','Waiting for agents','Researching']);
   const validEvents=events=>events==null||Array.isArray(events)&&events.length<=8&&events.every(event=>event&&typeof event.label==='string'&&eventLabels.has(event.label)&&typeof event.at==='string'&&Number.isFinite(Date.parse(event.at)));
+  const transcriptCache=new Map();
+  const validTranscript=value=>value&&typeof value.available==='boolean'&&(value.available?
+    typeof value.live==='boolean'&&Number.isFinite(Date.parse(value.updatedAt))&&Array.isArray(value.entries)&&value.entries.length<=80&&value.entries.every(e=>e&&['Assistant','You','You / tool','Tool call','Tool result'].includes(e.speaker)&&typeof e.text==='string'&&e.text.length<=8000&&Number.isFinite(Date.parse(e.at))):
+    typeof value.reason==='string'&&value.reason.length<=200);
+  async function transcript(id){
+    const entry=data.entries.find(e=>e.id===id&&e.kind==='session');
+    if(!entry||!data.token)return {available:false,reason:'Session output is unavailable.'};
+    const cached=transcriptCache.get(id),now=Date.now();
+    if(cached&&cached.version===entry.updatedAt&&now-cached.at<1000)return cached.promise;
+    const promise=fetch(`/api/sessions/${id}/transcript`,{cache:'no-store',headers:{'X-Agent-World-Token':data.token},signal:AbortSignal.timeout(6000)})
+      .then(async response=>{if(!response.ok)throw new Error();const value=await response.json();if(!validTranscript(value))throw new Error();return value;})
+      .catch(()=>({available:false,reason:'Session output reader unavailable.'}));
+    transcriptCache.set(id,{version:entry.updatedAt,at:now,promise});
+    if(transcriptCache.size>24)transcriptCache.delete(transcriptCache.keys().next().value);
+    return promise;
+  }
   function valid(value){return value&&Array.isArray(value.entries)&&value.entries.length<=200&&value.entries.every(e=>e&&hex(e.id)&&['provider','label','workspace','evidence'].every(k=>typeof e[k]==='string'&&e[k].length<=150)&&states.includes(e.status)&&['process','session'].includes(e.kind)&&(e.pid===null||Number.isInteger(e.pid)&&e.pid>0)&&Number.isFinite(Date.parse(e.updatedAt))&&validEvents(e.recentEvents)&&(e.role==null||roles.includes(e.role))&&(e.taskRef==null||hex(e.taskRef))&&(e.taskLabel==null||typeof e.taskLabel==='string'&&e.taskLabel.length<=100)&&(e.action==null||['planning','designing','coding','reviewing','testing','auditing','helping','command','research','tool','coordination','reporting'].includes(e.action))&&(e.targetRef==null||hex(e.targetRef))&&(e.targetKind==null||['session','job'].includes(e.targetKind))&&(e.parentId==null||hex(e.parentId))&&(e.activeChildCount==null||Number.isInteger(e.activeChildCount)&&e.activeChildCount>0&&e.activeChildCount<=200))&&Array.isArray(value.handoffs)&&value.handoffs.length<=80&&value.handoffs.every(h=>h&&hex(h.id)&&hex(h.sourceId)&&hex(h.taskRef)&&roles.includes(h.fromRole)&&roles.includes(h.toRole)&&typeof h.provider==='string'&&h.provider.length<=40&&Number.isFinite(Date.parse(h.at))&&(h.taskLabel==null||typeof h.taskLabel==='string'&&h.taskLabel.length<=100)&&(h.targetRef==null||hex(h.targetRef))&&(h.targetKind==null||['session','job'].includes(h.targetKind)))&&typeof value.partial==='boolean'&&Number.isFinite(Date.parse(value.scannedAt))&&Array.isArray(value.warnings)&&value.warnings.length<=20&&value.warnings.every(w=>typeof w==='string'&&w.length<=200)&&typeof value.limitations==='string'&&value.limitations.length<=500&&Array.isArray(value.coverage)&&value.coverage.length<=20&&value.coverage.every(c=>c&&typeof c.provider==='string'&&typeof c.records==='string');}
   let unsubscribe=null,requestGeneration=0;
-  function unavailable(){requestGeneration++;data={entries:[],warnings:['Session discovery unavailable. Last results were cleared.'],coverage:[],partial:true,scannedAt:null,limitations:'Reconnect the local reader to discover sessions.'};onChange();}
+  function unavailable(){requestGeneration++;transcriptCache.clear();data={entries:[],warnings:['Session discovery unavailable. Last results were cleared.'],coverage:[],partial:true,scannedAt:null,limitations:'Reconnect the local reader to discover sessions.'};onChange();}
   function activate(value,callback){active=value;onChange=callback;generation++;unsubscribe?.();unsubscribe=null;
     if(active){data={entries:[],warnings:[],coverage:[],partial:true,scannedAt:null,limitations:'Connecting to live session stream...'};const current=generation;unsubscribe=window.LiveFeed.subscribe('sessions',result=>{if(!active||current!==generation)return;if(!valid(result)){unavailable();return false;}requestGeneration++;data=result;onChange();return true;},()=>{if(active&&current===generation)unavailable();});}}
   async function poll(){
@@ -48,5 +64,5 @@ window.LocalSessions = (() => {
   function note(){return `Local discovery · ${data.entries.filter(e=>e.status==='running'||e.pid&&e.status.startsWith('event-')).length} live process entries, ${data.entries.filter(e=>e.kind==='session').length} session entries. ${data.partial?'Partial inventory. ':''}Process presence does not prove an agent is working.`;}
   $('session-filter').addEventListener('change',e=>{filter=e.target.value;onChange();});$('refresh-sessions').addEventListener('click',poll);
 
-  return {get:()=>data,activate,renderCrew,renderMissions,renderActivity,note,count:()=>visible().length};
+  return {get:()=>data,transcript,activate,renderCrew,renderMissions,renderActivity,note,count:()=>visible().length};
 })();

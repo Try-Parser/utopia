@@ -3,7 +3,7 @@ window.ComputerScreens=(()=>{
   'use strict';
   const M=window.ComputerModel,$=id=>document.getElementById(id),dialog=$('computer-dialog');
   const monitors=new Map(),previews=new Map();let role='builder',station=0,mode='office',source={jobs:[]},sessions={entries:[]},simulation={active:[],events:[],stage:'',title:''};
-  let returnTo=null,tab='code',selectedPath=null,patchGeneration=0,patchBusy=false,lastPatch=0,patchKey='';
+  let returnTo=null,tab='code',selectedPath=null,patchGeneration=0,transcriptGeneration=0,patchBusy=false,lastPatch=0,patchKey='';
   const make=(tag,cls,text)=>{const n=document.createElement(tag);n.className=cls||'';if(text!==undefined)n.textContent=text;return n;};
   const key=()=>`${role}:${station}`;
   const desks=()=>mode==='office'&&window.OfficeWorldView.getWorkstations().length?window.OfficeWorldView.getSceneLayout().stations:window.OfficeWorld.workstations;
@@ -42,7 +42,16 @@ window.ComputerScreens=(()=>{
     events.replaceChildren();for(const e of (data.events||[]).slice(-30)){const li=make('li');li.append(make('time','',e.at?new Date(e.at).toLocaleTimeString():String(e.time)),make('span','',e.text));events.append(li);}
     if(!events.children.length)events.append(make('li','empty','No task events are available for this computer.'));
     events.scrollTop=nearBottom?events.scrollHeight:scroll;
-    const result=$('computer-result'),displayResult=data.result||'Agent output will appear here when reported.';if(result.textContent!==displayResult)result.textContent=displayResult;
+    const result=$('computer-result'),displayResult=data.result||'Agent output will appear here when reported.';
+    if(!data.sessionId){transcriptGeneration++;result.dataset.sessionId='';if(result.textContent!==displayResult)result.textContent=displayResult;}
+    if(data.sessionId){
+      if(result.dataset.sessionId!==data.sessionId){result.dataset.sessionId=data.sessionId;result.textContent='Reading local session output…';}
+      const generation=++transcriptGeneration;
+      window.LocalSessions.transcript(data.sessionId).then(value=>{
+        if(generation!==transcriptGeneration||!dialog.open||tab!=='code'||projection().sessionId!==data.sessionId)return;
+        result.textContent=value.available?(value.entries.map(e=>`[${new Date(e.at).toLocaleTimeString()}] ${e.speaker}\n${e.text}`).join('\n\n')||'No text has been recorded for this session yet.'):value.reason;
+      });
+    }
     const focus=document.activeElement?.dataset?.changePath,files=$('computer-files');files.replaceChildren();
     for(const change of data.changes||[]){const button=make('button','change-file',`${change.kind} / ${change.path}`);button.type='button';button.dataset.changePath=change.path;button.setAttribute('aria-pressed',String(change.path===selectedPath));button.addEventListener('click',()=>{selectedPath=change.path;patchKey='';render();loadPatch();});files.append(button);}
     if(!files.children.length)files.append(make('p','muted','No previewable file changes were reported for this task.'));

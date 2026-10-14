@@ -174,6 +174,14 @@ def make_server(root, port=8787, live_queue=None, session_discovery=None):
                     self.send_json(503, {"error": "Local session discovery unavailable"})
                 else:
                     self.send_json(200, session_discovery.view())
+            elif re.fullmatch(r"/api/sessions/[a-f0-9]{32}/transcript", path):
+                if session_discovery is None:
+                    self.send_json(503, {"error": "Local session discovery unavailable"})
+                    return
+                if not live.secrets.compare_digest(self.headers.get("X-Agent-World-Token", "").encode(), session_discovery.token.encode()):
+                    self.send_json(403, {"error": "Local session token required"})
+                    return
+                self.send_json(200, session_discovery.transcript(path.split('/')[3]))
             elif re.fullmatch(r"/api/live/missions/[a-f0-9]{32}/changes/[0-9]{1,2}", path):
                 if live_queue is None:
                     self.send_json(503, {"error": "Native task reader unavailable"})
