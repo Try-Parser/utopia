@@ -54,6 +54,7 @@ class DiscoveryTests(unittest.TestCase):
         self.append_event(path, event)
         entry = scanner.view()["entries"][0]
         self.assertEqual((entry["status"], entry["role"], entry["action"]), ("event-working", "builder", "coding"))
+        self.assertEqual([event["label"] for event in entry["recentEvents"]], ["Editing files"])
         self.assertIn("department follows activity", entry["evidence"])
         self.assertNotIn("PRIVATE", json.dumps(entry))
         self.assertNotIn(SESSION, json.dumps(entry))
@@ -61,6 +62,7 @@ class DiscoveryTests(unittest.TestCase):
         self.append_event(path, {"type": "assistant", "sessionId": SESSION, "timestamp": D.timestamp(), "message": {"stop_reason": "end_turn", "content": []}})  # ai-department-allow: session-export (synthetic activity fixture)
         entry = scanner.view()["entries"][0]
         self.assertEqual((entry["status"], entry["role"], entry["action"]), ("event-waiting", "builder", None))
+        self.assertEqual([event["label"] for event in entry["recentEvents"]], ["Editing files", "Turn finished"])
         self.append_event(path, {"type": "user", "sessionId": SESSION, "timestamp": D.timestamp(), "message": {"content": "PRIVATE_NEW_PROMPT"}})  # ai-department-allow: session-export (synthetic activity fixture)
         self.assertEqual(scanner.view()["entries"][0]["status"], "running")
 
@@ -79,12 +81,33 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual(len(agents), 2)
         self.assertEqual({entry["action"] for entry in agents}, {"coding", "research"})
         self.assertEqual({entry["status"] for entry in agents}, {"event-working"})
+        self.assertEqual({entry["recentEvents"][0]["label"] for entry in agents}, {"Editing files", "Reading project files"})
         self.assertEqual(len({entry["id"] for entry in result["entries"]}), 3)
         parent = next(entry for entry in result["entries"] if entry["pid"] == 23)
         self.assertEqual(parent["activeChildCount"], 2)
         self.assertEqual({entry["parentId"] for entry in agents}, {parent["id"]})
         self.assertNotIn("PRIVATE_INPUT", json.dumps(result))
         self.assertNotIn(SESSION, json.dumps(result))
+
+    def test_cached_timeline_expires_each_event_even_when_latest_action_is_fresh(self):
+        path = self.record("Claude Code")
+        base = time.time()
+        for age, tool in ((299, "Read"), (0, "Edit")):
+            self.append_event(path, {"type": "assistant", "sessionId": SESSION, "timestamp": D.timestamp(base - age),  # ai-department-allow: session-export (synthetic activity fixture)
+                                     "message": {"content": [{"type": "tool_use", "name": tool}]}})
+        rows = [{"pid": 23, "name": "claude", "args": ["claude", "--session-id", SESSION]}]
+        scanner = self.scanner(rows)
+        scanner.view()
+        scanner._live_stop = threading.Event()
+        try:
+            self.assertEqual([event["label"] for event in scanner.view()["entries"][0]["recentEvents"]],
+                             ["Reading project files", "Editing files"])
+            with patch.object(D.time, "time", return_value=base + 2):
+                entry = scanner.view()["entries"][0]
+            self.assertEqual([event["label"] for event in entry["recentEvents"]], ["Editing files"])
+            self.assertEqual(entry["status"], "event-working")
+        finally:
+            scanner._live_stop = None
 
     def test_claude_subagent_parent_mismatch_is_not_connected(self):
         children = self.claude / "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" / "subagents"
@@ -121,6 +144,7 @@ class DiscoveryTests(unittest.TestCase):
         event("response_item", {"type": "custom_tool_call", "name": "apply_patch", "input": "PRIVATE_CODE"})
         entry = scanner.view()["entries"][0]
         self.assertEqual((entry["status"], entry["action"]), ("event-working", "coding"))
+        self.assertEqual([event["label"] for event in entry["recentEvents"]], ["Turn started", "Editing files"])
         self.assertIn("process linkage unknown", entry["evidence"])
         self.assertNotIn("PRIVATE", json.dumps(entry))
         event("response_item", {"type": "function_call", "name": "unrecognized_tool"})

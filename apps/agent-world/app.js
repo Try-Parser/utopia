@@ -33,8 +33,10 @@ function renderActivity() {
   const list = $('activity'); list.replaceChildren();
   if(mode==='office') {
     L.renderActivity(list);
-    const entries=S.get().entries.filter(e=>['event-working','event-waiting','adapter-working','adapter-waiting'].includes(e.status)).slice(0,12);
-    for(const e of entries.reverse())list.prepend(node('li','activity-event',`${e.provider} · ${e.workspace} · ${e.taskLabel||e.action||e.status} · ${new Date(e.updatedAt).toLocaleTimeString()}`));
+    const entries=S.get().entries.filter(e=>['event-working','event-waiting','adapter-working','adapter-waiting'].includes(e.status)).slice(0,24);
+    const events=entries.flatMap(e=>(e.recentEvents||[]).map(event=>({...event,provider:e.provider,session:e.label}))).sort((a,b)=>Date.parse(b.at)-Date.parse(a.at)).slice(0,24);
+    for(const event of events.reverse())list.prepend(node('li','activity-event',`${new Date(event.at).toLocaleTimeString()} · ${event.session} · ${event.label}`));
+    for(const e of entries.filter(e=>!e.recentEvents?.length).reverse())list.prepend(node('li','activity-event',`${e.provider} · ${e.workspace} · ${e.taskLabel||e.action||e.status} · ${new Date(e.updatedAt).toLocaleTimeString()}`));
     for(const e of (S.get().handoffs||[]).slice(-8).reverse())list.prepend(node('li','activity-event',`Reported handoff / ${e.fromRole} → ${e.toRole} / ${e.taskRef.slice(0,8)}`));
     for(const warning of S.get().warnings)list.prepend(node('li','empty',warning));
     if(!entries.length&&!(S.get().handoffs||[]).length)list.prepend(node('li','empty','No current local session task or tool events are visible. Open processes may be idle; workers appear when a linked session reports activity.'));

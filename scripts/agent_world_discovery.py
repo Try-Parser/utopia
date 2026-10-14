@@ -223,6 +223,10 @@ def tool_activity(record, root, now):
             return None
         role = action = label = None
         busy, started, event_at = False, False, None
+        recent_events = []
+        def add_event(at, text):
+            recent_events.append({"at": at.isoformat(), "label": text})
+            del recent_events[:-8]
         for line in lines:
             row = json.loads(line)
             if not isinstance(row, dict):
@@ -246,18 +250,21 @@ def tool_activity(record, root, now):
                     if not tool_result:
                         busy, started = False, True
                         role = action = label = None
+                        add_event(at, "New turn")
                     continue
                 if row.get("type") != "assistant":
                     continue
                 if message.get("stop_reason") in ("end_turn", "max_tokens", "stop_sequence", "refusal"):
                     busy = False
                     event_at = at
+                    add_event(at, "Turn finished")
                     continue
                 names = [c.get("name") for c in content if isinstance(c, dict) and c.get("type") == "tool_use"] if isinstance(content, list) else []
                 busy = True
                 event_at = at
                 if not names:
                     role = action = label = None
+                    add_event(at, "Assistant responding")
             else:
                 payload = row.get("payload")
                 if not isinstance(payload, dict):
@@ -265,10 +272,13 @@ def tool_activity(record, root, now):
                 if row.get("type") == "event_msg" and payload.get("type") == "task_started":
                     started, busy = True, True
                     role = action = label = None
+                    event_at = at
+                    add_event(at, "Turn started")
                     continue
                 if row.get("type") == "event_msg" and payload.get("type") in ("task_complete", "turn_aborted"):
                     busy, started = False, False
                     event_at = at
+                    add_event(at, "Turn finished")
                     continue
                 if row.get("type") != "response_item" or payload.get("type") not in ("function_call", "custom_tool_call") or not started:
                     continue
@@ -281,17 +291,22 @@ def tool_activity(record, root, now):
                 if name in TOOL_ACTIVITY:
                     role, action, label = TOOL_ACTIVITY[name]
                     event_at = at
+                    add_event(at, label)
                 else:
                     role = action = label = None  # Unknown current tools never reuse a coding claim.
+                    event_at = at
+                    add_event(at, "Using tool")
         if role and event_at:
             return {"status": "event-working" if busy else "event-waiting", "role": role,
                     "action": action if busy else None, "taskLabel": label,
                     "taskRef": opaque("activity", record["provider"] + ":" + record["key"]),
                     "updatedAt": event_at.isoformat(),
+                    "recentEvents": recent_events,
                     "evidence": "Local tool events; department follows activity, not an assigned specialist role"}
         if record["provider"] == "Claude Code" and busy and event_at and now - event_at.timestamp() <= 30:
             return {"status": "event-working", "role": None, "action": None,
                     "taskLabel": None, "taskRef": None, "updatedAt": event_at.isoformat(),
+                    "recentEvents": recent_events,
                     "evidence": "Local assistant activity observed; task details unavailable"}
     except (OSError, ValueError, TypeError, RecursionError):
         return None
@@ -635,6 +650,9 @@ class Discovery:
                 activity = cached[1]
                 if activity and not 0 <= now - datetime.fromisoformat(activity["updatedAt"]).timestamp() <= (30 if activity["status"] == "event-working" and activity["role"] is None else ACTIVITY_TTL):
                     activity = None
+                elif activity:
+                    activity = {**activity, "recentEvents": [event for event in activity.get("recentEvents", [])
+                                                         if 0 <= now - datetime.fromisoformat(event["at"]).timestamp() <= ACTIVITY_TTL]}
             else:
                 activity = tool_activity(record, self.roots[record["provider"]], now)
             retained[cache_key] = (fingerprint, activity)

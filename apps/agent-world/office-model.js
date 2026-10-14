@@ -62,11 +62,11 @@
       const role=roles.includes(e.role)?e.role:null,working=['event-working','adapter-working'].includes(e.status);
       const handoff=events.filter(h=>h.sourceId===e.id&&h.fromRole===role&&h.taskRef===e.taskRef&&['adapter-waiting','adapter-ended'].includes(e.status)).at(-1);
       return {id:`session-${e.id}`,sourceId:e.id,parentId:e.parentId||null,activeChildCount:e.activeChildCount||0,provider:e.provider,label:e.label,role,working,state:e.status,updatedAt:e.updatedAt,taskRef:e.taskRef||null,
-        note:e.evidence,taskLabel:e.taskLabel||'',action:working&&actions[e.action]?e.action:null,targetRef:e.targetRef||null,targetKind:e.targetKind||'session',
+        note:e.evidence,taskLabel:e.taskLabel||'',recentEvents:e.recentEvents||[],action:working&&actions[e.action]?e.action:null,targetRef:e.targetRef||null,targetKind:e.targetKind||'session',
         activity:working?(actions[e.action]?.[0]||'Working / activity details not connected'):e.activeChildCount?`${e.activeChildCount} subagent${e.activeChildCount===1?'':'s'} working in this session; parent action unknown`:e.status==='running'?'Session open; no current task event':e.status==='event-waiting'?(e.evidence?.startsWith('Codex local runtime activity observed')?'Activity recently seen':'Turn ended'):e.status.replace('adapter-',''),handoff};
     });
     for(const job of live.jobs.filter(j=>['queued','starting','running'].includes(j.status))) {
-      actors.push({id:`job-${job.id}`,sourceId:job.id,provider:'Codex',label:`Codex / ${job.role}`,role:job.role,working:job.status==='running',state:job.status,updatedAt:job.updatedAt,taskRef:job.id,taskLabel:job.title||'',action:job.status==='running'&&actions[job.action]?job.action:null,targetRef:null,note:'Native task runner event',activity:job.activity,handoff:null});
+      actors.push({id:`job-${job.id}`,sourceId:job.id,provider:'Codex',label:`Codex / ${job.role}`,role:job.role,working:job.status==='running',state:job.status,updatedAt:job.updatedAt,taskRef:job.id,taskLabel:job.title||'',recentEvents:(job.events||[]).slice(-8).map(event=>({at:event.at,label:event.text})),action:job.status==='running'&&actions[job.action]?job.action:null,targetRef:null,note:'Native task runner event',activity:job.activity,handoff:null});
     }
     return {actors,events};
   }
