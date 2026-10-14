@@ -129,6 +129,152 @@ class DiscoveryTests(unittest.TestCase):
         self.append_event(path, {"type": "user", "sessionId": SESSION, "timestamp": D.timestamp(), "message": {"content": "PRIVATE_NEW_PROMPT"}})  # ai-department-allow: session-export (synthetic activity fixture)
         self.assertEqual(scanner.view()["entries"][0]["status"], "running")
 
+    def test_human_input_request_waits_for_answer_without_exposing_question(self):
+        path = self.record("Claude Code")
+        rows = [{"pid": 23, "name": "claude", "args": ["claude", "--session-id", SESSION]}]
+        scanner = self.scanner(rows)
+        self.append_event(path, {"type": "assistant", "sessionId": SESSION, "timestamp": D.timestamp(),  # ai-department-allow: session-export (synthetic fixture)
+                                 "message": {"stop_reason": "tool_use", "content": [{"type": "tool_use", "name": "Edit", "id": "edit-call"}]}})
+        self.append_event(path, {"type": "assistant", "sessionId": SESSION, "timestamp": D.timestamp(),  # ai-department-allow: session-export (synthetic fixture)
+                                 "message": {"stop_reason": "tool_use", "content": [{"type": "tool_use", "name": "AskUserQuestion", "id": "q1", "input": {"question": "PRIVATE_QUESTION_TEXT"}}]}})
+        waiting = scanner.view()["entries"][0]
+        self.assertEqual((waiting["status"], waiting["awaitingHuman"], waiting["awaitingHumanMode"]),
+                         ("event-waiting", True, "claude"))
+        self.assertEqual(waiting["role"], "builder", "a question keeps its existing desk")
+        self.assertEqual(waiting["recentEvents"][-1]["label"], "Awaiting your answer")
+        self.assertNotIn("PRIVATE_QUESTION_TEXT", json.dumps(scanner.view()))
+        scanner.enable_live()
+        self.assertTrue(scanner.view()["entries"][0]["awaitingHuman"])
+        future_entries = {key: dict(entry) for key, entry in scanner._base_entries.items()}
+        scanner._apply_activity(future_entries, scanner._records, time.time() + 301, [], cache=True)
+        self.assertTrue(next(iter(future_entries.values()))["awaitingHuman"], "a quiet question remains pending")
+        closed_entries = {key: {**entry, "status": "recent"} for key, entry in scanner._base_entries.items()}
+        scanner._apply_activity(closed_entries, scanner._records, time.time() + 31, [], cache=False)
+        self.assertFalse(next(iter(closed_entries.values())).get("awaitingHuman", False), "a closed session cannot wait indefinitely")
+        self.append_event(path, {"type": "user", "sessionId": SESSION, "timestamp": D.timestamp(),  # ai-department-allow: session-export (synthetic fixture)
+                                 "message": {"content": [{"type": "tool_result", "tool_use_id": "edit-call", "content": "PRIVATE_UNRELATED_RESULT"}]}})
+        self.assertTrue(scanner.view()["entries"][0]["awaitingHuman"], "an unrelated tool result cannot answer the question")
+        self.append_event(path, {"type": "user", "sessionId": SESSION, "timestamp": D.timestamp(),  # ai-department-allow: session-export (synthetic fixture)
+                                 "message": {"content": [{"type": "tool_result", "tool_use_id": "q1", "content": "PRIVATE_ANSWER"}]}})
+        answered = scanner.view()["entries"][0]
+        self.assertFalse(answered.get("awaitingHuman", False))
+        self.assertEqual(answered["role"], "builder", "the reply gap keeps the worker's home desk")
+        self.assertNotIn("PRIVATE_ANSWER", json.dumps(answered))
+        scanner.disable_live()
+
+    def test_codex_async_question_ignores_acknowledgement_until_user_message(self):
+        path = self.record("Codex")
+        scanner = self.scanner([{"pid": 24, "name": "codex", "args": ["codex", "resume", SESSION]}])
+        self.append_event(path, {"type": "event_msg", "timestamp": D.timestamp(), "payload": {"type": "task_started"}})
+        self.append_event(path, {"type": "response_item", "timestamp": D.timestamp(),
+                                 "payload": {"type": "function_call", "name": "apply_patch", "call_id": "prior-edit"}})
+        self.append_event(path, {"type": "response_item", "timestamp": D.timestamp(),
+                                 "payload": {"type": "function_call", "namespace": "functions", "name": "request_user_input_async", "arguments": "PRIVATE_QUESTION"}})
+        waiting = scanner.view()["entries"][0]
+        self.assertTrue(waiting["awaitingHuman"])
+        self.assertEqual(waiting["awaitingHumanMode"], "async")
+        self.assertNotIn("PRIVATE_QUESTION", json.dumps(waiting))
+        self.append_event(path, {"type": "response_item", "timestamp": D.timestamp(),
+                                 "payload": {"type": "function_call_output", "output": "Request accepted"}})
+        self.assertTrue(scanner.view()["entries"][0]["awaitingHuman"])
+        self.append_event(path, {"type": "event_msg", "timestamp": D.timestamp(), "payload": {"type": "task_started"}})
+        self.append_event(path, {"type": "event_msg", "timestamp": D.timestamp(),
+                                 "payload": {"type": "user_message", "message": "PRIVATE_ANSWER"}})
+        answered = scanner.view()["entries"][0]
+        self.assertFalse(answered.get("awaitingHuman", False))
+        self.assertEqual(answered["role"], "builder", "an async reply keeps the reserved computer")
+        self.assertNotIn("PRIVATE_ANSWER", json.dumps(answered))
+
+    def test_codex_sync_question_requires_matching_call_result(self):
+        path = self.record("Codex")
+        scanner = self.scanner([{"pid": 24, "name": "codex", "args": ["codex", "resume", SESSION]}])
+        self.append_event(path, {"type": "event_msg", "timestamp": D.timestamp(), "payload": {"type": "task_started"}})
+        self.append_event(path, {"type": "response_item", "timestamp": D.timestamp(),
+                                 "payload": {"type": "function_call", "name": "apply_patch", "call_id": "edit-call"}})
+        self.append_event(path, {"type": "response_item", "timestamp": D.timestamp(),
+                                 "payload": {"type": "function_call", "name": "request_user_input", "call_id": "question-call", "arguments": "PRIVATE_QUESTION"}})
+        waiting = scanner.view()["entries"][0]
+        self.assertTrue(waiting["awaitingHuman"])
+        self.assertEqual(waiting["role"], "builder")
+        self.assertNotIn("question-call", json.dumps(waiting), "internal call identity must not enter broad metadata")
+        self.append_event(path, {"type": "response_item", "timestamp": D.timestamp(),
+                                 "payload": {"type": "function_call_output", "call_id": "edit-call", "output": "PRIVATE_UNRELATED_RESULT"}})
+        self.assertTrue(scanner.view()["entries"][0]["awaitingHuman"])
+        self.append_event(path, {"type": "response_item", "timestamp": D.timestamp(),
+                                 "payload": {"type": "function_call_output", "call_id": "question-call", "output": "PRIVATE_ANSWER"}})
+        answered = scanner.view()["entries"][0]
+        self.assertFalse(answered.get("awaitingHuman", False))
+        self.assertEqual(answered["role"], "builder")
+        self.assertNotIn("PRIVATE_ANSWER", json.dumps(answered))
+
+    def test_codex_written_question_keeps_home_when_turn_starts_before_reply(self):
+        path = self.record("Codex")
+        scanner = self.scanner([{"pid": 24, "name": "codex", "args": ["codex", "resume", SESSION]}])
+        self.append_event(path, {"type": "event_msg", "timestamp": D.timestamp(), "payload": {"type": "task_started"}})
+        self.append_event(path, {"type": "response_item", "timestamp": D.timestamp(),
+                                 "payload": {"type": "function_call", "name": "apply_patch", "call_id": "edit-call"}})
+        self.append_event(path, {"type": "response_item", "timestamp": D.timestamp(),
+                                 "payload": {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "PRIVATE_FINAL_QUESTION?"}]}})
+        self.append_event(path, {"type": "event_msg", "timestamp": D.timestamp(), "payload": {"type": "task_complete"}})
+        self.assertTrue(scanner.view()["entries"][0]["awaitingHuman"])
+        self.append_event(path, {"type": "event_msg", "timestamp": D.timestamp(), "payload": {"type": "task_started"}})
+        self.assertTrue(scanner.view()["entries"][0]["awaitingHuman"], "turn start alone is not an answer")
+        self.append_event(path, {"type": "event_msg", "timestamp": D.timestamp(),
+                                 "payload": {"type": "user_message", "message": "PRIVATE_ANSWER"}})
+        answered = scanner.view()["entries"][0]
+        self.assertFalse(answered.get("awaitingHuman", False))
+        self.assertEqual(answered["role"], "builder")
+        self.assertNotIn("PRIVATE_ANSWER", json.dumps(answered))
+
+    def test_final_written_questions_wait_without_exposing_their_text(self):
+        for provider in ("Claude Code", "Codex"):
+            with self.subTest(provider=provider):
+                path = self.record(provider)
+                scanner = self.scanner()
+                if provider == "Claude Code":
+                    self.append_event(path, {"type": "assistant", "sessionId": SESSION, "timestamp": D.timestamp(),  # ai-department-allow: session-export (synthetic fixture)
+                                             "message": {"stop_reason": "end_turn", "content": [{"type": "text", "text": "PRIVATE_FINAL_QUESTION?"}]}})
+                else:
+                    self.append_event(path, {"type": "event_msg", "timestamp": D.timestamp(), "payload": {"type": "task_started"}})
+                    self.append_event(path, {"type": "response_item", "timestamp": D.timestamp(),
+                                             "payload": {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "PRIVATE_FINAL_QUESTION?"}]}})
+                    self.append_event(path, {"type": "event_msg", "timestamp": D.timestamp(), "payload": {"type": "task_complete"}})
+                waiting = scanner.view()["entries"][0]
+                self.assertTrue(waiting["awaitingHuman"])
+                self.assertEqual(waiting["awaitingHumanMode"], "text")
+                self.assertNotIn("PRIVATE_FINAL_QUESTION", json.dumps(waiting))
+                path.unlink()
+
+    def test_written_question_reply_keeps_home_and_late_tool_answer_refreshes_activity(self):
+        path = self.record("Claude Code")
+        scanner = self.scanner([{"pid": 23, "name": "claude", "args": ["claude", "--session-id", SESSION]}])
+        self.append_event(path, {"type": "assistant", "sessionId": SESSION, "timestamp": D.timestamp(),  # ai-department-allow: session-export (synthetic fixture)
+                                 "message": {"stop_reason": "tool_use", "content": [{"type": "tool_use", "name": "Edit"}]}})
+        self.append_event(path, {"type": "assistant", "sessionId": SESSION, "timestamp": D.timestamp(),  # ai-department-allow: session-export (synthetic fixture)
+                                 "message": {"stop_reason": "end_turn", "content": [{"type": "text", "text": "PRIVATE_FINAL_QUESTION?"}]}})
+        self.assertEqual(scanner.view()["entries"][0]["role"], "builder")
+        self.append_event(path, {"type": "user", "sessionId": SESSION, "timestamp": D.timestamp(),  # ai-department-allow: session-export (synthetic fixture)
+                                 "message": {"content": "PRIVATE_ANSWER"}})
+        answered = scanner.view()["entries"][0]
+        self.assertFalse(answered.get("awaitingHuman", False))
+        self.assertEqual(answered["role"], "builder")
+        self.assertNotIn("PRIVATE_ANSWER", json.dumps(answered))
+
+        scanner.enable_live()
+        self.append_event(path, {"type": "assistant", "sessionId": SESSION, "timestamp": D.timestamp(),  # ai-department-allow: session-export (synthetic fixture)
+                                 "message": {"stop_reason": "tool_use", "content": [{"type": "tool_use", "name": "AskUserQuestion", "id": "late-answer"}]}})
+        pending = scanner.view()["entries"][0]
+        future = time.time() + D.ACTIVITY_TTL + 1
+        self.append_event(path, {"type": "user", "sessionId": SESSION, "timestamp": D.timestamp(future),  # ai-department-allow: session-export (synthetic fixture)
+                                 "message": {"content": [{"type": "tool_result", "tool_use_id": "late-answer", "content": "PRIVATE_LATE_ANSWER"}]}})
+        os.utime(path, (future, future))
+        record = next(r for r in scanner._records if r["provider"] == "Claude Code")
+        cached = next(v[1] for v in scanner._activity_cache.values() if v[1] and v[1].get("awaitingHuman"))
+        resumed = D.tool_activity(record, self.claude, future + 0.01, cached)
+        self.assertEqual(resumed["role"], "builder")
+        self.assertAlmostEqual(D.datetime.fromisoformat(resumed["updatedAt"]).timestamp(), future, delta=1)
+        scanner.disable_live()
+
     def test_parallel_claude_subagents_have_distinct_live_work(self):
         self.record("Claude Code")
         children = self.claude / SESSION / "subagents"
@@ -429,6 +575,19 @@ class DiscoveryTests(unittest.TestCase):
             scanner.heartbeat({**data, "prompt": "not accepted"})
         with self.assertRaises(ValueError):
             D.process_rule("Custom AI=path/to/executable;command")
+
+    def test_provider_neutral_adapter_can_report_and_clear_human_wait(self):
+        scanner = self.scanner()
+        data = {"provider": "Other AI", "sessionId": "custom-question", "state": "waiting", "workspace": "/work/project", "pid": None}  # ai-department-allow: session-export (synthetic fixture)
+        identity = scanner.heartbeat({**data, "awaitingHuman": True})
+        waiting = next(e for e in scanner.view()["entries"] if e["id"] == identity)
+        self.assertEqual((waiting["status"], waiting["awaitingHuman"]), ("adapter-waiting", True))
+        scanner.heartbeat({**data, "state": "working", "awaitingHuman": False})
+        resumed = next(e for e in scanner.view()["entries"] if e["id"] == identity)
+        self.assertFalse(resumed["awaitingHuman"])
+        for invalid in ({**data, "awaitingHuman": "yes"}, {**data, "state": "working", "awaitingHuman": True}):
+            with self.assertRaises(ValueError):
+                scanner.heartbeat(invalid)
 
     def test_symlink_and_oversized_headers_are_not_read_or_counted_as_complete(self):
         outside = self.root / "outside.jsonl"

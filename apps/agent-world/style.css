@@ -177,7 +177,9 @@ dialog{background:#213c4a;border-color:#617b8b;color:#e6edf0;border-radius:11px;
 .desk-screen{z-index:6}
 .mini-workstation-preview,#mini-app-preview{z-index:7;pointer-events:none}
 
-.character.working.at-conference-seat:not(.office-walking) .person{transform:translateY(-8px);animation:none}
+.character.at-conference-seat:not(.office-walking) .person{transform:translateY(-8px);animation:none}
+.office-character[data-action=awaiting-human] .character-bubble{background:#fff0c7;border-color:#d1a95e}
+.office-character.departing .person{filter:saturate(.72)}
 
 /* Live office takes the stage; its evidence stays within reach at the right. */
 .workspace-grid{gap:10px;min-height:0}

@@ -9,6 +9,7 @@ def main():
     parser.add_argument("--provider", required=True)
     parser.add_argument("--session-id", required=True)
     parser.add_argument("--state", required=True, choices=("working", "waiting", "idle", "ended"))
+    parser.add_argument("--awaiting-human", action="store_true", help="Report that this waiting session asked a human for input")
     parser.add_argument("--workspace", default="")
     parser.add_argument("--pid", type=int)
     parser.add_argument("--role", choices=("planner", "designer", "builder", "reviewer", "qa", "security"))
@@ -24,11 +25,15 @@ def main():
     args = parser.parse_args()
     if not 1 <= args.port <= 65535:
         parser.error("Invalid local port")
+    if args.awaiting_human and args.state != "waiting":
+        parser.error("--awaiting-human requires --state waiting")
     base = f"http://127.0.0.1:{args.port}"
     with urlopen(base + "/api/sessions", timeout=15) as response:
         token = json.load(response)["token"]
     data = {"provider": args.provider, "sessionId": args.session_id, "state": args.state,  # ai-department-allow: session-export (local metadata schema)
             "workspace": args.workspace, "pid": args.pid}
+    if args.awaiting_human:
+        data["awaitingHuman"] = True
     for field, value in (("role", args.role), ("taskId", args.task_id), ("handoffTo", args.handoff_to), ("eventId", args.event_id),
                          ("taskLabel", args.task_label), ("action", args.action), ("targetProvider", args.target_provider), ("targetSessionId", args.target_session_id), ("targetJobId", args.target_job_id)):
         if value is not None:

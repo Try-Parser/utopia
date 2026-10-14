@@ -41,6 +41,30 @@ test('automatically observed threads keep shared computers and expand capacity',
   assert.deepEqual(O.destination(scene[0],0),scene[0].station.point);
   assert.match(O.presentation(scene[0]).destination,/Shared computer/);
 });
+test('explicit human questions sit in conference and release the seat after an answer',()=>{
+  const question={...base,kind:'session',status:'event-waiting',role:'builder',awaitingHuman:true,updatedAt:new Date().toISOString()};
+  const waiting=O.project({entries:[question]},{jobs:[]}).actors[0];
+  const seats=O.assignWorkstations([waiting],[]),g=O.layout([waiting],seats);M.configure(g);
+  try{const scene=O.sceneActors([waiting],seats,M.free,g)[0];
+    assert.equal(scene.station.key,'builder:0');assert.equal(scene.conferenceSeat.key,'conference:0');
+    assert.deepEqual(O.destination(scene,0,g),scene.conferenceSeat.point);
+    assert.ok(M.path(scene.station.point,scene.conferenceSeat.point).length);
+    assert.equal(O.presentation(scene).word,'Waiting for your answer');
+    const answered=O.project({entries:[{...question,awaitingHuman:false,status:'event-waiting'}]},{jobs:[]}).actors[0];
+    const replyGap=O.sceneActors([answered],O.assignWorkstations([answered],[],seats),M.free,g,[scene])[0];
+    assert.equal(replyGap.station.key,scene.station.key,'the reply-to-work gap retains the same computer');
+    assert.equal(replyGap.conferenceSeat,null);
+    const resumed=O.project({entries:[{...question,awaitingHuman:false,status:'event-working',action:'coding'}]},{jobs:[]}).actors[0];
+    const home=O.sceneActors([resumed],O.assignWorkstations([resumed],[],seats),M.free,g,[replyGap])[0];
+    assert.equal(home.conferenceSeat,null);assert.equal(home.station.key,scene.station.key);
+    assert.deepEqual(O.destination(home,0,g),home.station.point);
+  }finally{M.configure(null);}
+});
+test('completed workers can reach breakout and the office exit from every computer',()=>{
+  const g=O.layout();M.configure(g);
+  try{for(const kind of ['breakout','exit']){const target=O.departureTarget(g,kind);assert.equal(M.free(target.x,target.y),true);for(const station of g.stations)assert.ok(M.path(station.point,target).length,`${station.key} can reach ${kind}`);}}
+  finally{M.configure(null);}
+});
 test('live child work is the initial focus while a manually selected parent stays selected',()=>{
   const parent={...base,id:'a'.repeat(32),provider:'Claude Code',label:'Claude session',kind:'session',activeChildCount:2};
   const child={...base,id:'b'.repeat(32),parentId:parent.id,provider:'Claude Code',label:'Claude agent',kind:'session',status:'event-working',role:'builder',action:'coding'};

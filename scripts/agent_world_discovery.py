@@ -292,9 +292,21 @@ TOOL_ACTIVITY = {
     "collaboration.spawn_agent": ("planner", "coordination", "Coordinating agents"),
     "WebSearch": ("planner", "research", "Researching"), "WebFetch": ("planner", "research", "Researching"),
 }
+HUMAN_INPUT_TOOLS = {"AskUserQuestion", "request_user_input", "request_user_input_async"}
 
 
-def tool_activity(record, root, now):
+def final_question(blocks):
+    """Recognize an assistant's final written question without retaining its text."""
+    if isinstance(blocks, str):
+        return blocks.strip().endswith("?")
+    if isinstance(blocks, list):
+        text = [block.get("text") for block in blocks if isinstance(block, dict)
+                and block.get("type") in ("text", "output_text") and isinstance(block.get("text"), str)]
+        return bool(text and text[-1].strip().endswith("?"))
+    return False
+
+
+def tool_activity(record, root, now, previous_activity=None):
     """Project event types/names only. Never retain tool input/output or messages."""
     if record["provider"] not in ("Codex", "Claude Code"):
         return None
@@ -320,9 +332,17 @@ def tool_activity(record, root, now):
         lines = raw.splitlines()
         if len(lines) > 256 or any(len(line) > 65536 for line in lines):
             return None
-        role = action = label = None
-        busy, started, event_at = False, False, None
-        recent_events = []
+        question_pending = bool(previous_activity and previous_activity.get("awaitingHuman"))
+        role = previous_activity.get("role") if question_pending else None
+        action = label = None
+        question_mode = previous_activity.get("awaitingHumanMode") if question_pending else None
+        question_call = previous_activity.get("_questionCall") if question_pending else None
+        plain_question_candidate = False
+        answer_return = False
+        busy, started = False, False
+        event_at = datetime.fromisoformat(previous_activity["updatedAt"]) if question_pending else None
+        recent_events = [event for event in previous_activity.get("recentEvents", [])
+                         if 0 <= now - datetime.fromisoformat(event["at"]).timestamp() <= ACTIVITY_TTL] if question_pending else []
         def add_event(at, text):
             recent_events.append({"at": at.isoformat(), "label": text})
             del recent_events[:-8]
@@ -345,10 +365,22 @@ def tool_activity(record, root, now):
                     continue
                 content = message.get("content")
                 if row.get("type") == "user":
-                    tool_result = isinstance(content, list) and any(isinstance(c, dict) and c.get("type") == "tool_result" for c in content)
+                    results = [c for c in content if isinstance(c, dict) and c.get("type") == "tool_result"] if isinstance(content, list) else []
+                    tool_result = bool(results)
+                    answered = question_pending and (not tool_result or question_mode == "claude" and any(c.get("tool_use_id") == question_call for c in results))
+                    if answered:
+                        question_pending = False
+                        question_mode = question_call = None
+                        answer_return = True
+                        event_at = at
+                        add_event(at, "Answer received")
+                    plain_question_candidate = False
                     if not tool_result:
+                        answer_return = answered
                         busy, started = False, True
-                        role = action = label = None
+                        if not answer_return:
+                            role = None
+                        action = label = None
                         add_event(at, "New turn")
                     continue
                 if row.get("type") != "assistant":
@@ -356,9 +388,21 @@ def tool_activity(record, root, now):
                 if message.get("stop_reason") in ("end_turn", "max_tokens", "stop_sequence", "refusal"):
                     busy = False
                     event_at = at
-                    add_event(at, "Turn finished")
+                    if message.get("stop_reason") == "end_turn" and final_question(content):
+                        question_pending, question_mode = True, "text"
+                        add_event(at, "Awaiting your answer")
+                    else:
+                        add_event(at, "Turn finished")
                     continue
                 names = [c.get("name") for c in content if isinstance(c, dict) and c.get("type") == "tool_use"] if isinstance(content, list) else []
+                if any(name in HUMAN_INPUT_TOOLS for name in names):
+                    question_pending, busy = True, False
+                    question_mode = "claude"
+                    question_call = next((c.get("id") for c in content if isinstance(c, dict) and c.get("type") == "tool_use" and c.get("name") in HUMAN_INPUT_TOOLS), None)
+                    action = label = None
+                    event_at = at
+                    add_event(at, "Awaiting your answer")
+                    continue
                 busy = True
                 event_at = at
                 if not names:
@@ -369,22 +413,70 @@ def tool_activity(record, root, now):
                 if not isinstance(payload, dict):
                     continue
                 if row.get("type") == "event_msg" and payload.get("type") == "task_started":
+                    plain_question_candidate = False
                     started, busy = True, True
-                    role = action = label = None
+                    if not question_pending and not answer_return:
+                        role = None
+                    action = label = None
                     event_at = at
                     add_event(at, "Turn started")
                     continue
                 if row.get("type") == "event_msg" and payload.get("type") in ("task_complete", "turn_aborted"):
+                    if payload.get("type") == "turn_aborted":
+                        question_pending = False
+                        question_mode = question_call = None
                     busy, started = False, False
                     event_at = at
-                    add_event(at, "Turn finished")
+                    if payload.get("type") == "task_complete" and plain_question_candidate:
+                        question_pending, question_mode = True, "text"
+                        add_event(at, "Awaiting your answer")
+                    else:
+                        add_event(at, "Turn finished")
+                    plain_question_candidate = False
                     continue
-                if row.get("type") != "response_item" or payload.get("type") not in ("function_call", "custom_tool_call") or not started:
+                if (row.get("type") == "event_msg" and payload.get("type") == "user_message"
+                        or row.get("type") == "response_item" and payload.get("type") == "message" and payload.get("role") == "user"):
+                    answer_return = question_pending
+                    question_pending = False
+                    question_mode = question_call = None
+                    plain_question_candidate = False
+                    started, busy = True, False
+                    if not answer_return:
+                        role = None
+                    action = label = None
+                    event_at = at
+                    add_event(at, "New turn")
                     continue
+                if row.get("type") == "response_item" and payload.get("type") in ("function_call_output", "custom_tool_call_output") and question_pending:
+                    # Synchronous input returns its answer as a tool result. Async
+                    # requests acknowledge immediately and remain pending.
+                    if question_mode == "sync" and payload.get("call_id") == question_call:
+                        question_pending = False
+                        question_mode = question_call = None
+                        answer_return = True
+                        event_at = at
+                        add_event(at, "Answer received")
+                    continue
+                if row.get("type") == "response_item" and payload.get("type") == "message" and payload.get("role") == "assistant":
+                    plain_question_candidate = final_question(payload.get("content"))
+                    continue
+                if row.get("type") != "response_item" or payload.get("type") not in ("function_call", "custom_tool_call"):
+                    continue
+                plain_question_candidate = False
                 namespace = payload.get("namespace")
                 raw_name = payload.get("name")
                 names = [namespace + "." + raw_name if isinstance(raw_name, str) and raw_name not in TOOL_ACTIVITY
                          and namespace in ("functions", "collaboration") else raw_name]
+                if raw_name in HUMAN_INPUT_TOOLS:
+                    question_pending, busy = True, False
+                    question_mode = "async" if raw_name == "request_user_input_async" else "sync"
+                    question_call = payload.get("call_id")
+                    action = label = None
+                    event_at = at
+                    add_event(at, "Awaiting your answer")
+                    continue
+                if not started:
+                    continue
                 busy = True
             for name in names:
                 if not isinstance(name, str):
@@ -398,6 +490,13 @@ def tool_activity(record, root, now):
                     role = action = label = None  # Unknown current tools never reuse a coding claim.
                     event_at = at
                     add_event(at, "Using tool")
+        if question_pending and event_at:
+            return {"status": "event-waiting", "role": role, "action": None, "awaitingHuman": True,
+                    "awaitingHumanMode": question_mode,
+                    "_questionCall": question_call,
+                    "taskLabel": None, "taskRef": None, "updatedAt": event_at.isoformat(),
+                    "recentEvents": recent_events,
+                    "evidence": "Local human-input request observed; awaiting a reply"}
         if role and event_at:
             return {"status": "event-working" if busy else "event-waiting", "role": role,
                     "action": action if busy else None, "taskLabel": label,
@@ -610,7 +709,7 @@ class Discovery:
 
     def heartbeat(self, data):
         fields = {"provider", "sessionId", "state", "workspace", "pid"}
-        optional = {"role", "taskId", "handoffTo", "eventId", "taskLabel", "action", "targetProvider", "targetSessionId", "targetJobId"}
+        optional = {"role", "taskId", "handoffTo", "eventId", "taskLabel", "action", "targetProvider", "targetSessionId", "targetJobId", "awaitingHuman"}
         if not isinstance(data, dict) or not fields <= set(data) or set(data) - fields - optional:
             raise ValueError("Invalid heartbeat fields")
         if (not isinstance(data["provider"], str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 ._-]{0,39}", data["provider"])
@@ -621,6 +720,8 @@ class Discovery:
             raise ValueError("Invalid heartbeat metadata")
         if any(name in data and (not isinstance(data[name], str) or data[name] not in ROLES) for name in ("role", "handoffTo")):
             raise ValueError("Invalid department role")
+        if "awaitingHuman" in data and (type(data["awaitingHuman"]) is not bool or data["awaitingHuman"] and data["state"] != "waiting"):
+            raise ValueError("A human-input wait requires a waiting state")
         if any(name in data and (not isinstance(data[name], str) or not re.fullmatch(r"[A-Za-z0-9_.:-]{1,80}", data[name])) for name in ("taskId", "eventId")):
             raise ValueError("Invalid workflow reference")
         if "handoffTo" in data and not {"role", "taskId", "eventId"} <= set(data):
@@ -670,7 +771,8 @@ class Discovery:
                 raise ValueError("Heartbeat registry is full")
             self.heartbeats[key] = {"provider": provider, "state": data["state"], "workspace": workspace_label(data["workspace"]),
                                     "pid": data["pid"], "seen": now, "updatedAt": timestamp(), "role": data.get("role"), "taskRef": task_ref,
-                                    "taskLabel": data.get("taskLabel"), "action": data.get("action"), "targetRef": target_ref, "targetKind": target_kind}
+                                    "taskLabel": data.get("taskLabel"), "action": data.get("action"), "targetRef": target_ref, "targetKind": target_kind,
+                                    "awaitingHuman": data.get("awaitingHuman", False)}
             if event_key and event_key not in self.handoffs:
                 self.handoffs[event_key] = {"event": event, "seen": now, "at": timestamp()}
                 if len(self.handoffs) > 80:
@@ -733,13 +835,16 @@ class Discovery:
                 continue
             try:
                 info = record["path"].stat(follow_symlinks=False)
-                if stat.S_ISREG(info.st_mode) and 0 <= now - info.st_mtime <= ACTIVITY_TTL:
-                    fresh.append(({**record, "modified": info.st_mtime}, (info.st_mtime_ns, info.st_size, info.st_ino)))
+                cache_key = (record["provider"], record["key"], str(record["path"]))
+                pending = cache and self._activity_cache.get(cache_key)
+                pending = bool(pending and pending[1] and pending[1].get("awaitingHuman"))
+                if stat.S_ISREG(info.st_mode) and (0 <= now - info.st_mtime <= ACTIVITY_TTL or pending):
+                    fresh.append(({**record, "modified": info.st_mtime, "pending": pending}, (info.st_mtime_ns, info.st_size, info.st_ino)))
             except OSError:
                 continue
-        fresh.sort(key=lambda pair: pair[0]["modified"], reverse=True)
+        fresh.sort(key=lambda pair: (pair[0]["pending"], pair[0]["modified"]), reverse=True)
         limited = len(fresh) > ACTIVITY_FILES
-        warning = "Tool activity scan limited to the newest twenty-four session records."
+        warning = "Tool activity scan limited to twenty-four session records, prioritizing pending questions and recent files."
         if limited and warning not in warnings:
             warnings.append(warning)
         examined, retained = set(), {}
@@ -758,19 +863,25 @@ class Discovery:
             cached = self._activity_cache.get(cache_key) if cache else None
             if cached and cached[0] == fingerprint:
                 activity = cached[1]
-                if activity and not 0 <= now - datetime.fromisoformat(activity["updatedAt"]).timestamp() <= (30 if activity["status"] == "event-working" and activity["role"] is None else ACTIVITY_TTL):
+                if activity and not activity.get("awaitingHuman") and not 0 <= now - datetime.fromisoformat(activity["updatedAt"]).timestamp() <= (30 if activity["status"] == "event-working" and activity["role"] is None else ACTIVITY_TTL):
                     activity = None
                 elif activity:
                     activity = {**activity, "recentEvents": [event for event in activity.get("recentEvents", [])
                                                          if 0 <= now - datetime.fromisoformat(event["at"]).timestamp() <= ACTIVITY_TTL]}
             else:
-                activity = tool_activity(record, self.roots[record["provider"]], now)
+                activity = tool_activity(record, self.roots[record["provider"]], now, cached[1] if cached else None)
+            if activity and activity.get("awaitingHuman") and not matched:
+                # A file alone cannot prove the session is still open forever.
+                # Keep unlinked questions briefly, then let the avatar depart.
+                age = now - record["modified"]
+                if age > (30 if record["provider"] == "Claude Code" else ACTIVITY_TTL):
+                    activity = None
             retained[cache_key] = (fingerprint, activity)
             if (activity and record["provider"] == "Claude Code" and not matched and activity["status"] == "event-working"
                     and now - datetime.fromisoformat(activity["updatedAt"]).timestamp() > 30):
                 activity = None
-            if activity and (matched or activity["status"] == "event-working"):
-                entry.update(activity)
+            if activity and (matched or activity["status"] == "event-working" or activity.get("awaitingHuman")):
+                entry.update({key: value for key, value in activity.items() if key != "_questionCall"})
                 if not matched:
                     entry["evidence"] += "; process linkage unknown"
         if cache:
@@ -846,6 +957,7 @@ class Discovery:
                 entries[key] = {"id": key, "provider": beat["provider"], "label": old.get("label", beat["provider"] + " session " + key[:8]),
                                 "kind": "session", "status": "adapter-" + state, "workspace": beat["workspace"], "pid": beat["pid"],
                                 "role": beat["role"] if age <= 30 else None, "taskRef": beat["taskRef"] if age <= 30 else None,
+                                "awaitingHuman": beat.get("awaitingHuman", False) if age <= 30 else False,
                                 "taskLabel": beat.get("taskLabel") if age <= 30 else None, "action": beat.get("action") if age <= 30 else None,
                                 "targetRef": beat.get("targetRef") if age <= 30 else None,
                                 "targetKind": beat.get("targetKind") if age <= 30 else None,
