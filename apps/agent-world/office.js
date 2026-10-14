@@ -130,7 +130,7 @@ window.OfficeWorldView=(()=>{
     const view=O.presentation(actor);
     $('agent-detail').replaceChildren(node('h3','',actor.label),node('p','task-title',view.title),node('p','',`${role?.role||'Role unknown'} / ${view.word}`),node('p','',view.detail),node('p','',`Going to: ${view.destination}`),node('p','detail-note',`${actor.note}${actor.taskRef?` · Work item ${actor.taskRef.slice(0,8)}`:''}`));
     const current=actors.get(actor.id);if(current)showCoordinates(current);
-    if(!actor.action&&!actor.taskLabel&&!actor.handoff)$('agent-detail').append(node('p','connection-hint','This session is detected, but task/action events are not connected. Its provider needs an activity hook or adapter; process presence cannot reveal its work.'));
+    if(actor.state==='running'&&!actor.action&&!actor.taskLabel)$('agent-detail').append(node('p','connection-hint','No current task or tool event is visible for this open session. It may be idle; process presence alone cannot reveal work.'));
     if(O.canRoam(actor))$('agent-detail').append(node('p','detail-note','Walking through shared areas is a visual waiting routine. It does not indicate a provider task, help visit or meeting.'));
     for(const a of actors.values()) {a.element.classList.toggle('selected',a.data.id===selected);a.element.setAttribute('aria-pressed',String(a.data.id===selected));}
     layoutBubbles();

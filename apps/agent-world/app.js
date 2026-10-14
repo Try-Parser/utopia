@@ -36,7 +36,7 @@ function renderActivity() {
     for(const e of entries.reverse())list.prepend(node('li','activity-event',`${e.provider} · ${e.workspace} · ${e.taskLabel||e.action||e.status} · ${new Date(e.updatedAt).toLocaleTimeString()}`));
     for(const e of (S.get().handoffs||[]).slice(-8).reverse())list.prepend(node('li','activity-event',`Reported handoff / ${e.fromRole} → ${e.toRole} / ${e.taskRef.slice(0,8)}`));
     for(const warning of S.get().warnings)list.prepend(node('li','empty',warning));
-    if(!entries.length&&!(S.get().handoffs||[]).length)list.prepend(node('li','empty','No task events reported yet. Process sightings remain in Local sessions; an identified session and readable tool log or provider adapter are needed to place a worker.'));
+    if(!entries.length&&!(S.get().handoffs||[]).length)list.prepend(node('li','empty','No current local session task or tool events are visible. Open processes may be idle; workers appear when a linked session reports activity.'));
     return;
   }
 }

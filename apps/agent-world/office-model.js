@@ -89,7 +89,7 @@
     return result;
   }
   function presentation(actor) {
-    const title=actor.handoff?.taskLabel||actor.taskLabel||'Task details not connected';
+    const title=actor.handoff?.taskLabel||actor.taskLabel||(actor.state==='running'?'No current task event':'Task details not connected');
     if(actor.handoff)return {title,action:'handoff',word:'Passing task',icon:'→',destination:actor.colleague?.label||`${roleNames[actor.handoff.toRole]} department`,detail:`Taking ${title} to ${actor.colleague?.label||roleNames[actor.handoff.toRole]+' department'}`};
     if(actor.working&&actor.action==='helping')return {title,action:actor.colleague?'helping':'waiting',word:actor.colleague?'Helping':'Colleague not connected',icon:'↔',destination:actor.colleague?.label||'Own computer',detail:actor.colleague?`Helping ${actor.colleague.label} with ${title}`:'Helping was reported, but the colleague is not currently connected to a working desk.'};
     const known=actor.working&&actions[actor.action];
