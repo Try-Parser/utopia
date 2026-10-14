@@ -478,18 +478,19 @@ class Discovery:
                         state = candidate
                     except sqlite3.Error:
                         pass  # Session identity still comes from the runtime log.
-                rows = logs.execute("SELECT thread_id, ts FROM "
+                rows = logs.execute("SELECT thread_id, ts, target FROM "
                                     "(SELECT id, thread_id, ts, target FROM logs ORDER BY id DESC LIMIT 4096) "
                                     "WHERE ts >= ? AND thread_id IS NOT NULL "
                                     "AND target IN ('codex_core::session::turn', 'codex_core::tools::parallel') "
                                     "ORDER BY id DESC LIMIT 256", (now - 120,)).fetchall()
-                seen = set()
-                for identity, at in rows:
-                    if not isinstance(identity, str) or not UUID.fullmatch(identity) or identity in seen or not isinstance(at, (int, float)) or not 0 <= now - at <= 120:
+                history = {}
+                for identity, at, target in rows:
+                    if not isinstance(identity, str) or not UUID.fullmatch(identity) or not isinstance(at, (int, float)) or not 0 <= now - at <= 120:
                         continue
-                    seen.add(identity)
-                    if len(seen) > 32:
+                    if identity not in history and len(history) >= 32:
                         break
+                    history.setdefault(identity, []).append((at, target))
+                for identity, events in history.items():
                     metadata = None
                     if state is not None:
                         try:
@@ -498,12 +499,15 @@ class Discovery:
                             state = None  # Older/newer state schemas may not expose thread metadata.
                     workspace = workspace_label(metadata[0]) if metadata else "Unknown"
                     role = metadata[1] if metadata and metadata[1] in ROLES else None
+                    recent = [{"at": timestamp(at), "label": "Tool activity" if target == "codex_core::tools::parallel" else "Turn activity"}
+                              for at, target in reversed(events[:8])]
                     self._codex_live.append({"id": opaque("Codex", identity.lower()), "provider": "Codex",
                                              "label": "Codex session " + opaque("Codex", identity.lower())[:8],
                                              "kind": "session", "status": "event-waiting",
                                              "workspace": workspace, "pid": None, "parentPid": None,
                                              "role": role, "action": None,
-                                             "updatedAt": timestamp(at),
+                                             "recentEvents": recent,
+                                             "updatedAt": timestamp(events[0][0]),
                                              "evidence": "Codex local runtime activity observed; current task state unavailable"})
         except (OSError, sqlite3.Error, ValueError, TypeError):
             self._codex_live = []
@@ -717,7 +721,7 @@ class Discovery:
             for runtime in self._codex_runtime(time.time()):
                 previous = entries.get(runtime["id"], {})
                 if previous.get("status") in ("event-working", "event-waiting"):
-                    continue
+                    continue  # Structured lifecycle events have more specific state.
                 entries[runtime["id"]] = {**previous, **runtime,
                                           "pid": previous.get("pid"), "parentPid": previous.get("parentPid")}
             for key, beat in self.heartbeats.items():

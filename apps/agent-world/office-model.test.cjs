@@ -52,6 +52,15 @@ test('live child work is the initial focus while a manually selected parent stay
   assert.match(O.presentation(actors[0]).detail,/parent action unknown/);
   assert.equal(actors[1].parentId,parent.id);
 });
+test('recent exact session activity takes focus over a process-only worker unless selection is pinned',()=>{
+  const processOnly={...base,id:'a'.repeat(32),provider:'Claude Code',status:'running'};
+  const observed={...base,id:'b'.repeat(32),provider:'Codex',status:'event-waiting',recentEvents:[{at:new Date().toISOString(),label:'Tool activity'}]};
+  const actors=O.project({entries:[processOnly,observed]}, {jobs:[]}).actors;
+  assert.equal(O.focusActor(actors,actors[0].id).sourceId,observed.id);
+  assert.equal(O.focusActor(actors,actors[0].id,true).sourceId,processOnly.id);
+  const actualWork=O.project({entries:[{...processOnly,status:'event-working'},observed]}, {jobs:[]}).actors;
+  assert.equal(O.focusActor(actualWork,null).sourceId,processOnly.id);
+});
 test('five computers circle a shared clear workspace in every live department',()=>{
   const g=O.layout();M.configure(g);
   try{assert.equal(g.stations.length,30);for(const role of O.roles){const seats=g.stations.filter(s=>s.role===role);assert.equal(seats.length,5);assert.ok(M.free(seats[0].center.x,seats[0].center.y));const room=g.rooms.find(r=>r.role===role);assert.ok(M.free(room.x+160,room.y+30),'door entrance clear');assert.ok(M.free(room.x+115,room.y+30),'space beside first desk through door');

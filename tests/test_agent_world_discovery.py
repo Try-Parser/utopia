@@ -227,7 +227,36 @@ class DiscoveryTests(unittest.TestCase):
                                    collector=lambda: ([], False), interval=0)
             self.assertEqual(explicit.codex_home, home.absolute())
             self.assertEqual(explicit.roots["Codex"], home.absolute() / "sessions")
-            self.assertTrue(any(e["provider"] == "Codex" for e in explicit.view()["entries"]))
+        self.assertTrue(any(e["provider"] == "Codex" for e in explicit.view()["entries"]))
+
+    def test_live_codex_runtime_events_identify_session_without_inventing_work(self):
+        home = self.root / "codex-home"
+        home.mkdir()
+        now = int(time.time())
+        with closing(sqlite3.connect(home / "logs_2.sqlite")) as logs:
+            logs.execute("CREATE TABLE logs (id INTEGER PRIMARY KEY, ts INTEGER, thread_id TEXT, target TEXT, feedback_log_body TEXT)")
+            logs.execute("INSERT INTO logs VALUES (1, ?, ?, ?, ?)",
+                         (now - 4, SESSION, "codex_core::session::turn", "PRIVATE_PROMPT"))
+            logs.execute("INSERT INTO logs VALUES (2, ?, ?, ?, ?)",
+                         (now - 2, SESSION, "codex_core::tools::parallel", "PRIVATE_COMMAND"))
+            logs.commit()
+        with closing(sqlite3.connect(home / "state_5.sqlite")) as state:
+            state.execute("CREATE TABLE threads (id TEXT PRIMARY KEY, cwd TEXT, agent_role TEXT, updated_at_ms INTEGER)")
+            state.execute("INSERT INTO threads VALUES (?, ?, ?, ?)",
+                          (SESSION, "/work/sample", None, now * 1000))
+            state.commit()
+        scanner = D.Discovery(self.codex, self.claude, collector=lambda: ([], False),
+                              interval=0, codex_home=home)
+        entry = next(e for e in scanner.view()["entries"] if e["provider"] == "Codex")
+        self.assertEqual((entry["status"], entry["role"], entry["action"]),
+                         ("event-waiting", None, None))
+        self.assertEqual([event["label"] for event in entry["recentEvents"]], ["Turn activity", "Tool activity"])
+        self.assertNotIn("PRIVATE", json.dumps(entry))
+        self.assertNotIn(SESSION, json.dumps(entry))
+        with patch.object(D.time, "monotonic", return_value=time.monotonic() + 1), \
+                patch.object(D.time, "time", return_value=now + 20):
+            older = next(e for e in scanner.view()["entries"] if e["provider"] == "Codex")
+        self.assertEqual((older["status"], older["action"]), ("event-waiting", None))
 
     def test_activity_is_bounded_and_explicit_heartbeat_wins(self):
         path = self.record("Claude Code")

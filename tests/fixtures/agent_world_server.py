@@ -1,8 +1,10 @@
 """Browser-only offline fixture server; no authentication or model connection."""
 from pathlib import Path
 import signal
+import sqlite3
 import sys
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 root = Path(__file__).resolve().parents[2]
@@ -25,7 +27,9 @@ rows = [{"pid": 3101, "parent": 1, "name": "codex.exe", "args": ["codex", "app-s
         {"pid": 3102, "parent": 1, "name": "claude", "args": ["claude", "--session-id", claude_id]},
         {"pid": 3103, "parent": 1, "name": "node", "args": ["node", "/opt/node_modules/@google/gemini-cli/cli.js"]},
         {"pid": 3104, "parent": 1, "name": "ollama", "args": ["ollama", "serve"]}]
-sessions = agent_world.discovery.Discovery(codex_root, claude_root, collector=lambda: (rows, False), interval=0)
+codex_home = fixtures / "codex-home"
+codex_home.mkdir()
+sessions = agent_world.discovery.Discovery(codex_root, claude_root, collector=lambda: (rows, False), interval=0, codex_home=codex_home)
 server = agent_world.make_server(fixtures, 8787, manager, sessions)
 
 def control_fixture():
@@ -39,6 +43,19 @@ def control_fixture():
         elif command.strip() == "resume_feed":
             server.event_stream = agent_world.stream.EventStream(sessions, manager)
             server.event_stream.start()
+        elif command.strip() == "runtime_activity":
+            identity = "99999999-8888-7777-6666-555555555555"
+            with sqlite3.connect(codex_home / "logs_2.sqlite") as logs:
+                logs.execute("CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY, ts INTEGER, thread_id TEXT, target TEXT, feedback_log_body TEXT)")
+                logs.execute("INSERT INTO logs (ts, thread_id, target, feedback_log_body) VALUES (?, ?, ?, ?)",
+                             (int(time.time()), identity, "codex_core::tools::parallel", "PRIVATE_RUNTIME_BODY"))
+            with sqlite3.connect(codex_home / "state_2.sqlite") as state:
+                state.execute("CREATE TABLE IF NOT EXISTS threads (id TEXT PRIMARY KEY, cwd TEXT, agent_role TEXT, updated_at_ms INTEGER)")
+                state.execute("INSERT OR REPLACE INTO threads VALUES (?, ?, ?, ?)",
+                              (identity, "/work/demo", None, int(time.time() * 1000)))
+        elif command.strip() == "runtime_clear":
+            with sqlite3.connect(codex_home / "logs_2.sqlite") as logs:
+                logs.execute("UPDATE logs SET ts=?", (int(time.time()) - 121,))
 threading.Thread(target=control_fixture, daemon=True).start()
 
 class Preview(BaseHTTPRequestHandler):

@@ -101,8 +101,14 @@
   }
   function focusActor(actors,selected,manual=false) {
     const current=actors.find(actor=>actor.id===selected);
-    if(current&&(manual||current.working))return current;
-    return actors.find(actor=>actor.working&&(actor.action||actor.taskLabel))||actors.find(actor=>actor.working)||current||actors[0]||null;
+    if(current&&manual)return current;
+    const active=actors.find(actor=>actor.working&&(actor.action||actor.taskLabel));
+    if(active)return active;
+    const working=actors.find(actor=>actor.working);
+    if(working)return working;
+    const observed=actors.filter(actor=>actor.state==='event-waiting'&&actor.recentEvents?.length)
+      .sort((a,b)=>Date.parse(b.recentEvents.at(-1).at)-Date.parse(a.recentEvents.at(-1).at))[0];
+    return observed||current||actors[0]||null;
   }
   // Only an explicitly reported idle role may take a visual waiting walk.
   function canRoam(actor) {return Boolean(actor.role)&&actor.state==='adapter-idle'&&!actor.working&&!actor.handoff;}
