@@ -14,6 +14,7 @@ try{const saved=localStorage.getItem(VIEW_STORAGE),angle=Number(localStorage.get
 let officeCameraPending=false,officeCameraManual=false,cameraRevision=0;
 let mode = 'office', selected = 'planner', observed = [], observedMessage = 'Connecting to the local checkpoint reader…', pollGeneration = 0;
 function node(tag, className, text) { const n = document.createElement(tag); if (className) n.className = className; if (text !== undefined) n.textContent = text; return n; }
+const codexHelp=node('p','connection-help');codexHelp.id='codex-activity-help';codexHelp.hidden=true;$('office-sidebar').querySelector('.sidebar-body').prepend(codexHelp);
 function announce(text) { $('announcement').textContent = text; }
 function renderCrew(){document.body.dataset.mode='office';$('office-characters').hidden=false;$('office-roster').hidden=false;$('office-hud').hidden=false;$('crew-title').textContent='Observed coworkers';}
 function renderMissions() {
@@ -54,10 +55,14 @@ function render() {
   $('connection-health').textContent=S.get().scannedAt?S.get().partial?'Live / partial':'Live':S.get().warnings.length?'Reader offline':'Connecting';
   const connected=S.get().entries.filter(e=>['running','event-working','event-waiting','adapter-working','adapter-waiting'].includes(e.status));
   const reporting=connected.filter(e=>e.action||e.taskLabel);
+  const codexProcess=S.get().entries.some(e=>e.provider==='Codex'&&e.kind==='process'&&e.status==='running');
+  const codexEvents=S.get().entries.some(e=>e.provider==='Codex'&&e.kind==='session'&&['event-working','event-waiting','adapter-working','adapter-waiting','adapter-idle'].includes(e.status));
+  codexHelp.hidden=!codexProcess||codexEvents;
+  if(!codexHelp.hidden)codexHelp.textContent='Codex is running, but no session activity has reached the office. In Codex, open /hooks and review or trust the Agent World hooks, then start or resume a session. Until events arrive, the office cannot show that worker’s task.';
   $('activity-connection').textContent=`${connected.length} local sessions/processes · ${reporting.length} reporting activity${S.get().partial?' · partial inventory':''}`;
   $('mobile-flow-count').textContent=`${reporting.length} active reports`;
   $('world-title').textContent='The living office';$('world-count').textContent='AUTOMATIC';
-  $('source-note').textContent=`${S.note()} ${L.get().enabled?'Native runner connected. '+L.get().workspace:L.get().warning} Claude live session and fresh Codex turn tool events are read automatically. Other task details need an activity hook. Recorded runs are read-only journal entries.`;
+  $('source-note').textContent=`${S.note()} ${L.get().enabled?'Native runner connected. '+L.get().workspace:L.get().warning} Claude live session events are read when available. Codex activity requires a trusted local hook or a fresh readable turn log. Recorded runs are read-only journal entries.`;
   $('world-status').textContent='Observing local agents';$('game-prompt').textContent='Automatic office / Select a coworker or computer to inspect their work';
 
 }
@@ -145,7 +150,7 @@ function setOfficeZoom(zoomed,automatic=false) {
 $('map-zoom').addEventListener('click',()=>setOfficeZoom(!$('world').classList.contains('zoomed')));
 const officePhone=matchMedia('(max-width:560px)');officePhone.addEventListener('change',()=>{if(mode==='office'){officeCameraManual=false;setOfficeZoom(officePhone.matches,true);}});
 for(const event of ['pointerdown','wheel'])$('world').parentElement.addEventListener(event,()=>{if(mode==='office'){officeCameraManual=true;officeCameraPending=false;cameraRevision++;}},{passive:true});
-new ResizeObserver(()=>{$('world').style.setProperty('--actor-scale',String(document.body.dataset.mode==='office'?Math.max(.8,Math.min(1.15,$('world').clientWidth/(window.OfficeWorldView?.getSceneLayout().width||1280)*1.4)):Math.max(.42,Math.min(1.2,$('world').clientWidth/1280))));}).observe($('world'));
+new ResizeObserver(()=>{$('world').style.setProperty('--actor-scale',String(document.body.dataset.mode==='office'?Math.max(.44,Math.min(.64,$('world').clientWidth/(window.OfficeWorldView?.getSceneLayout().width||1280)*.98)):Math.max(.42,Math.min(1.2,$('world').clientWidth/1280))));}).observe($('world'));
 $('new-mission').addEventListener('click',()=>{$('work-tray').open=true;});
 function accessOptions() { const canEdit = L.get().allowEdits && ['planner', 'builder'].includes($('mission-role').value); $('mission-access').options[1].disabled = !canEdit; if (!canEdit) $('mission-access').value = 'read-only'; }
 $('mission-role').addEventListener('change', accessOptions);

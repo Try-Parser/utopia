@@ -124,6 +124,12 @@ window.OfficeWorldView=(()=>{
   reduced.addEventListener('change',()=>{motionOverride=null;motionLabel();});
   motionLabel();
   const node=(tag,cls,text)=>{const n=document.createElement(tag);n.className=cls||'';if(text!==undefined)n.textContent=text;return n;};
+  function updateBubbleDensity(){
+    const active=[...actors.values()].filter(a=>a.data.working||a.data.handoff).sort((a,b)=>Date.parse(b.data.updatedAt||0)-Date.parse(a.data.updatedAt||0));
+    const detailed=new Set(active.slice(0,2).map(a=>a.data.id));
+    if(active.some(a=>a.data.id===selected))detailed.add(selected);
+    for(const a of actors.values())a.element.classList.toggle('bubble-detailed',detailed.has(a.data.id));
+  }
   function inspect(actor) {
     selected=actor.id;
     const role=window.AgentWorld.ROLES.find(r=>r.id===actor.role);
@@ -133,6 +139,7 @@ window.OfficeWorldView=(()=>{
     if(actor.state==='running'&&!actor.action&&!actor.taskLabel)$('agent-detail').append(node('p','connection-hint','No current task or tool event is visible for this open session. It may be idle; process presence alone cannot reveal work.'));
     if(O.canRoam(actor))$('agent-detail').append(node('p','detail-note','Walking through shared areas is a visual waiting routine. It does not indicate a provider task, help visit or meeting.'));
     for(const a of actors.values()) {a.element.classList.toggle('selected',a.data.id===selected);a.element.setAttribute('aria-pressed',String(a.data.id===selected));}
+    updateBubbleDensity();
     layoutBubbles();
     for(const row of $('office-roster').querySelectorAll('[data-office-row]'))row.setAttribute('aria-pressed',String(row.dataset.officeRow===selected));
   }
@@ -165,7 +172,7 @@ window.OfficeWorldView=(()=>{
     if(mode!=='office')return;
     const world=$('world').getBoundingClientRect(),viewport=$('world').parentElement.getBoundingClientRect(),safe={left:Math.max(world.left,viewport.left),right:Math.min(world.right,viewport.right),top:Math.max(world.top,viewport.top),bottom:Math.min(world.bottom,viewport.bottom)},people=[...actors.values()].filter(a=>a.owned&&a.element.isConnected);
     for(const line of links.querySelectorAll('.bubble-leader'))line.remove();
-    const labels=people.map(a=>a.element.querySelector('.character-name')?.getBoundingClientRect()).filter(Boolean),bodies=people.map(a=>a.element.getBoundingClientRect()),placed=[];
+    const labels=people.map(a=>a.element.querySelector('.character-name')?.getBoundingClientRect()).filter(Boolean),bodies=people.map(a=>a.element.getBoundingClientRect()),monitors=[...document.querySelectorAll('.desk-screen')].map(e=>e.getBoundingClientRect()),placed=[];
     const overlap=(a,b)=>Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left))*Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top));
     people.sort((a,b)=>Number(b.data.id===selected)-Number(a.data.id===selected)||Number(b.data.working)-Number(a.data.working));
     const anchors=people.map(a=>{const bubble=a.element.querySelector('.character-bubble');bubble.style.translate='none';return {a,bubble,actorRect:a.element.getBoundingClientRect()};}).filter(({actorRect})=>actorRect.right>=safe.left&&actorRect.left<=safe.right&&actorRect.bottom>=safe.top&&actorRect.top<=safe.bottom).map(item=>({...item,base:item.bubble.getBoundingClientRect()})).filter(item=>item.base.width&&item.base.height);
@@ -174,7 +181,7 @@ window.OfficeWorldView=(()=>{
       for(const dy of [0,-38,-76,38,76,-114,114,-152,152])for(const dx of [0,-70,70,-140,140]){
         const rect={left:base.left+dx,right:base.right+dx,top:base.top+dy,bottom:base.bottom+dy};
         const overflow=Math.max(0,safe.left+4-rect.left)+Math.max(0,rect.right-safe.right+4)+Math.max(0,safe.top+4-rect.top)+Math.max(0,rect.bottom-safe.bottom+4);
-        const collision=placed.reduce((sum,p)=>sum+overlap(rect,p),0)+labels.reduce((sum,p)=>sum+overlap(rect,p),0)+bodies.reduce((sum,p)=>sum+overlap(rect,p),0)+anchors.slice(index+1).reduce((sum,p)=>sum+overlap(rect,p.base)*.8,0);
+        const collision=placed.reduce((sum,p)=>sum+overlap(rect,p),0)+labels.reduce((sum,p)=>sum+overlap(rect,p),0)+bodies.reduce((sum,p)=>sum+overlap(rect,p),0)+monitors.reduce((sum,p)=>sum+overlap(rect,p)*1.4,0)+anchors.slice(index+1).reduce((sum,p)=>sum+overlap(rect,p.base)*.8,0);
         const score=collision+overflow*500+Math.abs(dx)*.2+Math.abs(dy)*.3;
         if(score<best.score)best={score,dx,dy,rect};
       }
@@ -255,6 +262,7 @@ window.OfficeWorldView=(()=>{
       if(focus)roster.querySelector(`[data-office-row="${focus}"]`)?.focus({preventScroll:true});
       if(!data.length)$('agent-detail').replaceChildren(node('h3','','The office is quiet'),node('p','','Start your local agents. Process sightings appear in Local sessions; identified sessions, task roles and handoffs appear here when their events are connected.'));
       else inspect(data.find(a=>a.id===selected)||data[0]);
+      updateBubbleDensity();
       $('office-summary').textContent=`${data.length} observed workers / ${data.filter(a=>a.working).length} working / ${workstations.length} computers / departments expand with their teams`;
     }
   }
