@@ -52,6 +52,8 @@ class DiscoveryTests(unittest.TestCase):
         self.append_event(path, {"type": "assistant", "sessionId": SESSION, "timestamp": now,  # ai-department-allow: session-export (synthetic transcript fixture)
                                  "message": {"content": [{"type": "text", "text": "I am editing the login form"},
                                                          {"type": "tool_use", "name": "Edit", "input": {"file": "login.py"}}]}})
+        self.append_event(path, {"type": "user", "sessionId": SESSION, "timestamp": now,  # ai-department-allow: session-export (synthetic transcript fixture)
+                                 "message": {"content": "Please fix the login form"}})
         self.append_event(path, {"type": "assistant", "sessionId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "timestamp": now,  # ai-department-allow: session-export (synthetic cross-session fixture)
                                  "message": {"content": [{"type": "text", "text": "WRONG_SESSION_SECRET"}]}})
         scanner = self.scanner([{"pid": 23, "name": "claude", "args": ["claude", "--session-id", SESSION]}])
@@ -59,7 +61,7 @@ class DiscoveryTests(unittest.TestCase):
         self.assertNotIn("I am editing", json.dumps(scanner.view()))
         result = scanner.transcript(entry["id"])
         self.assertTrue(result["available"])
-        self.assertEqual([e["speaker"] for e in result["entries"]], ["Assistant", "Tool call"])
+        self.assertEqual([e["speaker"] for e in result["entries"]], ["Assistant", "Tool call", "You"])
         self.assertIn("login.py", result["entries"][1]["text"])
         self.assertNotIn("WRONG_SESSION_SECRET", json.dumps(result))
         server = world.make_server(self.root, port=0, session_discovery=scanner)
@@ -92,6 +94,18 @@ class DiscoveryTests(unittest.TestCase):
         self.assertTrue(transcript["available"])
         self.assertEqual([(e["speaker"], e["text"]) for e in transcript["entries"]],
                          [("Assistant", "I found the failing test."), ("Tool result", "2 tests failed")])
+        self.assertTrue(entry["transcriptLive"])
+        scanner.enable_live()
+        self.append_event(path, {"type": "response_item", "timestamp": now,
+                                 "payload": {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "A new result is ready."}]}})
+        changed = next(e for e in scanner.view()["entries"] if e["id"] == entry["id"])
+        self.assertEqual(changed["updatedAt"], entry["updatedAt"])
+        self.assertNotEqual(changed["transcriptRevision"], entry["transcriptRevision"])
+        self.assertNotIn("A new result is ready.", json.dumps(scanner.view()))
+        os.utime(path, (time.time() - 31, time.time() - 31))
+        quiet = next(e for e in scanner.view()["entries"] if e["id"] == entry["id"])
+        self.assertFalse(quiet["transcriptLive"])
+        scanner.disable_live()
         os.utime(path, (time.time() - 600, time.time() - 600))
         self.assertFalse(scanner.transcript(entry["id"])["available"])
 

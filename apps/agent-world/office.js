@@ -218,6 +218,32 @@ window.OfficeWorldView=(()=>{
     helpLinks.clear();links.replaceChildren();
     for(const a of data)if(a.working&&a.action==='helping'&&a.colleague){const line=document.createElementNS('http://www.w3.org/2000/svg','line');line.dataset.helper=a.id;line.setAttribute('class','help-link');links.append(line);helpLinks.set(a.id,{line,target:a.colleague.id});}
   }
+  function showBubble(a){
+    const actor=a.data,view=O.presentation(actor),bubble=a.element.querySelector('.character-bubble');
+    const reported=Boolean(actor.taskLabel||actor.handoff?.taskLabel);
+    const detail=actor.colleague?`${view.word}: ${actor.colleague.label} · ${view.title}`:actor.handoff?`To ${view.destination}: ${view.title}`:actor.id.startsWith('job-')?actor.activity:actor.taskLabel;
+    const output=a.bubbleValue;
+    bubble.hidden=!output&&!reported;
+    a.element.dataset.bubble=output?'transcript':reported?'reported':'none';
+    a.element.dataset.taskKnown=String(Boolean(output||reported));
+    a.element.querySelector('.worker-action').textContent=output?.speaker||view.word;
+    a.element.querySelector('.worker-task').textContent=output?.text||detail||view.title;
+    const eventTime=a.element.querySelector('.worker-event-time'),at=output?.at||actor.updatedAt;
+    eventTime.hidden=!output&&!reported;
+    if(!eventTime.hidden&&at){eventTime.dateTime=at;eventTime.textContent=`Updated ${new Date(at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;}
+  }
+  function refreshBubble(a){
+    if(!a.data.id.startsWith('session-'))return;
+    const version=`${a.data.transcriptRevision||a.data.updatedAt}:${a.data.transcriptLive}`;
+    if(a.bubbleVersion===version)return;
+    a.bubbleVersion=version;
+    const generation=++a.bubbleGeneration,sourceId=a.data.sourceId;
+    window.LocalSessions.transcript(sourceId).then(value=>{
+      if(actors.get(a.data.id)!==a||generation!==a.bubbleGeneration)return;
+      a.bubbleValue=O.transcriptBubble(value);
+      showBubble(a);updateBubbleDensity();layoutBubbles();
+    });
+  }
   function renderFlow(data,sessions){
     const list=$('task-flow-list'),focus=document.activeElement?.dataset?.flowAgent;list.replaceChildren();
     const known=data.filter(a=>a.taskLabel||a.action||a.handoff);
@@ -253,7 +279,7 @@ window.OfficeWorldView=(()=>{
       if(!a) {
         const owned=mode==='office',el=owned?node('button','character office-character'):document.getElementById(`character-${actor.id}`);
         if(owned) {el.type='button';el.dataset.office=actor.id;const bubble=node('span','character-bubble');bubble.append(node('strong','worker-action'),node('span','worker-task'),node('time','worker-event-time'));el.append(bubble,node('span','person'),node('span','action-prop'),node('span','character-name'));$('office-characters').append(el);el.addEventListener('click',()=>{const current=actors.get(actor.id);if(current)inspect(current.data,true);});}
-        a={element:el,owned,position:mode==='office'?geometry.lobby(actor.arrivalIndex):O.lobby(index),route:[],goal:null,assignment:null,data:actor,roamStep:0,rest:0,index:mode==='office'?actor.arrivalIndex:index};actors.set(actor.id,a);
+        a={element:el,owned,position:mode==='office'?geometry.lobby(actor.arrivalIndex):O.lobby(index),route:[],goal:null,assignment:null,data:actor,roamStep:0,rest:0,index:mode==='office'?actor.arrivalIndex:index,bubbleValue:null,bubbleVersion:null,bubbleGeneration:0};actors.set(actor.id,a);
       }
       a.data=actor;
       if(mode==='office')a.index=actor.arrivalIndex;
@@ -269,13 +295,9 @@ window.OfficeWorldView=(()=>{
       a.element.classList.toggle('at-conference-seat',Boolean(actor.conferenceSeat)&&Math.hypot(a.position.x-actor.conferenceSeat.point.x,a.position.y-actor.conferenceSeat.point.y)<2);
       if(a.owned) {
         const r=window.AgentWorld.ROLES.find(r=>r.id===actor.role);a.element.style.setProperty('--agent',r?.color||'#8999aa');
-        const view=O.presentation(actor);a.element.dataset.action=view.action;a.element.dataset.taskKnown=String(Boolean(actor.taskLabel||actor.handoff?.taskLabel));a.element.title=`${view.word} / ${view.title} / ${view.detail} / Going to ${view.destination}`;
+        const view=O.presentation(actor);a.element.dataset.action=view.action;a.element.title=`${view.word} / ${view.title} / ${view.detail} / Going to ${view.destination}`;
         a.element.querySelector('.character-name').textContent=`${O.workerLabel(actor,r?.role)} / ${actor.provider.slice(0,2)} ${actor.sourceId.slice(0,4)}`;
-        a.element.querySelector('.worker-action').textContent=view.word;
-        const liveDetail=actor.id.startsWith('job-')?actor.activity:actor.taskLabel;
-        a.element.querySelector('.worker-task').textContent=a.ambient&&!actor.taskLabel?'Waiting routine (visual)':actor.colleague?`${view.word}: ${actor.colleague.label} · ${view.title}`:actor.handoff?`To ${view.destination}: ${view.title}`:liveDetail||view.title;
-        const eventTime=a.element.querySelector('.worker-event-time'),reported=actor.updatedAt&&['event-working','event-waiting','adapter-working','adapter-waiting','running','starting','queued'].includes(actor.state)&&Boolean(actor.taskLabel||actor.action||actor.id.startsWith('job-'));
-        eventTime.hidden=!reported;if(reported){eventTime.dateTime=actor.updatedAt;eventTime.textContent=`Updated ${new Date(actor.updatedAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;}
+        showBubble(a);refreshBubble(a);
         a.element.querySelector('.action-prop').textContent=view.icon;
         a.element.setAttribute('aria-label',`Inspect ${actor.label}`);a.element.classList.toggle('working',actor.working);a.element.classList.toggle('handing-off',Boolean(actor.handoff));
       }

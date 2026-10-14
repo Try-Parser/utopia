@@ -21,11 +21,12 @@ window.LocalSessions = (() => {
     const entry=data.entries.find(e=>e.id===id&&e.kind==='session');
     if(!entry||!data.token)return {available:false,reason:'Session output is unavailable.'};
     const cached=transcriptCache.get(id),now=Date.now();
-    if(cached&&cached.version===entry.updatedAt&&now-cached.at<1000)return cached.promise;
+    const version=`${entry.transcriptRevision||entry.updatedAt}:${entry.transcriptLive}`;
+    if(cached&&cached.version===version&&now-cached.at<1000)return cached.promise;
     const promise=fetch(`/api/sessions/${id}/transcript`,{cache:'no-store',headers:{'X-Agent-World-Token':data.token},signal:AbortSignal.timeout(6000)})
       .then(async response=>{if(!response.ok)throw new Error();const value=await response.json();if(!validTranscript(value))throw new Error();return value;})
       .catch(()=>({available:false,reason:'Session output reader unavailable.'}));
-    transcriptCache.set(id,{version:entry.updatedAt,at:now,promise});
+    transcriptCache.set(id,{version,at:now,promise});
     if(transcriptCache.size>24)transcriptCache.delete(transcriptCache.keys().next().value);
     return promise;
   }

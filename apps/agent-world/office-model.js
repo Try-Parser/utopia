@@ -61,7 +61,7 @@
     const actors=sessions.entries.filter(e=>e.kind!=='process'&&(['event-working','event-waiting','running','adapter-working','adapter-waiting','adapter-idle'].includes(e.status)||e.status==='adapter-ended'&&events.some(h=>h.sourceId===e.id&&h.fromRole===e.role&&h.taskRef===e.taskRef))).map(e=>{
       const role=roles.includes(e.role)?e.role:null,working=['event-working','adapter-working'].includes(e.status);
       const handoff=events.filter(h=>h.sourceId===e.id&&h.fromRole===role&&h.taskRef===e.taskRef&&['adapter-waiting','adapter-ended'].includes(e.status)).at(-1);
-      return {id:`session-${e.id}`,sourceId:e.id,parentId:e.parentId||null,activeChildCount:e.activeChildCount||0,provider:e.provider,label:e.label,role,working,state:e.status,updatedAt:e.updatedAt,taskRef:e.taskRef||null,
+      return {id:`session-${e.id}`,sourceId:e.id,parentId:e.parentId||null,activeChildCount:e.activeChildCount||0,provider:e.provider,label:e.label,role,working,state:e.status,updatedAt:e.updatedAt,transcriptRevision:e.transcriptRevision||null,transcriptLive:e.transcriptLive??null,taskRef:e.taskRef||null,
         note:e.evidence,taskLabel:e.taskLabel||'',recentEvents:e.recentEvents||[],action:working&&actions[e.action]?e.action:null,targetRef:e.targetRef||null,targetKind:e.targetKind||'session',
         activity:working?(actions[e.action]?.[0]||'Working / activity details not connected'):e.activeChildCount?`${e.activeChildCount} subagent${e.activeChildCount===1?'':'s'} working in this session; parent action unknown`:e.status==='running'?'Session open; no current task event':e.status==='event-waiting'?(e.evidence?.startsWith('Codex local runtime activity observed')?'Activity recently seen':'Turn ended'):e.status.replace('adapter-',''),handoff};
     });
@@ -113,6 +113,13 @@
   function workerLabel(actor,roleLabel) {
     return roleLabel||roleNames[actor.role]|| (actor.activeChildCount?'Parent session':actor.working||actor.recentEvents?.length?'Activity observed':actor.station?'Shared computer':'Session open');
   }
+  function transcriptBubble(transcript) {
+    if(!transcript?.available||!Array.isArray(transcript.entries))return null;
+    const entry=[...transcript.entries].reverse().find(item=>typeof item?.text==='string'&&item.text.trim());
+    if(!entry)return null;
+    const characters=Array.from(entry.text.trim()),text=characters.slice(0,180).join('');
+    return {speaker:`${entry.speaker} · ${transcript.live?'Live':'Last recorded'}`,text:text+(characters.length>180?'…':''),at:entry.at};
+  }
   // Only an explicitly reported idle role may take a visual waiting walk.
   function canRoam(actor) {return Boolean(actor.role)&&actor.state==='adapter-idle'&&!actor.working&&!actor.handoff;}
   function idleStops(actor,index,geometry) {
@@ -120,5 +127,5 @@
     const waiting=geometry?geometry.lobby(index):lobby(index);
     return [index%2?left:coffee,middle,actor.station?.point||(actor.role?desks[actor.role]:waiting),index%2?coffee:left,waiting];
   }
-  return {roles,roleNames,actions,desks,workstations,layout,isPlanning,sceneLayout,assignWorkstations,lobby,project,destination,sceneActors,presentation,workerLabel,focusActor,canRoam,idleStops};
+  return {roles,roleNames,actions,desks,workstations,layout,isPlanning,sceneLayout,assignWorkstations,lobby,project,destination,sceneActors,presentation,workerLabel,transcriptBubble,focusActor,canRoam,idleStops};
 });

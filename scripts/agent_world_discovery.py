@@ -233,7 +233,7 @@ def session_transcript(record, root, now=None):
                 message = row.get("message")
                 if not isinstance(message, dict) or row.get("type") not in ("assistant", "user"):
                     continue
-                speaker = "Assistant" if row["type"] == "assistant" else "You / tool"
+                speaker = "Assistant" if row["type"] == "assistant" else "You"
                 blocks = message.get("content")
                 if isinstance(blocks, str):
                     add(at, speaker, blocks)
@@ -749,6 +749,10 @@ class Discovery:
                 continue
             examined.add(key)
             entry = entries[key]
+            # Transcript changes may not advance the classified task timestamp.
+            # Share only file identity here; text stays in the selected endpoint.
+            entry["transcriptRevision"] = f"{fingerprint[0]}:{fingerprint[1]}:{fingerprint[2]}"
+            entry["transcriptLive"] = now - record["modified"] <= 30
             matched = entry["status"] == "running" and entry["kind"] == "session"
             cache_key = (record["provider"], record["key"], str(record["path"]))
             cached = self._activity_cache.get(cache_key) if cache else None
