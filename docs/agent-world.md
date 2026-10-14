@@ -82,6 +82,16 @@ python scripts/agent_world_heartbeat.py --provider "My AI" --session-id opaque-s
 
 Report every 10–15 seconds and on state changes; allowed states are working, waiting, idle, and ended. The helper calls only the authenticated local metadata endpoint. It launches no provider and sends no prompt. API integrations can GET `/api/sessions` for the session token and POST `/api/sessions/heartbeat` with required provider, sessionId, state, workspace and nullable pid, plus optional role, taskId, handoffTo and eventId, using the local Origin and `X-Agent-World-Token` header. The PID is adapter-supplied metadata, not OS verification. States are labeled **Adapter: working** etc.; a heartbeat older than 30 seconds is expired, and after five minutes it disappears. Only fresh adapter-reported work animates an external character. Heartbeats are held in memory and never grant task execution or control over the external session.
 
+### Codex lifecycle bridge
+
+To show Codex sessions and subagents from the local Codex user profile, start the single Agent World server and install its lifecycle bridge:
+
+```powershell
+python scripts/install_agent_world_codex_hook.py --port 8790
+```
+
+The installer preserves other entries in `~/.codex/hooks.json` and installs a copy of the reporter under `~/.codex/hooks/`. Open `/hooks` in Codex to review and trust the new user-level hooks, then start or resume the session. Codex does not run untrusted user hooks. The current turn's earlier work cannot be replayed by this bridge. `SessionStart`, prompt, tool, stop, interrupt, session-end, and subagent lifecycle events update the office immediately when Codex emits them. Known tool names assign a department; unknown tools remain unassigned. The bridge has no access to a task's private contents and sends no prompt, tool input/output, or transcript. An event older than thirty seconds no longer counts as active work, so a long silent tool can temporarily look idle until another event arrives. Hook coverage depends on the Codex client and tool path; process discovery and local event-log observation remain fallback signals.
+
 The Claude storage layout follows [official Claude session documentation](https://code.claude.com/docs/en/agent-sdk/sessions). For a Codex integration attached to its owning app-server, [official thread-list and runtime-status APIs](https://learn.chatgpt.com/docs/app-server) can supply authoritative thread metadata; starting a separate app-server does not reveal another instance's loaded threads.
 
 ## Observe real workflow checkpoints
