@@ -2,7 +2,7 @@
 window.LocalSessions = (() => {
   'use strict';
   const states=['event-working','event-waiting','running','recorded','recent','adapter-working','adapter-waiting','adapter-idle','adapter-ended','adapter-stale'];
-  const stateLabel={'event-working':'Tool events: working','event-waiting':'Tool events: turn ended',running:'Process alive',recorded:'Stored session',recent:'Recently updated','adapter-working':'Adapter: working','adapter-waiting':'Adapter: waiting','adapter-idle':'Adapter: idle','adapter-ended':'Adapter: ended','adapter-stale':'Heartbeat expired'};
+  const stateLabel={'event-working':'Local activity: working','event-waiting':'Local activity: recently seen',running:'Process alive',recorded:'Stored session',recent:'Recently updated','adapter-working':'Adapter: working','adapter-waiting':'Adapter: waiting','adapter-idle':'Adapter: idle','adapter-ended':'Adapter: ended','adapter-stale':'Heartbeat expired'};
   const colors={'Codex':'#739777','Claude Code':'#c38f78','Gemini CLI':'#659cae','Ollama':'#a492c3'};
   const positions=[[194,217],[474,217],[754,217],[194,462],[474,462],[754,462],[235,305],[340,305],[445,305],[550,305],[655,305],[760,305]];
   let data={entries:[],warnings:[],coverage:[],partial:true,scannedAt:null,limitations:'Connecting to local session discovery…'},active=false,generation=0,inFlight=false,selected=null,filter='all',onChange=()=>{};

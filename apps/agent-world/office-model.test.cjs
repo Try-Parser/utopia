@@ -29,6 +29,18 @@ test('parallel workers own distinct stable computers; departments grow and role 
   const finished=O.assignWorkstations([],[old,{id:'new',role:'builder',status:'completed',title:'New'}],running);
   assert.equal(finished.find(s=>s.key==='builder:0').occupant.id,'job-new');assert.equal(finished.find(s=>s.key==='builder:1').occupant.id,'job-old');
 });
+test('automatically observed threads keep shared computers and expand capacity',()=>{
+  const note='Codex local runtime activity observed; current task state unavailable';
+  const actors=Array.from({length:32},(_,i)=>({id:`session-auto-${i}`,provider:'Codex',role:null,working:false,state:'event-waiting',note}));
+  let seats=O.assignWorkstations(actors,[]);
+  assert.equal(seats.filter(s=>s.occupant).length,32);
+  assert.equal(seats.find(s=>s.occupant?.id===actors[0].id).key,'builder:0');
+  seats=O.assignWorkstations([...actors].reverse(),[],seats);
+  assert.equal(seats.find(s=>s.occupant?.id===actors[0].id).key,'builder:0');
+  const scene=O.sceneActors(actors,seats,()=>true,O.layout(actors,seats));
+  assert.deepEqual(O.destination(scene[0],0),scene[0].station.point);
+  assert.match(O.presentation(scene[0]).destination,/Shared computer/);
+});
 test('five computers circle a shared clear workspace in every live department',()=>{
   const g=O.layout();M.configure(g);
   try{assert.equal(g.stations.length,30);for(const role of O.roles){const seats=g.stations.filter(s=>s.role===role);assert.equal(seats.length,5);assert.ok(M.free(seats[0].center.x,seats[0].center.y));const room=g.rooms.find(r=>r.role===role);assert.ok(M.free(room.x+160,room.y+30),'door entrance clear');assert.ok(M.free(room.x+115,room.y+30),'space beside first desk through door');
@@ -85,6 +97,7 @@ test('local session events seat observed coding activity without adapter or infe
   const actor=O.project(events,{jobs:[]}).actors[0];assert.equal(actor.working,true);assert.equal(O.canRoam(actor),false);assert.equal(actor.action,'coding');assert.equal(actor.handoff,undefined);
   const seats=O.assignWorkstations([actor],[]),scene=O.sceneActors([actor],seats,M.free)[0];assert.equal(scene.station.key,'builder:0');assert.deepEqual(O.destination(scene,0),scene.station.point);assert.equal(scene.colleague,null);
   events.entries[0].status='event-waiting';events.entries[0].action=null;const ended=O.project(events,{jobs:[]}).actors[0];assert.equal(ended.working,false);assert.equal(ended.activity,'Turn ended');
+  const runtime=O.project({entries:[{...base,status:'event-waiting',evidence:'Codex local runtime activity observed; current task state unavailable'}]},{jobs:[]}).actors[0];assert.equal(runtime.activity,'Activity recently seen');assert.equal(runtime.working,false);
 });
 
 test('game presentation projects world positions without changing movement or station ownership',()=>{

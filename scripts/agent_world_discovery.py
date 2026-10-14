@@ -1,5 +1,6 @@
 """Read-only local AI process/session discovery. Never invokes a provider runtime."""
 from copy import deepcopy
+from contextlib import closing
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -7,6 +8,7 @@ import os
 from pathlib import Path
 import re
 import secrets
+import sqlite3
 import stat
 import subprocess
 import sys
@@ -369,7 +371,7 @@ def session_records(provider, root):
 
 
 class Discovery:
-    def __init__(self, codex_root=None, claude_root=None, custom=(), collector=collect_processes, interval=5):
+    def __init__(self, codex_root=None, claude_root=None, custom=(), collector=collect_processes, interval=5, codex_home=None):
         self.roots = {"Codex": Path(codex_root) if codex_root is not None else Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex"))) / "sessions",
                       "Claude Code": Path(claude_root) if claude_root is not None else Path(os.environ.get("CLAUDE_CONFIG_DIR", str(Path.home() / ".claude"))) / "projects"}
         self.custom = tuple(process_rule(value) for value in custom)
@@ -383,6 +385,56 @@ class Discovery:
         self._records, self._base_entries, self._activity_cache = [], {}, {}
         self._live_stop = None
         self._inventory_thread = None
+        self.codex_home = Path(codex_home) if codex_home is not None else self.roots["Codex"].parent
+        self._codex_live_at, self._codex_live = 0.0, []
+
+    def _codex_runtime(self, now):
+        """Read only thread identity and timing from Codex's local runtime databases."""
+        if time.monotonic() - self._codex_live_at < .5:
+            return self._codex_live
+        self._codex_live_at, self._codex_live = time.monotonic(), []
+        home = self.codex_home
+        def latest(kind):
+            candidates = [path for path in home.glob(kind + "_*.sqlite")
+                          if re.fullmatch(kind + r"_[0-9]+\.sqlite", path.name)
+                          and safe_path(path, home) and path.is_file()]
+            return max(candidates, key=lambda path: path.stat().st_mtime) if candidates else None
+        try:
+            logs_path, state_path = latest("logs"), latest("state")
+        except OSError:
+            return []
+        if logs_path is None or state_path is None:
+            return []
+        try:
+            with closing(sqlite3.connect(logs_path.as_uri() + "?mode=ro", uri=True, timeout=.1)) as logs, \
+                    closing(sqlite3.connect(state_path.as_uri() + "?mode=ro", uri=True, timeout=.1)) as state:
+                logs.execute("PRAGMA query_only=ON")
+                state.execute("PRAGMA query_only=ON")
+                rows = logs.execute("SELECT thread_id, ts FROM "
+                                    "(SELECT id, thread_id, ts, target FROM logs ORDER BY id DESC LIMIT 4096) "
+                                    "WHERE ts >= ? AND thread_id IS NOT NULL "
+                                    "AND target IN ('codex_core::session::turn', 'codex_core::tools::parallel') "
+                                    "ORDER BY id DESC LIMIT 256", (now - 120,)).fetchall()
+                seen = set()
+                for identity, at in rows:
+                    if not isinstance(identity, str) or not UUID.fullmatch(identity) or identity in seen or not isinstance(at, (int, float)) or not 0 <= now - at <= 120:
+                        continue
+                    seen.add(identity)
+                    if len(seen) > 32:
+                        break
+                    metadata = state.execute("SELECT cwd, agent_role FROM threads WHERE id=?", (identity,)).fetchone()
+                    workspace = workspace_label(metadata[0]) if metadata else "Unknown"
+                    role = metadata[1] if metadata and metadata[1] in ROLES else None
+                    self._codex_live.append({"id": opaque("Codex", identity.lower()), "provider": "Codex",
+                                             "label": "Codex session " + opaque("Codex", identity.lower())[:8],
+                                             "kind": "session", "status": "event-waiting",
+                                             "workspace": workspace, "pid": None, "parentPid": None,
+                                             "role": role, "action": None,
+                                             "updatedAt": timestamp(at),
+                                             "evidence": "Codex local runtime activity observed; current task state unavailable"})
+        except (OSError, sqlite3.Error, ValueError, TypeError):
+            self._codex_live = []
+        return self._codex_live
 
     def heartbeat(self, data):
         fields = {"provider", "sessionId", "state", "workspace", "pid"}
@@ -582,6 +634,12 @@ class Discovery:
                 live_entries = {e["id"]: e for e in result["entries"]}
                 result["partial"] = self._apply_activity(live_entries, self._records, time.time(), result["warnings"]) or result["partial"]
             entries = {entry["id"]: entry for entry in result["entries"]}
+            for runtime in self._codex_runtime(time.time()):
+                previous = entries.get(runtime["id"], {})
+                if previous.get("status") in ("event-working", "event-waiting"):
+                    continue
+                entries[runtime["id"]] = {**previous, **runtime,
+                                          "pid": previous.get("pid"), "parentPid": previous.get("parentPid")}
             for key, beat in self.heartbeats.items():
                 age = time.monotonic() - beat["seen"]
                 if age > 300:
@@ -604,5 +662,5 @@ class Discovery:
             result["handoffs"] = [{**v["event"], "at": v["at"]} for v in self.handoffs.values() if time.monotonic() - v["seen"] <= 300]
             result["token"] = self.token
             result["supported"] = list(PROVIDERS) + [provider for provider, _ in self.custom if provider not in PROVIDERS]
-            result["limitations"] = "Browser/cloud-only sessions and hidden in-app threads need a metadata adapter. Process existence and file freshness do not prove a working agent."
+            result["limitations"] = "Codex runtime threads and supported local records appear automatically. Other hidden or cloud-only sessions need a provider activity source. Process existence alone cannot reveal task details."
             return result

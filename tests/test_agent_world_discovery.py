@@ -1,7 +1,9 @@
 """Discovery provenance, projection, extension and local HTTP boundaries."""
 import importlib.util
+from contextlib import closing
 import json
 import os
+import sqlite3
 from pathlib import Path
 import tempfile
 import threading
@@ -82,6 +84,41 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual(scanner.view()["entries"][0]["status"], "recent", "an ended unlinked turn does not create a waiting avatar")
         with patch.object(D.time, "time", return_value=time.time() + 301):
             self.assertEqual(scanner.view()["entries"][0]["status"], "recorded")
+
+    def test_live_codex_sqlite_threads_appear_without_hook_or_session_file(self):
+        home = self.root / "codex-home"
+        home.mkdir()
+        with closing(sqlite3.connect(home / "logs_2.sqlite")) as logs:
+            logs.execute("CREATE TABLE logs (id INTEGER PRIMARY KEY, ts INTEGER, thread_id TEXT, target TEXT, feedback_log_body TEXT)")
+            logs.execute("INSERT INTO logs VALUES (1, ?, ?, ?, ?)",
+                         (int(time.time()), SESSION, "codex_core::tools::parallel", "PRIVATE_PROMPT PRIVATE_CODE"))
+            logs.commit()
+        with closing(sqlite3.connect(home / "state_5.sqlite")) as state:
+            state.execute("CREATE TABLE threads (id TEXT PRIMARY KEY, cwd TEXT, agent_role TEXT)")
+            state.execute("INSERT INTO threads VALUES (?, ?, ?)", (SESSION, "/work/sample", "qa"))
+            state.commit()
+        scanner = D.Discovery(self.codex, self.claude, collector=lambda: ([], False),
+                              interval=0, codex_home=home)
+        result = scanner.view()
+        entry = next(e for e in result["entries"] if e["provider"] == "Codex")
+        self.assertEqual((entry["kind"], entry["status"], entry["role"], entry["action"]),
+                         ("session", "event-waiting", "qa", None))
+        self.assertEqual(entry["workspace"], "sample")
+        self.assertNotIn("PRIVATE", json.dumps(result))
+        self.assertNotIn(SESSION, json.dumps(result))
+        path = self.record("Codex")
+        for row in ({"type": "event_msg", "timestamp": D.timestamp(), "payload": {"type": "task_started"}},
+                    {"type": "response_item", "timestamp": D.timestamp(), "payload": {"type": "function_call", "name": "apply_patch"}},
+                    {"type": "event_msg", "timestamp": D.timestamp(), "payload": {"type": "task_complete"}}):
+            self.append_event(path, row)
+        linked = D.Discovery(self.codex, self.claude, codex_home=home,
+                             collector=lambda: ([{"pid": 23, "name": "codex", "args": ["codex", "--session-id", SESSION]}], False), interval=0)
+        completed = next(e for e in linked.view()["entries"] if e["id"] == entry["id"])
+        self.assertEqual(completed["status"], "event-waiting")
+        self.assertIn("Local tool events", completed["evidence"])
+        with patch.object(D.time, "monotonic", return_value=time.monotonic() + 1), \
+                patch.object(D.time, "time", return_value=time.time() + 121):
+            self.assertFalse(any(e["provider"] == "Codex" and e["status"] == "event-waiting" for e in scanner.view()["entries"]))
 
     def test_activity_is_bounded_and_explicit_heartbeat_wins(self):
         path = self.record("Claude Code")
