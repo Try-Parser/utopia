@@ -119,6 +119,27 @@ class DiscoveryTests(unittest.TestCase):
         with patch.object(D.time, "monotonic", return_value=time.monotonic() + 1), \
                 patch.object(D.time, "time", return_value=time.time() + 121):
             self.assertFalse(any(e["provider"] == "Codex" and e["status"] == "event-waiting" for e in scanner.view()["entries"]))
+        (home / "state_5.sqlite").unlink()
+        (home / "logs_2.sqlite").rename(home / "logs_17.sqlite")
+        with patch.dict(os.environ, {"CODEX_HOME": str(home)}):
+            portable = D.Discovery(claude_root=self.claude, collector=lambda: ([], False), interval=0)
+            self.assertEqual(portable.roots["Codex"], home / "sessions")
+            self.assertEqual(portable.codex_home, home)
+            entry = next(e for e in portable.view()["entries"] if e["provider"] == "Codex")
+            self.assertEqual((entry["workspace"], entry["role"]), ("Unknown", None))
+        with closing(sqlite3.connect(home / "state_99.sqlite")) as incompatible:
+            incompatible.execute("CREATE TABLE unrelated (value TEXT)")
+        fallback = D.Discovery(codex_home=home, codex_root=self.codex,
+                               claude_root=self.claude, collector=lambda: ([], False), interval=0)
+        self.assertTrue(any(e["provider"] == "Codex" and e["status"] == "event-waiting"
+                            for e in fallback.view()["entries"]))
+        relative = Path(os.path.relpath(home, Path.cwd()))
+        with patch.dict(os.environ, {"CODEX_HOME": str(self.root / "wrong-profile")}):
+            explicit = D.Discovery(codex_home=relative, claude_root=self.claude,
+                                   collector=lambda: ([], False), interval=0)
+            self.assertEqual(explicit.codex_home, home.absolute())
+            self.assertEqual(explicit.roots["Codex"], home.absolute() / "sessions")
+            self.assertTrue(any(e["provider"] == "Codex" for e in explicit.view()["entries"]))
 
     def test_activity_is_bounded_and_explicit_heartbeat_wins(self):
         path = self.record("Claude Code")

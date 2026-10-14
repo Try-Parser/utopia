@@ -1,6 +1,6 @@
 """Read-only local AI process/session discovery. Never invokes a provider runtime."""
 from copy import deepcopy
-from contextlib import closing
+from contextlib import ExitStack, closing
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -372,7 +372,14 @@ def session_records(provider, root):
 
 class Discovery:
     def __init__(self, codex_root=None, claude_root=None, custom=(), collector=collect_processes, interval=5, codex_home=None):
-        self.roots = {"Codex": Path(codex_root) if codex_root is not None else Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex"))) / "sessions",
+        if codex_home is not None:
+            profile = Path(codex_home)
+        elif codex_root is not None:
+            profile = Path(codex_root).parent
+        else:
+            profile = Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex")))
+        profile = profile.resolve()
+        self.roots = {"Codex": Path(codex_root) if codex_root is not None else profile / "sessions",
                       "Claude Code": Path(claude_root) if claude_root is not None else Path(os.environ.get("CLAUDE_CONFIG_DIR", str(Path.home() / ".claude"))) / "projects"}
         self.custom = tuple(process_rule(value) for value in custom)
         self.collector, self.interval = collector, interval
@@ -385,7 +392,7 @@ class Discovery:
         self._records, self._base_entries, self._activity_cache = [], {}, {}
         self._live_stop = None
         self._inventory_thread = None
-        self.codex_home = Path(codex_home) if codex_home is not None else self.roots["Codex"].parent
+        self.codex_home = profile
         self._codex_live_at, self._codex_live = 0.0, []
 
     def _codex_runtime(self, now):
@@ -400,16 +407,28 @@ class Discovery:
                           and safe_path(path, home) and path.is_file()]
             return max(candidates, key=lambda path: path.stat().st_mtime) if candidates else None
         try:
-            logs_path, state_path = latest("logs"), latest("state")
+            logs_path = latest("logs")
         except OSError:
             return []
-        if logs_path is None or state_path is None:
+        if logs_path is None:
             return []
         try:
-            with closing(sqlite3.connect(logs_path.as_uri() + "?mode=ro", uri=True, timeout=.1)) as logs, \
-                    closing(sqlite3.connect(state_path.as_uri() + "?mode=ro", uri=True, timeout=.1)) as state:
+            state_path = latest("state")
+        except OSError:
+            state_path = None
+        try:
+            with ExitStack() as stack:
+                logs = stack.enter_context(closing(sqlite3.connect(logs_path.as_uri() + "?mode=ro", uri=True, timeout=.1)))
                 logs.execute("PRAGMA query_only=ON")
-                state.execute("PRAGMA query_only=ON")
+                state = None
+                if state_path is not None:
+                    try:
+                        candidate = sqlite3.connect(state_path.as_uri() + "?mode=ro", uri=True, timeout=.1)
+                        stack.callback(candidate.close)
+                        candidate.execute("PRAGMA query_only=ON")
+                        state = candidate
+                    except sqlite3.Error:
+                        pass  # Session identity still comes from the runtime log.
                 rows = logs.execute("SELECT thread_id, ts FROM "
                                     "(SELECT id, thread_id, ts, target FROM logs ORDER BY id DESC LIMIT 4096) "
                                     "WHERE ts >= ? AND thread_id IS NOT NULL "
@@ -422,7 +441,12 @@ class Discovery:
                     seen.add(identity)
                     if len(seen) > 32:
                         break
-                    metadata = state.execute("SELECT cwd, agent_role FROM threads WHERE id=?", (identity,)).fetchone()
+                    metadata = None
+                    if state is not None:
+                        try:
+                            metadata = state.execute("SELECT cwd, agent_role FROM threads WHERE id=?", (identity,)).fetchone()
+                        except sqlite3.Error:
+                            state = None  # Older/newer state schemas may not expose thread metadata.
                     workspace = workspace_label(metadata[0]) if metadata else "Unknown"
                     role = metadata[1] if metadata and metadata[1] in ROLES else None
                     self._codex_live.append({"id": opaque("Codex", identity.lower()), "provider": "Codex",

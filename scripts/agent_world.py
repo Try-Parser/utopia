@@ -269,6 +269,7 @@ def main():
     parser.add_argument("--codex-binary", type=Path, help="Installed native Codex executable")
     parser.add_argument("--task-timeout", type=int, default=1800, help="Seconds allowed per native run")
     parser.add_argument("--codex-sessions-root", type=Path, help="Alternate Codex sessions directory")
+    parser.add_argument("--codex-home", type=Path, help="Alternate Codex profile directory containing local runtime databases")
     parser.add_argument("--claude-projects-root", type=Path, help="Alternate Claude projects directory")
     parser.add_argument("--provider-process", action="append", default=[], help="Additional Provider=executable-name signature")
     args = parser.parse_args()
@@ -278,7 +279,8 @@ def main():
         parser.error("Task timeout must be between 1 and 7200 seconds")
     manager = None
     try:
-        sessions = discovery.Discovery(args.codex_sessions_root, args.claude_projects_root, args.provider_process)
+        sessions = discovery.Discovery(args.codex_sessions_root, args.claude_projects_root, args.provider_process,
+                                       codex_home=args.codex_home)
     except ValueError as error:
         parser.error(str(error))
     if args.enable_live:
