@@ -47,7 +47,7 @@
   function assignWorkstations(actors,jobs,previous=[]) {
     const seats=layout(actors,previous).stations.map(s=>({...s,occupant:null})),assigned=new Set();
     const department=a=>a.role;
-    for(const old of previous){const actor=actors.find(a=>a.id===old.occupant?.id),seat=seats.find(s=>s.key===old.key);if(actor&&seat&&(seat.role===department(actor)||observedWithoutRole(actor))){seat.occupant=actor;assigned.add(actor.id);}}
+    for(const old of previous){const actor=actors.find(a=>a.id===old.occupant?.id),seat=seats.find(s=>s.key===old.key);if(actor&&seat&&(seat.role===department(actor)||!actor.role&&observedWithoutRole(actor))){seat.occupant=actor;assigned.add(actor.id);}}
     for(const actor of actors){if(assigned.has(actor.id))continue;const seat=seats.find(s=>s.role===department(actor)&&!s.occupant);if(seat){seat.occupant=actor;assigned.add(actor.id);}}
     // Active threads without a verified department still work at a free computer.
     for(const actor of actors){if(assigned.has(actor.id)||!observedWithoutRole(actor))continue;const seat=seats.find(s=>s.role==='builder'&&!s.occupant)||seats.find(s=>!s.occupant);if(seat){seat.occupant=actor;assigned.add(actor.id);}}

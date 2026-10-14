@@ -33,6 +33,10 @@ PROCESS_LIMIT = 3000
 FILE_LIMIT = 2000
 RECORD_LIMIT = 200
 ROLES = ("planner", "designer", "builder", "reviewer", "qa", "security")
+CODEX_AGENT_ROLES = {"correctness": "reviewer", "review": "reviewer", "ui_design": "designer",
+                     "design": "designer", "planning": "planner", "plan": "planner",
+                     "build": "builder", "coding": "builder", "test": "qa", "testing": "qa",
+                     "security": "security", "qa": "qa"}
 UUID = re.compile(r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}\Z")
 
 
@@ -52,6 +56,14 @@ def workspace_label(value):
 
 def opaque(provider, identity):
     return hashlib.sha256((provider + ":" + identity).encode()).hexdigest()[:32]
+
+
+def codex_agent_role(agent_path):
+    """Classify only an exact, provider-owned agent path segment."""
+    if not isinstance(agent_path, str) or len(agent_path) > 256 or not agent_path.startswith("/root/"):
+        return None
+    segment = agent_path.rsplit("/", 1)[-1]
+    return segment if segment in ROLES else CODEX_AGENT_ROLES.get(segment)
 
 
 def provider_label(value):
@@ -688,11 +700,14 @@ class Discovery:
                     metadata = None
                     if state is not None:
                         try:
-                            metadata = state.execute("SELECT cwd, agent_role FROM threads WHERE id=?", (identity,)).fetchone()
+                            try:
+                                metadata = state.execute("SELECT cwd, agent_role, agent_path FROM threads WHERE id=?", (identity,)).fetchone()
+                            except sqlite3.Error:
+                                metadata = state.execute("SELECT cwd, agent_role FROM threads WHERE id=?", (identity,)).fetchone()
                         except sqlite3.Error:
                             state = None  # Older/newer state schemas may not expose thread metadata.
                     workspace = workspace_label(metadata[0]) if metadata else "Unknown"
-                    role = metadata[1] if metadata and metadata[1] in ROLES else None
+                    role = metadata[1] if metadata and metadata[1] in ROLES else codex_agent_role(metadata[2]) if metadata and len(metadata) > 2 else None
                     recent = [{"at": timestamp(at), "label": "Tool activity" if target == "codex_core::tools::parallel" else "Turn activity"}
                               for at, target in reversed(events[:8])]
                     self._codex_live.append({"id": opaque("Codex", identity.lower()), "provider": "Codex",

@@ -467,6 +467,29 @@ class DiscoveryTests(unittest.TestCase):
             older = next(e for e in scanner.view()["entries"] if e["provider"] == "Codex")
         self.assertEqual((older["status"], older["action"]), ("event-waiting", None))
 
+    def test_codex_agent_paths_route_parallel_workers_without_exposing_paths(self):
+        home = self.root / "codex-home"
+        home.mkdir()
+        identities = [f"99999999-8888-7777-6666-{index:012d}" for index in range(1, 5)]
+        paths = ["/root/qa", "/root/security", "/root/correctness", "/root/security_extra"]
+        with closing(sqlite3.connect(home / "logs_2.sqlite")) as logs:
+            logs.execute("CREATE TABLE logs (id INTEGER PRIMARY KEY, ts INTEGER, thread_id TEXT, target TEXT)")
+            logs.executemany("INSERT INTO logs (ts, thread_id, target) VALUES (?, ?, ?)",
+                             [(int(time.time()), identity, "codex_core::tools::parallel") for identity in identities])
+            logs.commit()
+        with closing(sqlite3.connect(home / "state_5.sqlite")) as state:
+            state.execute("CREATE TABLE threads (id TEXT PRIMARY KEY, cwd TEXT, agent_role TEXT, agent_path TEXT)")
+            state.executemany("INSERT INTO threads VALUES (?, ?, ?, ?)",
+                              [(identity, "/work/sample", None, path) for identity, path in zip(identities, paths)])
+            state.commit()
+        result = D.Discovery(self.codex, self.claude, collector=lambda: ([], False),
+                             interval=0, codex_home=home).view()
+        entries = {entry["id"]: entry for entry in result["entries"] if entry["provider"] == "Codex"}
+        self.assertEqual([entries[D.opaque("Codex", identity)]["role"] for identity in identities],
+                         ["qa", "security", "reviewer", None])
+        self.assertNotIn("/root/", json.dumps(result))
+        self.assertTrue(all(entry["action"] is None for entry in entries.values()))
+
     def test_activity_is_bounded_and_explicit_heartbeat_wins(self):
         path = self.record("Claude Code")
         rows = [{"pid": 23, "name": "claude", "args": ["claude", "--session-id", SESSION]}]

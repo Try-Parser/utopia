@@ -55,7 +55,7 @@ dialog{border:2px solid #829571;border-radius:5px;width:min(470px,calc(100% - 28
 /* A cutaway office interior, with observable travel instead of stationary icons. */
 .world-scroll{background:#abb5af;background-image:linear-gradient(90deg,#a3aea8 1px,transparent 1px),linear-gradient(#a3aea8 1px,transparent 1px);background-size:48px 48px}
 .world-panel{border-color:#62746b}.office-architecture{shape-rendering:crispEdges}.office-furnishings{filter:drop-shadow(0 4px 0 #55645a25)}
-.character.working.at-desk:not(.office-walking) .person{transform:translateY(-12px);animation:typing 1s steps(2,end) infinite}.character.office-walking .person{animation:office-stride .4s steps(2,end) infinite!important}
+.character.at-desk:not(.office-walking) .person{transform:translateY(-12px);animation:none}.character.working.at-desk:not(.office-walking) .person{animation:typing 1s steps(2,end) infinite}.character.office-walking .person{animation:office-stride .4s steps(2,end) infinite!important}
 .character[data-facing=up].office-walking .person:before{background:#3a3933;border-top-color:#3a3933}.character[data-facing=left].office-walking .person:before{border-left:3px solid #3a3933}.character[data-facing=right].office-walking .person:before{border-right:3px solid #3a3933}
 .equipment-lights{animation:equipment-idle 3s steps(2,end) infinite}.world[data-motion=paused] .person,.world[data-motion=paused] .equipment-lights,.world.simulation-paused .person{animation:none!important}
 @keyframes typing{50%{transform:translateY(-13px) rotate(-2deg)}}@keyframes office-stride{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-2px) rotate(3deg)}}@keyframes equipment-idle{50%{opacity:.55}}

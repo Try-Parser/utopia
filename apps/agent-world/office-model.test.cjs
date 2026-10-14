@@ -41,6 +41,15 @@ test('automatically observed threads keep shared computers and expand capacity',
   assert.deepEqual(O.destination(scene[0],0),scene[0].station.point);
   assert.match(O.presentation(scene[0]).destination,/Shared computer/);
 });
+test('a newly identified agent leaves its shared desk for its own department',()=>{
+  const unknown={id:'session-promoted',provider:'Codex',role:null,working:false,state:'event-waiting',note:'Codex local runtime activity observed; current task state unavailable'};
+  const before=O.assignWorkstations([unknown],[]);
+  assert.equal(before.find(s=>s.occupant?.id===unknown.id).role,'builder');
+  const known={...unknown,role:'qa'},after=O.assignWorkstations([known],[],before);
+  assert.equal(after.find(s=>s.occupant?.id===known.id).role,'qa');
+  const scene=O.sceneActors([known],after,()=>true,O.layout([known],after));
+  assert.deepEqual(O.destination(scene[0],0,O.layout([known],after)),scene[0].station.point);
+});
 test('explicit human questions sit in conference and release the seat after an answer',()=>{
   const question={...base,kind:'session',status:'event-waiting',role:'builder',awaitingHuman:true,updatedAt:new Date().toISOString()};
   const waiting=O.project({entries:[question]},{jobs:[]}).actors[0];

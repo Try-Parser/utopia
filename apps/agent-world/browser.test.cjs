@@ -138,6 +138,19 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     await page.locator(`[data-office="session-${runtimeEntry.id}"]`).click({force:true});assert.match(await page.locator('.agent-activity').textContent(),/Tool activity/);assert.match(await page.locator(`[data-office="session-${runtimeEntry.id}"] .character-name`).textContent(),/Activity observed/);assert.match(await page.locator('#task-flow-list').textContent(),/Tool activity/);await page.waitForFunction(()=>document.querySelector('.session-output pre')?.textContent.includes('no readable transcript'));assert.equal(await page.locator(`[data-office="session-${runtimeEntry.id}"] .character-bubble`).isVisible(),false);await page.keyboard.press('Escape');
     assert.doesNotMatch(await page.evaluate(async()=>JSON.stringify(await(await fetch('/api/sessions')).json())),/PRIVATE_RUNTIME_BODY|99999999-8888-7777-6666-555555555555/);
     server.stdin.write('runtime_clear\n');await page.waitForFunction(id=>!window.OfficeWorldView.getState().some(a=>a.id===`session-${id}`),runtimeEntry.id);
+    server.stdin.write('runtime_departments\n');
+    await page.waitForFunction(()=>['qa','security','reviewer'].every(role=>window.OfficeWorldView.getState().some(a=>a.role===role&&a.station?.startsWith(`${role}:`))));
+    for(const role of ['qa','security','reviewer']){
+      const actor=await page.evaluate(role=>window.OfficeWorldView.getState().find(a=>a.role===role),role);
+      await page.waitForSelector(`[data-office="${actor.id}"].at-desk:not(.office-walking)`,{timeout:20000});
+      assert.equal(actor.station.split(':')[0],role);
+      const pose=await page.locator(`[data-office="${actor.id}"] .person`).evaluate(node=>({transform:getComputedStyle(node).transform,animation:getComputedStyle(node).animationName}));
+      assert.match(pose.transform,/matrix\(1, 0, 0, 1, 0, -12\)/,'observed agent sits at its computer');
+      assert.equal(pose.animation,'none','observed activity does not imply typing');
+    }
+    assert.doesNotMatch(await page.evaluate(async()=>JSON.stringify(await(await fetch('/api/sessions')).json())),/PRIVATE_RUNTIME_BODY|\/root\/correctness/);
+    server.stdin.write('runtime_clear\n');
+    console.log('PASS: live Codex subagents walk to and sit in their exact departments');
     console.log('PASS: Codex runtime session without a fresh rollout seats a worker and streams safe observed tool activity');
     await page.locator(`[data-office="${observedActor.id}"]`).click();
     const childDirectory=path.join(fixtures,'claude-records',observedClaudeId,'subagents');fs.mkdirSync(childDirectory,{recursive:true});
