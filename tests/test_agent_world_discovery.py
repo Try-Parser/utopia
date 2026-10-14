@@ -57,12 +57,55 @@ class DiscoveryTests(unittest.TestCase):
         self.assertIn("department follows activity", entry["evidence"])
         self.assertNotIn("PRIVATE", json.dumps(entry))
         self.assertNotIn(SESSION, json.dumps(entry))
-        self.assertEqual(self.scanner().view()["entries"][0]["status"], "recent")
+        self.assertEqual(self.scanner().view()["entries"][0]["status"], "event-working")
         self.append_event(path, {"type": "assistant", "sessionId": SESSION, "timestamp": D.timestamp(), "message": {"stop_reason": "end_turn", "content": []}})  # ai-department-allow: session-export (synthetic activity fixture)
         entry = scanner.view()["entries"][0]
         self.assertEqual((entry["status"], entry["role"], entry["action"]), ("event-waiting", "builder", None))
         self.append_event(path, {"type": "user", "sessionId": SESSION, "timestamp": D.timestamp(), "message": {"content": "PRIVATE_NEW_PROMPT"}})  # ai-department-allow: session-export (synthetic activity fixture)
         self.assertEqual(scanner.view()["entries"][0]["status"], "running")
+
+    def test_parallel_claude_subagents_have_distinct_live_work(self):
+        self.record("Claude Code")
+        children = self.claude / SESSION / "subagents"
+        children.mkdir(parents=True)
+        for suffix, tool in (("one", "Edit"), ("two", "Read")):
+            event = {"type": "assistant", "sessionId": SESSION, "cwd": "/work/sample",  # ai-department-allow: session-export (synthetic fixture)
+                     "timestamp": D.timestamp(), "message": {"content": [
+                         {"type": "tool_use", "name": tool, "input": {"secret": "PRIVATE_INPUT"}}]}}  # ai-department-allow: session-export (synthetic fixture)
+            self.append_event(children / ("agent-" + suffix + ".jsonl"), event)
+        rows = [{"pid": 23, "name": "claude", "args": ["claude", "--session-id", SESSION]}]
+        result = self.scanner(rows).view()
+        agents = [entry for entry in result["entries"] if " agent " in entry["label"]]
+        self.assertEqual(len(agents), 2)
+        self.assertEqual({entry["action"] for entry in agents}, {"coding", "research"})
+        self.assertEqual({entry["status"] for entry in agents}, {"event-working"})
+        self.assertEqual(len({entry["id"] for entry in result["entries"]}), 3)
+        self.assertNotIn("PRIVATE_INPUT", json.dumps(result))
+        self.assertNotIn(SESSION, json.dumps(result))
+
+    def test_claude_subagent_parent_mismatch_is_not_connected(self):
+        children = self.claude / "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" / "subagents"
+        children.mkdir(parents=True)
+        event = {"type": "assistant", "sessionId": SESSION, "cwd": "/work/sample",  # ai-department-allow: session-export (synthetic fixture)
+                 "timestamp": D.timestamp(), "message": {"content": [{"type": "tool_use", "name": "Edit"}]}}  # ai-department-allow: session-export (synthetic fixture)
+        self.append_event(children / "agent-one.jsonl", event)
+        self.assertEqual(self.scanner().view()["entries"], [])
+
+    def test_gemini_cli_session_records_are_discovered_without_ide_process(self):
+        home = self.root / "gemini-home"
+        chats = home / ".gemini" / "tmp" / "project-hash" / "chats"
+        chats.mkdir(parents=True)
+        (chats / "session-example.jsonl").write_text(json.dumps({"sessionId": SESSION,  # ai-department-allow: session-export (synthetic fixture)
+            "projectHash": "project-hash", "prompt": "PRIVATE_GEMINI_PROMPT"}) + "\n")  # ai-department-allow: session-export (synthetic fixture)
+        with patch.dict(os.environ, {"GEMINI_CLI_HOME": str(home)}):
+            result = self.scanner().view()
+        entry = next(entry for entry in result["entries"] if entry["provider"] == "Gemini CLI")
+        self.assertEqual((entry["kind"], entry["status"], entry["workspace"]), ("session", "recent", "Unknown"))
+        self.assertNotIn("PRIVATE_GEMINI_PROMPT", json.dumps(result))
+        self.assertNotIn(SESSION, json.dumps(result))
+        (chats.parent / "other.jsonl").write_text(json.dumps({"sessionId": SESSION}) + "\n")  # ai-department-allow: session-export (synthetic fixture)
+        wrong = self.scanner(gemini_root=chats.parent.parent).view()
+        self.assertEqual(len([entry for entry in wrong["entries"] if entry["provider"] == "Gemini CLI"]), 1)
 
     def test_codex_turn_lifecycle_unknown_tool_and_expiry_fail_closed(self):
         path = self.record("Codex")

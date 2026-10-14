@@ -197,11 +197,13 @@ TOOL_ACTIVITY = {
 
 def tool_activity(record, root, now):
     """Project event types/names only. Never retain tool input/output or messages."""
+    if record["provider"] not in ("Codex", "Claude Code"):
+        return None
     path = record["path"]
     if not safe_path(path, root):
         return None
-    # Nested Claude agent logs can share the parent's sessionId; don't attribute them to it.
-    if record["provider"] == "Claude Code" and path.stem.lower() != record["key"]:
+    # Root sessions and nested agents have different identities and file layouts.
+    if record["provider"] == "Claude Code" and not record.get("child") and path.stem.lower() != record["key"]:
         return None
     flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_NOFOLLOW", 0)
     try:
@@ -233,7 +235,7 @@ def tool_activity(record, root, now):
                 continue
             if record["provider"] == "Claude Code":
                 session_identity = row.get("sessionId")
-                if not isinstance(session_identity, str) or not UUID.fullmatch(session_identity) or session_identity.lower() != record["key"]:
+                if not isinstance(session_identity, str) or not UUID.fullmatch(session_identity) or session_identity.lower() != record.get("session", record["key"]):
                     continue
                 message = row.get("message")
                 if not isinstance(message, dict):
@@ -253,6 +255,9 @@ def tool_activity(record, root, now):
                     continue
                 names = [c.get("name") for c in content if isinstance(c, dict) and c.get("type") == "tool_use"] if isinstance(content, list) else []
                 busy = True
+                event_at = at
+                if not names:
+                    role = action = label = None
             else:
                 payload = row.get("payload")
                 if not isinstance(payload, dict):
@@ -284,6 +289,10 @@ def tool_activity(record, root, now):
                     "taskRef": opaque("activity", record["provider"] + ":" + record["key"]),
                     "updatedAt": event_at.isoformat(),
                     "evidence": "Local tool events; department follows activity, not an assigned specialist role"}
+        if record["provider"] == "Claude Code" and busy and event_at and now - event_at.timestamp() <= 30:
+            return {"status": "event-working", "role": None, "action": None,
+                    "taskLabel": None, "taskRef": None, "updatedAt": event_at.isoformat(),
+                    "evidence": "Local assistant activity observed; task details unavailable"}
     except (OSError, ValueError, TypeError, RecursionError):
         return None
     return None
@@ -354,24 +363,41 @@ def session_records(provider, root):
                             continue
                         candidate = payload.get("id") or payload.get("session_id")
                         cwd = workspace_label(payload.get("cwd"))
-                    else:
+                    elif provider == "Claude Code":
                         candidate = row.get("sessionId")
                         if cwd == "Unknown":
                             cwd = workspace_label(row.get("cwd"))
+                    elif provider == "Gemini CLI":
+                        if path.parent.name != "chats" or path.parent.parent.parent != root or not path.name.startswith("session-"):
+                            break
+                        candidate = row.get("sessionId")
+                    else:
+                        break
                     if isinstance(candidate, str) and UUID.fullmatch(candidate):
                         identity = candidate.lower()
-                    if identity and (provider == "Codex" or cwd != "Unknown"):
+                    if identity and (provider in ("Codex", "Gemini CLI") or cwd != "Unknown"):
                         break
             if identity:
+                child = False
+                if provider == "Claude Code" and path.parent.name == "subagents":
+                    parent = path.parent.parent.name
+                    if not UUID.fullmatch(parent) or parent.lower() != identity or not re.fullmatch(r"agent-[A-Za-z0-9_-]{1,64}", path.stem):
+                        continue
+                    child = True
+                elif provider == "Claude Code" and "subagents" in path.parts:
+                    continue
                 records.append({"key": identity, "provider": provider, "workspace": cwd,
-                                "modified": modified, "path": path})
+                                "modified": modified, "path": path,
+                                "session": identity, "child": child})
+                if child:
+                    records[-1]["key"] = identity + ":" + path.stem.lower()
         except (OSError, ValueError, TypeError, RecursionError):
             partial = True
     return records, "unavailable" if errors and not candidates else "scanned", partial or bool(errors)
 
 
 class Discovery:
-    def __init__(self, codex_root=None, claude_root=None, custom=(), collector=collect_processes, interval=5, codex_home=None):
+    def __init__(self, codex_root=None, claude_root=None, custom=(), collector=collect_processes, interval=5, codex_home=None, gemini_root=None):
         if codex_home is not None:
             profile = Path(codex_home)
         elif codex_root is not None:
@@ -380,7 +406,8 @@ class Discovery:
             profile = Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex")))
         profile = profile.resolve()
         self.roots = {"Codex": Path(codex_root) if codex_root is not None else profile / "sessions",
-                      "Claude Code": Path(claude_root) if claude_root is not None else Path(os.environ.get("CLAUDE_CONFIG_DIR", str(Path.home() / ".claude"))) / "projects"}
+                      "Claude Code": Path(claude_root) if claude_root is not None else Path(os.environ.get("CLAUDE_CONFIG_DIR", str(Path.home() / ".claude"))) / "projects",
+                      "Gemini CLI": Path(gemini_root) if gemini_root is not None else Path(os.environ.get("GEMINI_CLI_HOME", str(Path.home()))) / ".gemini" / "tmp"}
         self.custom = tuple(process_rule(value) for value in custom)
         self.collector, self.interval = collector, interval
         self.token = secrets.token_urlsafe(32)
@@ -553,7 +580,8 @@ class Discovery:
             key = opaque(record["provider"], record["key"])
             if key in entries:
                 continue
-            entries[key] = {"id": key, "provider": record["provider"], "label": record["provider"] + " session " + key[:8],
+            label = record["provider"] + (" agent " if record.get("child") else " session ") + key[:8]
+            entries[key] = {"id": key, "provider": record["provider"], "label": label,
                             "kind": "session", "status": "recent" if 0 <= now - record["modified"] < 300 else "recorded",
                             "workspace": record["workspace"], "pid": None, "parentPid": None,
                             "updatedAt": timestamp(record["modified"]), "evidence": "Local session metadata; runtime activity unknown"}
@@ -578,7 +606,7 @@ class Discovery:
     def _apply_activity(self, entries, records, now, warnings, cache=True):
         fresh = []
         for record in records:
-            if record["provider"] == "Claude Code" and record["path"].stem.lower() != record["key"]:
+            if record["provider"] == "Claude Code" and not record.get("child") and record["path"].stem.lower() != record["key"]:
                 continue
             try:
                 info = record["path"].stat(follow_symlinks=False)
@@ -599,17 +627,18 @@ class Discovery:
             examined.add(key)
             entry = entries[key]
             matched = entry["status"] == "running" and entry["kind"] == "session"
-            if record["provider"] == "Claude Code" and not matched:
-                continue
             cache_key = (record["provider"], record["key"], str(record["path"]))
             cached = self._activity_cache.get(cache_key) if cache else None
             if cached and cached[0] == fingerprint:
                 activity = cached[1]
-                if activity and not 0 <= now - datetime.fromisoformat(activity["updatedAt"]).timestamp() <= ACTIVITY_TTL:
+                if activity and not 0 <= now - datetime.fromisoformat(activity["updatedAt"]).timestamp() <= (30 if activity["status"] == "event-working" and activity["role"] is None else ACTIVITY_TTL):
                     activity = None
             else:
                 activity = tool_activity(record, self.roots[record["provider"]], now)
             retained[cache_key] = (fingerprint, activity)
+            if (activity and record["provider"] == "Claude Code" and not matched and activity["status"] == "event-working"
+                    and now - datetime.fromisoformat(activity["updatedAt"]).timestamp() > 30):
+                activity = None
             if activity and (matched or activity["status"] == "event-working"):
                 entry.update(activity)
                 if not matched:
@@ -686,5 +715,5 @@ class Discovery:
             result["handoffs"] = [{**v["event"], "at": v["at"]} for v in self.handoffs.values() if time.monotonic() - v["seen"] <= 300]
             result["token"] = self.token
             result["supported"] = list(PROVIDERS) + [provider for provider, _ in self.custom if provider not in PROVIDERS]
-            result["limitations"] = "Codex runtime threads and supported local records appear automatically. Other hidden or cloud-only sessions need a provider activity source. Process existence alone cannot reveal task details."
+            result["limitations"] = "Codex, Claude Code and Gemini CLI local records appear automatically, including Claude subagents. Other hidden or cloud-only sessions need a provider activity source. Process existence alone cannot reveal task details."
             return result

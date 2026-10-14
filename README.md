@@ -18,7 +18,7 @@ Context loads only when needed. One QA owner coordinates affected checks; small 
 
 Play the local [game-style control room](docs/agent-world.md): assign simulated missions or connect real native Codex tasks, select agent characters, and watch actual assigned-role events. A separate observed-runs mode reads historical workflow checkpoints. Start with `python scripts/agent_world.py --enable-live`, then open **http://127.0.0.1:8787**. Native missions default to read-only; `--allow-edits` makes explicitly selected coordinator/builder workspace edits available. A completed native turn does not certify review or test approval.
 
-**Local sessions** automatically discovers recognizable Codex, Claude and other AI processes, plus bounded Codex/Claude session metadata, including sessions launched elsewhere. Custom executable rules and local metadata heartbeats extend coverage to other runtimes. Process presence, stored records and adapter-reported activity remain distinct; opaque app/browser/cloud sessions require their own metadata integration.
+**Local sessions** automatically discovers recognizable AI processes across terminal, desktop and IDE launch surfaces. It reads bounded local Codex and Claude Code session records, separate Claude subagent activity, and Gemini CLI JSONL session metadata from its user profile (`GEMINI_CLI_HOME` is supported). Custom executable rules and local metadata heartbeats extend coverage to other runtimes. Process presence, stored records and adapter-reported activity remain distinct; an app process does not reveal every internal conversation or task, and opaque app/browser/cloud sessions require a provider activity source.
 
 ## Observed verification
 
