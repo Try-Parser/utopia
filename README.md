@@ -14,6 +14,12 @@ Open the [full autonomous pipeline PNG](docs/autonomous-development-flow.png) or
 
 Context loads only when needed. One QA owner coordinates affected checks; small substantive changes keep three independent review lenses with focused scope. Every required check must pass; failures, missing checks or reviews and required skips block delivery. Blockers become one repair brief, with at most two automatic fix rounds before diagnosis and replanning. Delivery stops at the authorized local or remote target.
 
+## Agent World
+
+Play the local [game-style control room](docs/agent-world.md): assign simulated missions or connect real native Codex tasks, select agent characters, and watch actual assigned-role events. A separate observed-runs mode reads historical workflow checkpoints. Start with `python scripts/agent_world.py --enable-live`, then open **http://127.0.0.1:8787**. Native missions default to read-only; `--allow-edits` makes explicitly selected coordinator/builder workspace edits available. A completed native turn does not certify review or test approval.
+
+**Local sessions** automatically discovers recognizable Codex, Claude and other AI processes, plus bounded Codex/Claude session metadata, including sessions launched elsewhere. Custom executable rules and local metadata heartbeats extend coverage to other runtimes. Process presence, stored records and adapter-reported activity remain distinct; opaque app/browser/cloud sessions require their own metadata integration.
+
 ## Observed verification
 
 See the [current observed tool demonstration](docs/verification/2026-10-08-measured/report.md) and the visual panel preview below. These are actual tool/fixture checks; live AI accuracy, token savings and production speed remain unmeasured.
