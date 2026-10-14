@@ -41,6 +41,17 @@ test('automatically observed threads keep shared computers and expand capacity',
   assert.deepEqual(O.destination(scene[0],0),scene[0].station.point);
   assert.match(O.presentation(scene[0]).destination,/Shared computer/);
 });
+test('live child work is the initial focus while a manually selected parent stays selected',()=>{
+  const parent={...base,id:'a'.repeat(32),provider:'Claude Code',label:'Claude session',kind:'session',activeChildCount:2};
+  const child={...base,id:'b'.repeat(32),parentId:parent.id,provider:'Claude Code',label:'Claude agent',kind:'session',status:'event-working',role:'builder',action:'coding'};
+  const actors=O.project({entries:[parent,child]}, {jobs:[]}).actors;
+  assert.equal(O.focusActor(actors,null).sourceId,child.id);
+  assert.equal(O.focusActor(actors,actors[0].id).sourceId,child.id);
+  assert.equal(O.focusActor(actors,actors[0].id,true).sourceId,parent.id);
+  assert.equal(O.presentation(actors[0]).title,'2 subagents working');
+  assert.match(O.presentation(actors[0]).detail,/parent action unknown/);
+  assert.equal(actors[1].parentId,parent.id);
+});
 test('five computers circle a shared clear workspace in every live department',()=>{
   const g=O.layout();M.configure(g);
   try{assert.equal(g.stations.length,30);for(const role of O.roles){const seats=g.stations.filter(s=>s.role===role);assert.equal(seats.length,5);assert.ok(M.free(seats[0].center.x,seats[0].center.y));const room=g.rooms.find(r=>r.role===role);assert.ok(M.free(room.x+160,room.y+30),'door entrance clear');assert.ok(M.free(room.x+115,room.y+30),'space beside first desk through door');

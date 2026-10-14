@@ -61,9 +61,9 @@
     const actors=sessions.entries.filter(e=>e.kind!=='process'&&(['event-working','event-waiting','running','adapter-working','adapter-waiting','adapter-idle'].includes(e.status)||e.status==='adapter-ended'&&events.some(h=>h.sourceId===e.id&&h.fromRole===e.role&&h.taskRef===e.taskRef))).map(e=>{
       const role=roles.includes(e.role)?e.role:null,working=['event-working','adapter-working'].includes(e.status);
       const handoff=events.filter(h=>h.sourceId===e.id&&h.fromRole===role&&h.taskRef===e.taskRef&&['adapter-waiting','adapter-ended'].includes(e.status)).at(-1);
-      return {id:`session-${e.id}`,sourceId:e.id,provider:e.provider,label:e.label,role,working,state:e.status,updatedAt:e.updatedAt,taskRef:e.taskRef||null,
+      return {id:`session-${e.id}`,sourceId:e.id,parentId:e.parentId||null,activeChildCount:e.activeChildCount||0,provider:e.provider,label:e.label,role,working,state:e.status,updatedAt:e.updatedAt,taskRef:e.taskRef||null,
         note:e.evidence,taskLabel:e.taskLabel||'',action:working&&actions[e.action]?e.action:null,targetRef:e.targetRef||null,targetKind:e.targetKind||'session',
-        activity:working?(actions[e.action]?.[0]||'Working / activity details not connected'):e.status==='running'?'Session open; no current task event':e.status==='event-waiting'?(e.evidence?.startsWith('Codex local runtime activity observed')?'Activity recently seen':'Turn ended'):e.status.replace('adapter-',''),handoff};
+        activity:working?(actions[e.action]?.[0]||'Working / activity details not connected'):e.activeChildCount?`${e.activeChildCount} subagent${e.activeChildCount===1?'':'s'} working in this session; parent action unknown`:e.status==='running'?'Session open; no current task event':e.status==='event-waiting'?(e.evidence?.startsWith('Codex local runtime activity observed')?'Activity recently seen':'Turn ended'):e.status.replace('adapter-',''),handoff};
     });
     for(const job of live.jobs.filter(j=>['queued','starting','running'].includes(j.status))) {
       actors.push({id:`job-${job.id}`,sourceId:job.id,provider:'Codex',label:`Codex / ${job.role}`,role:job.role,working:job.status==='running',state:job.status,updatedAt:job.updatedAt,taskRef:job.id,taskLabel:job.title||'',action:job.status==='running'&&actions[job.action]?job.action:null,targetRef:null,note:'Native task runner event',activity:job.activity,handoff:null});
@@ -93,11 +93,16 @@
     return result;
   }
   function presentation(actor) {
-    const title=actor.handoff?.taskLabel||actor.taskLabel||(actor.state==='running'?'No current task event':'Task details not connected');
+    const title=actor.handoff?.taskLabel||actor.taskLabel||(actor.activeChildCount?`${actor.activeChildCount} subagent${actor.activeChildCount===1?'':'s'} working`:actor.state==='running'?'No current task event':'Task details not connected');
     if(actor.handoff)return {title,action:'handoff',word:'Passing task',icon:'→',destination:actor.colleague?.label||`${roleNames[actor.handoff.toRole]} department`,detail:`Taking ${title} to ${actor.colleague?.label||roleNames[actor.handoff.toRole]+' department'}`};
     if(actor.working&&actor.action==='helping')return {title,action:actor.colleague?'helping':'waiting',word:actor.colleague?'Helping':'Colleague not connected',icon:'↔',destination:actor.colleague?.label||'Own computer',detail:actor.colleague?`Helping ${actor.colleague.label} with ${title}`:'Helping was reported, but the colleague is not currently connected to a working desk.'};
     const known=actor.working&&actions[actor.action];
-    return {title,action:known?actor.action:'unknown',word:known?known[0]:actor.working?'Working · details missing':actor.state==='running'?'Session open':actor.activity||'Waiting',icon:known?known[1]:'?',destination:actor.conferenceSeat?`Conference room · Seat ${actor.conferenceSeat.index+1}`:actor.role?`${roleNames[actor.role]} · Computer ${(actor.station?.index||0)+1}`:actor.station?`Shared computer ${actor.station.index+1}`:'Reception',detail:actor.activity};
+    return {title,action:known?actor.action:'unknown',word:known?known[0]:actor.working?'Working · details missing':actor.activeChildCount?'Connected team':actor.state==='running'?'Session open':actor.activity||'Waiting',icon:known?known[1]:'?',destination:actor.conferenceSeat?`Conference room · Seat ${actor.conferenceSeat.index+1}`:actor.role?`${roleNames[actor.role]} · Computer ${(actor.station?.index||0)+1}`:actor.station?`Shared computer ${actor.station.index+1}`:'Reception',detail:actor.activity};
+  }
+  function focusActor(actors,selected,manual=false) {
+    const current=actors.find(actor=>actor.id===selected);
+    if(current&&(manual||current.working))return current;
+    return actors.find(actor=>actor.working&&(actor.action||actor.taskLabel))||actors.find(actor=>actor.working)||current||actors[0]||null;
   }
   // Only an explicitly reported idle role may take a visual waiting walk.
   function canRoam(actor) {return Boolean(actor.role)&&actor.state==='adapter-idle'&&!actor.working&&!actor.handoff;}
@@ -106,5 +111,5 @@
     const waiting=geometry?geometry.lobby(index):lobby(index);
     return [index%2?left:coffee,middle,actor.station?.point||(actor.role?desks[actor.role]:waiting),index%2?coffee:left,waiting];
   }
-  return {roles,roleNames,actions,desks,workstations,layout,isPlanning,sceneLayout,assignWorkstations,lobby,project,destination,sceneActors,presentation,canRoam,idleStops};
+  return {roles,roleNames,actions,desks,workstations,layout,isPlanning,sceneLayout,assignWorkstations,lobby,project,destination,sceneActors,presentation,focusActor,canRoam,idleStops};
 });

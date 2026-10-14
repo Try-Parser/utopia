@@ -80,6 +80,9 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual({entry["action"] for entry in agents}, {"coding", "research"})
         self.assertEqual({entry["status"] for entry in agents}, {"event-working"})
         self.assertEqual(len({entry["id"] for entry in result["entries"]}), 3)
+        parent = next(entry for entry in result["entries"] if entry["pid"] == 23)
+        self.assertEqual(parent["activeChildCount"], 2)
+        self.assertEqual({entry["parentId"] for entry in agents}, {parent["id"]})
         self.assertNotIn("PRIVATE_INPUT", json.dumps(result))
         self.assertNotIn(SESSION, json.dumps(result))
 

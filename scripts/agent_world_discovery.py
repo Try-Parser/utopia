@@ -585,6 +585,8 @@ class Discovery:
                             "kind": "session", "status": "recent" if 0 <= now - record["modified"] < 300 else "recorded",
                             "workspace": record["workspace"], "pid": None, "parentPid": None,
                             "updatedAt": timestamp(record["modified"]), "evidence": "Local session metadata; runtime activity unknown"}
+            if record.get("child"):
+                entries[key]["parentId"] = opaque(record["provider"], record["session"])
         for process in rows:
             if not isinstance(process, dict) or type(process.get("pid")) is not int or not 0 < process["pid"] < 2**32 or not isinstance(process.get("name"), str):
                 continue
@@ -708,6 +710,14 @@ class Discovery:
                                 "targetRef": beat.get("targetRef") if age <= 30 else None,
                                 "targetKind": beat.get("targetKind") if age <= 30 else None,
                                 "parentPid": old.get("parentPid"), "updatedAt": beat["updatedAt"], "evidence": "Adapter-reported state" if age <= 30 else "Heartbeat expired; current activity unknown"}
+            working_children = {}
+            for entry in entries.values():
+                parent = entry.get("parentId")
+                if parent and entry["status"] in ("event-working", "adapter-working"):
+                    working_children[parent] = working_children.get(parent, 0) + 1
+            for parent, count in working_children.items():
+                if parent in entries:
+                    entries[parent]["activeChildCount"] = count
             ordered = sorted(entries.values(), key=lambda e: e["updatedAt"], reverse=True)
             ordered.sort(key=lambda e: e["status"] in ("recorded", "recent", "adapter-stale", "adapter-ended"))
             result["partial"] = result["partial"] or len(ordered) > RECORD_LIMIT

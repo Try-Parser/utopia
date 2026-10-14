@@ -3,7 +3,7 @@ window.OfficeWorldView=(()=>{
   'use strict';
   const O=window.OfficeWorld,M=window.OfficeGameModel,$=id=>document.getElementById(id);
   const actors=new Map(),packets=new Map(),seen=new Set(),routeQueue=new Map(),reduced=matchMedia('(prefers-reduced-motion: reduce)');
-  let view='isometric',angle=0,mode='',selected=null,last=performance.now(),lastStage=null,sequence=0,paused=false;
+  let view='isometric',angle=0,mode='',selected=null,selectedPinned=false,last=performance.now(),lastStage=null,sequence=0,paused=false;
   let motionOverride=null,workstations=[],geometry=O.layout(),geometryKey='',physicalGeometryKey='',sceneGeometry=O.sceneLayout(geometry),sceneWithOccupants=null;
   const svg=document.querySelector('svg.office'),original=document.createElementNS('http://www.w3.org/2000/svg','g');
   for(const child of [...svg.children])if(child.tagName.toLowerCase()!=='defs')original.append(child);
@@ -116,7 +116,7 @@ window.OfficeWorldView=(()=>{
     const width=sceneGeometry.width,height=sceneGeometry.height;
     svg.setAttribute('viewBox',`0 0 ${width} ${height}`);$('world').style.setProperty('--floor-width',String(width));$('world').style.setProperty('--floor-height',String(height));$('world').classList.toggle('expanded',live&&next.height>850);$('world').classList.toggle('isometric',live);$('world').dataset.view=view;
     links.setAttribute('viewBox',`0 0 ${width} ${height}`);svg.setAttribute('aria-label',`${view==='top-down'?'Top-down':'Isometric'} office rotated ${angle} degrees with department rooms, real AI coworkers, ${live?next.stations.length:12} computers and collaboration lounge`);
-    if(live)paintOffice();if(physicsChanged)for(const [id]of packets)dropPacket(id);return physicsChanged;
+    if(live)paintOffice();if(physicsChanged)for(const [id]of packets){dropPacket(id);seen.delete(id);}return physicsChanged;
   }
   const motionEnabled=()=>motionOverride===null?!reduced.matches:motionOverride;
   function motionLabel() {const playing=motionEnabled();$('motion-toggle').textContent=playing?'Pause movement':'Play movement';$('motion-toggle').setAttribute('aria-pressed',String(!playing));$('world').dataset.motion=playing?'playing':'paused';$('world').dataset.motionExplicit=String(motionOverride===true&&reduced.matches);if(!playing)for(const a of actors.values()){a.element.classList.remove('office-walking');if(a.data.working||a.data.handoff){routeQueue.delete(a.data.id);a.position={...O.destination(a.data,a.index,mode==='office'?geometry:null)};a.route=[];place(a);}}}
@@ -130,13 +130,20 @@ window.OfficeWorldView=(()=>{
     if(active.some(a=>a.data.id===selected))detailed.add(selected);
     for(const a of actors.values())a.element.classList.toggle('bubble-detailed',detailed.has(a.data.id));
   }
-  function inspect(actor) {
+  function inspect(actor,manual=false) {
+    const focusedChild=document.activeElement?.dataset?.relatedAgent;
+    const focusedHeading=selected===actor.id&&document.activeElement===$('agent-detail').querySelector('h3');
     selected=actor.id;
+    if(manual)selectedPinned=true;
     const role=window.AgentWorld.ROLES.find(r=>r.id===actor.role);
     const view=O.presentation(actor);
-    $('agent-detail').replaceChildren(node('h3','',actor.label),node('p','task-title',view.title),node('p','',`${role?.role||'Role unknown'} / ${view.word}`),node('p','',view.detail),node('p','',`Going to: ${view.destination}`),node('p','detail-note',`${actor.note}${actor.taskRef?` · Work item ${actor.taskRef.slice(0,8)}`:''}`));
+    const heading=node('h3','',actor.label);heading.tabIndex=-1;
+    $('agent-detail').replaceChildren(heading,node('p','task-title',view.title),node('p','',`${role?.role||'Role unknown'} / ${view.word}`),node('p','',view.detail),node('p','',`Going to: ${view.destination}`),node('p','detail-note',`${actor.note}${actor.taskRef?` · Work item ${actor.taskRef.slice(0,8)}`:''}`));
     const current=actors.get(actor.id);if(current)showCoordinates(current);
-    if(actor.state==='running'&&!actor.action&&!actor.taskLabel)$('agent-detail').append(node('p','connection-hint','No current task or tool event is visible for this open session. It may be idle; process presence alone cannot reveal work.'));
+    if(actor.activeChildCount){const children=[...actors.values()].map(a=>a.data).filter(a=>a.parentId===actor.sourceId&&a.working);const related=node('div','related-agents');related.append(node('strong','',`Connected agents working (${children.length})`));for(const child of children){const button=node('button','related-agent',`${child.label} · ${O.presentation(child).word}`);button.type='button';button.dataset.relatedAgent=child.id;button.addEventListener('click',()=>{const current=actors.get(child.id);if(current)inspect(current.data,true);});related.append(button);}$('agent-detail').append(related);}
+    if(focusedChild){const replacement=[...$('agent-detail').querySelectorAll('[data-related-agent]')].find(button=>button.dataset.relatedAgent===focusedChild);(replacement||heading).focus({preventScroll:true});}
+    else if(focusedHeading)heading.focus({preventScroll:true});
+    if(actor.state==='running'&&!actor.action&&!actor.taskLabel&&!actor.activeChildCount)$('agent-detail').append(node('p','connection-hint','No current task or tool event is visible for this open session. It may be idle; process presence alone cannot reveal work.'));
     if(O.canRoam(actor))$('agent-detail').append(node('p','detail-note','Walking through shared areas is a visual waiting routine. It does not indicate a provider task, help visit or meeting.'));
     for(const a of actors.values()) {a.element.classList.toggle('selected',a.data.id===selected);a.element.setAttribute('aria-pressed',String(a.data.id===selected));}
     updateBubbleDensity();
@@ -225,7 +232,7 @@ window.OfficeWorldView=(()=>{
       let a=actors.get(actor.id);
       if(!a) {
         const owned=mode==='office',el=owned?node('button','character office-character'):document.getElementById(`character-${actor.id}`);
-        if(owned) {el.type='button';el.dataset.office=actor.id;const bubble=node('span','character-bubble');bubble.append(node('strong','worker-action'),node('span','worker-task'),node('time','worker-event-time'));el.append(bubble,node('span','person'),node('span','action-prop'),node('span','character-name'));$('office-characters').append(el);el.addEventListener('click',()=>{const current=actors.get(actor.id);if(current)inspect(current.data);});}
+        if(owned) {el.type='button';el.dataset.office=actor.id;const bubble=node('span','character-bubble');bubble.append(node('strong','worker-action'),node('span','worker-task'),node('time','worker-event-time'));el.append(bubble,node('span','person'),node('span','action-prop'),node('span','character-name'));$('office-characters').append(el);el.addEventListener('click',()=>{const current=actors.get(actor.id);if(current)inspect(current.data,true);});}
         a={element:el,owned,position:mode==='office'?geometry.lobby(actor.arrivalIndex):O.lobby(index),route:[],goal:null,assignment:null,data:actor,roamStep:0,rest:0,index:mode==='office'?actor.arrivalIndex:index};actors.set(actor.id,a);
       }
       a.data=actor;
@@ -258,12 +265,13 @@ window.OfficeWorldView=(()=>{
     for(const event of events) packet(event);
     if(mode==='office') {
       const roster=$('office-roster'),focus=document.activeElement?.dataset?.officeRow;roster.replaceChildren();
-      for(const actor of data) {const view=O.presentation(actor),row=node('button','roster-row');row.type='button';row.dataset.officeRow=actor.id;row.setAttribute('aria-label',`Inspect ${actor.label}`);row.setAttribute('aria-pressed',String(actor.id===selected));const r=window.AgentWorld.ROLES.find(r=>r.id===actor.role);row.style.setProperty('--agent',r?.color||'#8999aa');const info=node('span','person-info');info.append(node('strong','',view.title),node('span','',`${r?.role||'Reception'} / ${actor.provider} ${actor.sourceId.slice(0,4)}`));row.append(node('span','portrait',actor.provider.slice(0,2)),info,node('span','role-state',view.word));row.addEventListener('click',()=>inspect(actor));roster.append(row);}
+      for(const actor of data) {const view=O.presentation(actor),row=node('button','roster-row');row.type='button';row.dataset.officeRow=actor.id;row.setAttribute('aria-label',`Inspect ${actor.label}`);row.setAttribute('aria-pressed',String(actor.id===selected));const r=window.AgentWorld.ROLES.find(r=>r.id===actor.role);row.style.setProperty('--agent',r?.color||'#8999aa');const info=node('span','person-info');info.append(node('strong','',view.title),node('span','',`${r?.role||(actor.station?'Shared computer':'Reception')} / ${actor.provider} ${actor.sourceId.slice(0,4)}`));row.append(node('span','portrait',actor.provider.slice(0,2)),info,node('span','role-state',view.word));row.addEventListener('click',()=>inspect(actor,true));roster.append(row);}
       if(focus)roster.querySelector(`[data-office-row="${focus}"]`)?.focus({preventScroll:true});
       if(!data.length)$('agent-detail').replaceChildren(node('h3','','The office is quiet'),node('p','','Start your local agents. Process sightings appear in Local sessions; identified sessions, task roles and handoffs appear here when their events are connected.'));
-      else inspect(data.find(a=>a.id===selected)||data[0]);
+      else {if(selectedPinned&&!data.some(a=>a.id===selected))selectedPinned=false;inspect(O.focusActor(data,selected,selectedPinned));}
       updateBubbleDensity();
-      $('office-summary').textContent=`${data.length} observed workers / ${data.filter(a=>a.working).length} working / ${workstations.length} computers / departments expand with their teams`;
+      const processOnly=sessions.entries.filter(e=>e.kind==='process'&&e.status==='running').length;
+      $('office-summary').textContent=`${data.length} identified workers / ${data.filter(a=>a.working).length} working / ${processOnly} process-only connection${processOnly===1?'':'s'} / ${workstations.length} computers`;
     }
   }
   function frame(now) {
