@@ -148,12 +148,30 @@ class DiscoveryTests(unittest.TestCase):
         self.assertIn("process linkage unknown", entry["evidence"])
         self.assertNotIn("PRIVATE", json.dumps(entry))
         event("response_item", {"type": "function_call", "name": "unrecognized_tool"})
-        self.assertEqual(scanner.view()["entries"][0]["status"], "recent")
+        unknown = scanner.view()["entries"][0]
+        self.assertEqual((unknown["status"], unknown["role"], unknown["taskLabel"]), ("event-working", None, None))
+        self.assertEqual(unknown["recentEvents"][-1]["label"], "Using tool")
         event("response_item", {"type": "function_call", "name": "exec_command"})
         event("event_msg", {"type": "task_complete"})
         self.assertEqual(scanner.view()["entries"][0]["status"], "recent", "an ended unlinked turn does not create a waiting avatar")
         with patch.object(D.time, "time", return_value=time.time() + 301):
             self.assertEqual(scanner.view()["entries"][0]["status"], "recorded")
+
+    def test_namespaced_codex_tool_calls_show_safe_live_activity(self):
+        path = self.record("Codex")
+        scanner = self.scanner()
+        self.append_event(path, {"type": "event_msg", "timestamp": D.timestamp(), "payload": {"type": "task_started"}})
+        self.append_event(path, {"type": "response_item", "timestamp": D.timestamp(), "payload": {
+            "type": "function_call", "namespace": "collaboration", "name": "wait_agent", "arguments": "PRIVATE_ARGUMENTS"}})  # ai-department-allow: session-export (synthetic activity fixture)
+        entry = scanner.view()["entries"][0]
+        self.assertEqual((entry["status"], entry["role"], entry["action"]), ("event-working", "planner", "coordination"))
+        self.assertEqual(entry["recentEvents"][-1]["label"], "Waiting for agents")
+        self.append_event(path, {"type": "response_item", "timestamp": D.timestamp(), "payload": {
+            "type": "function_call", "namespace": "functions", "name": "exec", "arguments": "PRIVATE_COMMAND"}})  # ai-department-allow: session-export (synthetic activity fixture)
+        entry = scanner.view()["entries"][0]
+        self.assertEqual((entry["status"], entry["role"], entry["action"]), ("event-working", None, None))
+        self.assertEqual(entry["recentEvents"][-1]["label"], "Using tool")
+        self.assertNotIn("PRIVATE", json.dumps(entry))
 
     def test_live_codex_sqlite_threads_appear_without_hook_or_session_file(self):
         home = self.root / "codex-home"

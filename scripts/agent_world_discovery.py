@@ -191,6 +191,10 @@ TOOL_ACTIVITY = {
     "TodoWrite": ("planner", "planning", "Planning work"), "update_plan": ("planner", "planning", "Planning work"),
     "EnterPlanMode": ("planner", "planning", "Planning work"), "ExitPlanMode": ("planner", "planning", "Planning work"),
     "Agent": ("planner", "coordination", "Coordinating agents"), "Task": ("planner", "coordination", "Coordinating agents"),
+    "collaboration.wait_agent": ("planner", "coordination", "Waiting for agents"),
+    "collaboration.send_message": ("planner", "coordination", "Coordinating agents"),
+    "collaboration.followup_task": ("planner", "coordination", "Coordinating agents"),
+    "collaboration.spawn_agent": ("planner", "coordination", "Coordinating agents"),
     "WebSearch": ("planner", "research", "Researching"), "WebFetch": ("planner", "research", "Researching"),
 }
 
@@ -282,7 +286,10 @@ def tool_activity(record, root, now):
                     continue
                 if row.get("type") != "response_item" or payload.get("type") not in ("function_call", "custom_tool_call") or not started:
                     continue
-                names = [payload.get("name")]
+                namespace = payload.get("namespace")
+                raw_name = payload.get("name")
+                names = [namespace + "." + raw_name if isinstance(raw_name, str) and raw_name not in TOOL_ACTIVITY
+                         and namespace in ("functions", "collaboration") else raw_name]
                 busy = True
             for name in names:
                 if not isinstance(name, str):
@@ -303,7 +310,7 @@ def tool_activity(record, root, now):
                     "updatedAt": event_at.isoformat(),
                     "recentEvents": recent_events,
                     "evidence": "Local tool events; department follows activity, not an assigned specialist role"}
-        if record["provider"] == "Claude Code" and busy and event_at and now - event_at.timestamp() <= 30:
+        if busy and event_at and now - event_at.timestamp() <= 30:
             return {"status": "event-working", "role": None, "action": None,
                     "taskLabel": None, "taskRef": None, "updatedAt": event_at.isoformat(),
                     "recentEvents": recent_events,
