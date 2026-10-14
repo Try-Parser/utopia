@@ -61,6 +61,13 @@ test('recent exact session activity takes focus over a process-only worker unles
   const actualWork=O.project({entries:[{...processOnly,status:'event-working'},observed]}, {jobs:[]}).actors;
   assert.equal(O.focusActor(actualWork,null).sourceId,processOnly.id);
 });
+test('worker labels distinguish observed activity, connected parent and open session',()=>{
+  assert.equal(O.workerLabel({role:null,activeChildCount:1,recentEvents:[]}), 'Parent session');
+  assert.equal(O.workerLabel({role:null,activeChildCount:0,recentEvents:[{label:'Tool activity'}]}), 'Activity observed');
+  assert.equal(O.workerLabel({role:null,activeChildCount:0,working:true,recentEvents:[]}), 'Activity observed');
+  assert.equal(O.workerLabel({role:null,activeChildCount:0,recentEvents:[]}), 'Session open');
+  assert.equal(O.workerLabel({role:'builder'}, 'Builder'), 'Builder');
+});
 test('five computers circle a shared clear workspace in every live department',()=>{
   const g=O.layout();M.configure(g);
   try{assert.equal(g.stations.length,30);for(const role of O.roles){const seats=g.stations.filter(s=>s.role===role);assert.equal(seats.length,5);assert.ok(M.free(seats[0].center.x,seats[0].center.y));const room=g.rooms.find(r=>r.role===role);assert.ok(M.free(room.x+160,room.y+30),'door entrance clear');assert.ok(M.free(room.x+115,room.y+30),'space beside first desk through door');

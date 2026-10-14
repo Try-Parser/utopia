@@ -221,12 +221,16 @@ window.OfficeWorldView=(()=>{
   function renderFlow(data,sessions){
     const list=$('task-flow-list'),focus=document.activeElement?.dataset?.flowAgent;list.replaceChildren();
     const known=data.filter(a=>a.taskLabel||a.action||a.handoff);
+    const knownIds=new Set(known.map(a=>a.id));
+    const observed=data.filter(a=>!knownIds.has(a.id)&&(a.activeChildCount||a.working||a.recentEvents?.length));
+    const pending=data.length-known.length-observed.length;
     for(const actor of known.slice(0,24)){const view=O.presentation(actor),li=node('li'),button=node('button','flow-task');button.type='button';button.dataset.flowAgent=actor.id;button.append(node('strong','',view.title),node('span','',`${actor.provider} ${actor.sourceId.slice(0,4)} / ${view.word} / ${view.destination}`));button.addEventListener('click',()=>{button.focus({preventScroll:true});actors.get(actor.id)?.element.click();});li.append(button);list.append(li);}
+    for(const actor of observed.slice(0,Math.max(0,24-known.length))){const view=O.presentation(actor),li=node('li'),button=node('button','flow-task');button.type='button';button.dataset.flowAgent=actor.id;button.append(node('strong','',actor.activeChildCount?view.title:actor.recentEvents?.at(-1)?.label||view.word),node('span','',`${actor.provider} ${actor.sourceId.slice(0,4)} / ${O.workerLabel(actor)} / ${view.destination}`));button.addEventListener('click',()=>{button.focus({preventScroll:true});actors.get(actor.id)?.element.click();});li.append(button);list.append(li);}
     if(known.length>24)list.append(node('li','flow-unconnected',`Showing 24 of ${known.length} task-linked workers here. All workers remain available in the office and inspector.`));
     for(const e of (sessions.handoffs||[]).slice(-8).reverse()){const li=node('li','flow-transfer');li.append(node('strong','',e.taskLabel||'Reported task transfer'),node('span','',`${O.roleNames[e.fromRole]} → ${O.roleNames[e.toRole]} / Reported handoff / ${new Date(e.at).toLocaleTimeString()}`));list.append(li);}
-    if(data.length>known.length)list.append(node('li','flow-unconnected',`${data.length-known.length} detected sessions have no connected task/action details.`));
+    if(pending)list.append(node('li','flow-unconnected',`${pending} open session${pending===1?' has':'s have'} no task or tool event yet.`));
     if(!list.children.length)list.append(node('li','flow-unconnected','Waiting for task and action events. Start an agent or connect its activity adapter.'));
-    $('task-flow-count').textContent=`${known.length} task-linked workers / ${(sessions.handoffs||[]).length} reported transfers`;
+    $('task-flow-count').textContent=`${known.length} task-linked / ${observed.length} activity observed / ${(sessions.handoffs||[]).length} reported transfers`;
     if(focus)for(const b of list.querySelectorAll('button'))if(b.dataset.flowAgent===focus)b.focus({preventScroll:true});
   }
   function sync(nextMode,sessions,live,state) {
@@ -266,7 +270,7 @@ window.OfficeWorldView=(()=>{
       if(a.owned) {
         const r=window.AgentWorld.ROLES.find(r=>r.id===actor.role);a.element.style.setProperty('--agent',r?.color||'#8999aa');
         const view=O.presentation(actor);a.element.dataset.action=view.action;a.element.dataset.taskKnown=String(Boolean(actor.taskLabel||actor.handoff?.taskLabel));a.element.title=`${view.word} / ${view.title} / ${view.detail} / Going to ${view.destination}`;
-        a.element.querySelector('.character-name').textContent=`${r?.role||'Unconnected'} / ${actor.provider.slice(0,2)} ${actor.sourceId.slice(0,4)}`;
+        a.element.querySelector('.character-name').textContent=`${O.workerLabel(actor,r?.role)} / ${actor.provider.slice(0,2)} ${actor.sourceId.slice(0,4)}`;
         a.element.querySelector('.worker-action').textContent=view.word;
         const liveDetail=actor.id.startsWith('job-')?actor.activity:actor.taskLabel;
         a.element.querySelector('.worker-task').textContent=a.ambient&&!actor.taskLabel?'Waiting routine (visual)':actor.colleague?`${view.word}: ${actor.colleague.label} · ${view.title}`:actor.handoff?`To ${view.destination}: ${view.title}`:liveDetail||view.title;
@@ -281,7 +285,7 @@ window.OfficeWorldView=(()=>{
     for(const event of events) packet(event);
     if(mode==='office') {
       const roster=$('office-roster'),focus=document.activeElement?.dataset?.officeRow;roster.replaceChildren();
-      for(const actor of data) {const view=O.presentation(actor),row=node('button','roster-row');row.type='button';row.dataset.officeRow=actor.id;row.setAttribute('aria-label',`Inspect ${actor.label}`);row.setAttribute('aria-pressed',String(actor.id===selected));const r=window.AgentWorld.ROLES.find(r=>r.id===actor.role);row.style.setProperty('--agent',r?.color||'#8999aa');const info=node('span','person-info');info.append(node('strong','',view.title),node('span','',`${r?.role||(actor.station?'Shared computer':'Reception')} / ${actor.provider} ${actor.sourceId.slice(0,4)}`));row.append(node('span','portrait',actor.provider.slice(0,2)),info,node('span','role-state',view.word));row.addEventListener('click',()=>inspect(actor,true));roster.append(row);}
+      for(const actor of data) {const view=O.presentation(actor),row=node('button','roster-row');row.type='button';row.dataset.officeRow=actor.id;row.setAttribute('aria-label',`Inspect ${actor.label}`);row.setAttribute('aria-pressed',String(actor.id===selected));const r=window.AgentWorld.ROLES.find(r=>r.id===actor.role);row.style.setProperty('--agent',r?.color||'#8999aa');const info=node('span','person-info');info.append(node('strong','',view.title),node('span','',`${O.workerLabel(actor,r?.role)} / ${actor.provider} ${actor.sourceId.slice(0,4)}`));row.append(node('span','portrait',actor.provider.slice(0,2)),info,node('span','role-state',view.word));row.addEventListener('click',()=>inspect(actor,true));roster.append(row);}
       if(focus)roster.querySelector(`[data-office-row="${focus}"]`)?.focus({preventScroll:true});
       if(!data.length)$('agent-detail').replaceChildren(node('h3','','The office is quiet'),node('p','','Start your local agents. Process sightings appear in Local sessions; identified sessions, task roles and handoffs appear here when their events are connected.'));
       else {if(selectedPinned&&!data.some(a=>a.id===selected))selectedPinned=false;inspect(O.focusActor(data,selected,selectedPinned));}

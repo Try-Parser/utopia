@@ -110,6 +110,9 @@
       .sort((a,b)=>Date.parse(b.recentEvents.at(-1).at)-Date.parse(a.recentEvents.at(-1).at))[0];
     return observed||current||actors[0]||null;
   }
+  function workerLabel(actor,roleLabel) {
+    return roleLabel||roleNames[actor.role]|| (actor.activeChildCount?'Parent session':actor.working||actor.recentEvents?.length?'Activity observed':actor.station?'Shared computer':'Session open');
+  }
   // Only an explicitly reported idle role may take a visual waiting walk.
   function canRoam(actor) {return Boolean(actor.role)&&actor.state==='adapter-idle'&&!actor.working&&!actor.handoff;}
   function idleStops(actor,index,geometry) {
@@ -117,5 +120,5 @@
     const waiting=geometry?geometry.lobby(index):lobby(index);
     return [index%2?left:coffee,middle,actor.station?.point||(actor.role?desks[actor.role]:waiting),index%2?coffee:left,waiting];
   }
-  return {roles,roleNames,actions,desks,workstations,layout,isPlanning,sceneLayout,assignWorkstations,lobby,project,destination,sceneActors,presentation,focusActor,canRoam,idleStops};
+  return {roles,roleNames,actions,desks,workstations,layout,isPlanning,sceneLayout,assignWorkstations,lobby,project,destination,sceneActors,presentation,workerLabel,focusActor,canRoam,idleStops};
 });
