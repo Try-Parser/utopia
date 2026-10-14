@@ -229,3 +229,12 @@ dialog{background:#213c4a;border-color:#617b8b;color:#e6edf0;border-radius:11px;
 .connection-help{margin:0;padding:10px 11px;border:1px solid #a58c62;border-left:4px solid #ddb77d;border-radius:6px;background:#394c52;color:#f5e9d3;font-size:10px;line-height:1.5}
 @media(min-width:801px){.workspace-grid.inspector-open .office-sidebar{display:none}.workspace-grid.inspector-open .team-panel{position:relative;inset:auto;width:310px;min-width:280px;max-width:27vw;z-index:1;box-shadow:none;flex-shrink:0}}
 @media(max-width:800px){.workspace-grid .team-panel:not([hidden]){position:fixed;inset:0;width:100vw;max-width:none;height:100dvh;z-index:31;border:0;border-radius:0;box-shadow:none}#team-close{min-height:44px}}
+
+/* The camera owns zoom and pan; the floor itself always fits the viewport. */
+.world-scroll{overflow:clip;touch-action:none}
+.world,.world.zoomed,.world.expanded:not(.zoomed){width:min(100cqw,calc(100cqh * var(--floor-ratio,2.1)));aspect-ratio:var(--floor-width,1280)/var(--floor-height,610);justify-self:center;align-self:center;transform:translate(var(--camera-x,0px),var(--camera-y,0px)) scale(var(--camera-scale,1));transform-origin:center;will-change:transform}
+.office{cursor:grab}.office:active{cursor:grabbing}
+.zoom-controls{display:flex;align-items:center;gap:2px;border:1px solid #58717d;border-radius:7px;background:#2b4553;padding:2px}
+.zoom-controls button{min-width:30px;min-height:28px;padding:2px 6px;font-size:17px;line-height:1;border:0}
+.zoom-controls output{min-width:38px;text-align:center;color:#dce8ec;font:10px ui-monospace,monospace}
+@media(max-width:560px){.scene-actions{gap:5px;flex-wrap:wrap;justify-content:flex-end}.scene-actions #world-status{display:none}.zoom-controls button{min-width:34px;min-height:34px}}

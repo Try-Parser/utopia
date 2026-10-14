@@ -114,7 +114,7 @@ window.OfficeWorldView=(()=>{
     const live=mode==='office';original.style.display=live?'none':'';scene.style.display=live?'':'none';if(physicsChanged)M.configure(live?next:null);
     sceneGeometry=live?O.sceneLayout(next,view,angle):{width:1280,height:610,stations:O.workstations};
     const width=sceneGeometry.width,height=sceneGeometry.height;
-    svg.setAttribute('viewBox',`0 0 ${width} ${height}`);$('world').style.setProperty('--floor-width',String(width));$('world').style.setProperty('--floor-height',String(height));$('world').classList.toggle('expanded',live&&next.height>850);$('world').classList.toggle('isometric',live);$('world').dataset.view=view;
+    svg.setAttribute('viewBox',`0 0 ${width} ${height}`);$('world').style.setProperty('--floor-width',String(width));$('world').style.setProperty('--floor-height',String(height));$('world').style.setProperty('--floor-ratio',String(width/height));$('world').classList.toggle('expanded',live&&next.height>850);$('world').classList.toggle('isometric',live);$('world').dataset.view=view;
     links.setAttribute('viewBox',`0 0 ${width} ${height}`);svg.setAttribute('aria-label',`${view==='top-down'?'Top-down':'Isometric'} office rotated ${angle} degrees with department rooms, real AI coworkers, ${live?next.stations.length:12} computers and collaboration lounge`);
     if(live)paintOffice();if(physicsChanged)for(const [id]of packets){dropPacket(id);seen.delete(id);}return physicsChanged;
   }
