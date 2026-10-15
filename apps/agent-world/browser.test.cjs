@@ -40,7 +40,10 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
       if(manual)await phone.getByRole('button',{name:'Whole office',exact:true}).click();
       await phone.waitForSelector('.office-character');
       if(manual){assert.equal(await phone.locator('#world').evaluate(e=>e.classList.contains('zoomed')),false,'late arrival respects chosen overview');}
-      else{await phone.waitForFunction(()=>{const actor=document.querySelector('.office-character'),bounds=actor?.getBoundingClientRect(),viewport=document.getElementById('world').parentElement.getBoundingClientRect();return bounds&&bounds.left+bounds.width/2>=viewport.left&&bounds.left+bounds.width/2<=viewport.right&&bounds.top+bounds.height/2>=viewport.top&&bounds.top+bounds.height/2<=viewport.bottom;});await phone.screenshot({path:path.join(process.env.EVIDENCE_DIR||'/tmp','delayed-mobile-arrival.png'),fullPage:true});}
+      else{await phone.waitForFunction(()=>{const actor=document.querySelector('.office-character'),bounds=actor?.getBoundingClientRect(),viewport=document.getElementById('world').parentElement.getBoundingClientRect();return bounds&&bounds.left+bounds.width/2>=viewport.left&&bounds.left+bounds.width/2<=viewport.right&&bounds.top+bounds.height/2>=viewport.top&&bounds.top+bounds.height/2<=viewport.bottom;});
+        const phoneFloor=await phone.locator('#world').boundingBox();assert.ok(phoneFloor.height>=844*.68,`portrait camera uses the available screen: ${JSON.stringify(phoneFloor)}`);
+        await phone.setViewportSize({width:320,height:568});await phone.waitForFunction(()=>document.getElementById('world').getBoundingClientRect().height>=innerHeight*.68);assert.equal(await phone.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'responsive camera adds no phone page overflow');
+        await phone.setViewportSize({width:390,height:844});await phone.screenshot({path:path.join(process.env.EVIDENCE_DIR||'/tmp','delayed-mobile-arrival.png'),fullPage:true});}
       await phone.close();}
     }finally{await phoneContext.close();}
     assert.equal(await page.locator('#game-player').count(),0);assert.equal(await page.locator('.office-character').count(),1);

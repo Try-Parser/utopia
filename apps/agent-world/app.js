@@ -165,9 +165,14 @@ function zoomOffice(next,clientX,clientY){
   cameraX=x-(x-cameraX)*scale/cameraScale;cameraY=y-(y-cameraY)*scale/cameraScale;cameraScale=scale;
   cameraRevision++;officeCameraManual=true;officeCameraPending=false;applyOfficeCamera();
 }
+function preferredCloseScale(){
+  if(!officePhone.matches)return 2.2;
+  const floor=$('world'),viewport=floor.parentElement;
+  return Math.min(3.25,Math.max(2.2,Math.round(viewport.clientHeight*.73/Math.max(1,floor.clientHeight)*100)/100));
+}
 function setOfficeZoom(zoomed,automatic=false) {
   cameraRevision++;if(!automatic){officeCameraManual=true;officeCameraPending=false;}
-  cameraScale=zoomed?2.2:1;cameraX=0;cameraY=0;applyOfficeCamera();
+  cameraScale=zoomed?preferredCloseScale():1;cameraX=0;cameraY=0;applyOfficeCamera();
   if(zoomed&&mode==='office'){officeCameraPending=automatic&&window.OfficeWorldView.getState().length===0;focusOfficeCamera();}
 }
 $('map-zoom').addEventListener('click',()=>setOfficeZoom(!$('world').classList.contains('zoomed')));
@@ -177,7 +182,8 @@ const officeViewport=$('world').parentElement;
 officeViewport.addEventListener('wheel',event=>{if(mode!=='office')return;event.preventDefault();zoomOffice(cameraScale*(event.deltaY<0?1.12:1/1.12),event.clientX,event.clientY);},{passive:false});
 $('world').addEventListener('keydown',event=>{if(event.key==='+'||event.key==='='){event.preventDefault();zoomOffice(cameraScale*1.25);}else if(event.key==='-'){event.preventDefault();zoomOffice(cameraScale/1.25);}else if(event.key==='0'){event.preventDefault();setOfficeZoom(false);}});
 const officePhone=matchMedia('(max-width:560px)');officePhone.addEventListener('change',()=>{if(mode==='office'){officeCameraManual=false;setOfficeZoom(officePhone.matches,true);}});
-new ResizeObserver(()=>{applyOfficeCamera();$('world').style.setProperty('--actor-scale',String(document.body.dataset.mode==='office'?Math.max(.44,Math.min(.64,$('world').clientWidth/(window.OfficeWorldView?.getSceneLayout().width||1280)*.98)):Math.max(.42,Math.min(1.2,$('world').clientWidth/1280))));}).observe($('world'));
+const officeResizeObserver=new ResizeObserver(()=>{if(officePhone.matches&&!officeCameraManual&&cameraScale>1){const scale=preferredCloseScale();if(scale!==cameraScale){cameraScale=scale;focusOfficeCamera();}}applyOfficeCamera();$('world').style.setProperty('--actor-scale',String(document.body.dataset.mode==='office'?Math.max(.44,Math.min(.64,$('world').clientWidth/(window.OfficeWorldView?.getSceneLayout().width||1280)*.98)):Math.max(.42,Math.min(1.2,$('world').clientWidth/1280))));});
+officeResizeObserver.observe($('world'));officeResizeObserver.observe(officeViewport);
 function accessOptions() { const canEdit = L.get().allowEdits && ['planner', 'builder'].includes($('mission-role').value); $('mission-access').options[1].disabled = !canEdit; if (!canEdit) $('mission-access').value = 'read-only'; }
 $('mission-role').addEventListener('change', accessOptions);
 $('new-mission').addEventListener('click',()=>{$('mission-role').value=selected;$('mission-access').value='read-only';accessOptions();$('mission-description').textContent=`Assign a native Codex task in ${L.get().workspace}. Choose a specialist and access.`;$('mission-note').textContent='Uses your Codex account. Local edits are possible when selected. Commits, publication, and deployment are not part of task execution.';$('mission-error').textContent='';$('mission-title').setCustomValidity('');$('mission-dialog').showModal();$('mission-title').focus();});$('close-dialog').addEventListener('click',()=>$('mission-dialog').close());
