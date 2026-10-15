@@ -122,6 +122,8 @@ The world can scroll horizontally on small screens while page controls and missi
 
 Python live tests and the browser fixture server execute offline subprocess fixtures rather than model calls. They verify stream handling, native process cancellation, access selection, replay protection, persistence, and actual HTTP/UI journeys; they do not establish native account availability. The optional native connection smoke is separate.
 
+The Chromium browser journeys are `apps/agent-world/browser.test.cjs` and `apps/agent-world/browser-burst.test.cjs`. The parallel-worker journey uses its own fixture server so its 30-second active heartbeat window is independent of the longer interface journey. Run both in the development Playwright Docker environment when changing the office UI or session flow.
+
 The office includes a furnished eight-seat conference room and equally sized, numbered computers. Each department starts with five desks around a shared circular workspace and adds pods for more role-known parallel sessions. Room height grows with new pods, and occupied computers retain stable identities during the visit. Click a computer or select its number in the enlarged display; every workstation has an independent app URL. Changed occupants disconnect the prior preview. Unknown roles remain in reception. Large offices scroll inside the floor view, and meetings are not inferred from the conference furniture.
 
 ### Show what agents are doing
