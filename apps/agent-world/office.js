@@ -17,10 +17,10 @@ window.OfficeWorldView=(()=>{
     const P=(x,y,z=0)=>v.project(x,y,z),polygon=(points,attrs,parent=scene)=>shape('polygon',{points:points.map(p=>`${p.x},${p.y}`).join(' '),...attrs},parent);
     const floor=(bounds,attrs,parent=scene)=>{const [x,y,r,b]=bounds;return polygon([P(x,y),P(r,y),P(r,b),P(x,b)],attrs,parent);};
     const line=(a,b,attrs,parent=scene)=>shape('path',{d:`M${a.x} ${a.y}L${b.x} ${b.y}`,...attrs},parent);
-    const box=(bounds,z,colors,parent=scene,base=0)=>{const [x,y,r,b]=bounds,A=P(x,y,z),B=P(r,y,z),C=P(r,b,z),D=P(x,b,z);
-      polygon([D,C,P(r,b,base),P(x,b,base)],{fill:colors[1]},parent);
-      polygon([B,C,P(r,b,base),P(r,y,base)],{fill:colors[2]},parent);
-      polygon([A,B,C,D],{fill:colors[0],stroke:colors[3]||colors[0],'stroke-width':.8},parent);
+    const box=(bounds,z,colors,parent=scene,base=0)=>{const [x,y,r,b]=bounds,top=[P(x,y,z),P(r,y,z),P(r,b,z),P(x,b,z)],bottom=[P(x,y,base),P(r,y,base),P(r,b,base),P(x,b,base)],centerX=top.reduce((sum,p)=>sum+p.x,0)/4;
+      const edges={north:[0,1],east:[1,2],south:[2,3],west:[3,0]};
+      for(const side of v.visibleFaces(bounds)){const [a,c]=edges[side],shade=(top[a].x+top[c].x)/2<centerX?colors[1]:colors[2];polygon([top[a],top[c],bottom[c],bottom[a]],{fill:shade},parent);}
+      polygon(top,{fill:colors[0],stroke:colors[3]||colors[0],'stroke-width':.8},parent);
     };
     shape('rect',{width:v.width,height:v.height,fill:'#263744'});
     const platform=[25,25,w-25,h-25];floor([35,48,w-8,h-5],{fill:'#101f29',opacity:.5});

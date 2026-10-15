@@ -235,9 +235,11 @@ test('local session events seat observed coding activity without adapter or infe
 });
 
 test('game presentation projects world positions without changing movement or station ownership',()=>{
-  const g=O.layout(),v=O.sceneLayout(g);assert.equal(v.width,2175);assert.equal(v.height,1123.5);
-  assert.deepEqual(v.project(0,0),{x:535,y:80});assert.deepEqual(v.project(1600,g.height),{x:1640,y:1043.5});
-  assert.deepEqual(v.project(220,140,45),{x:685,y:170});
+  const g=O.layout(),v=O.sceneLayout(g),slope=Math.sqrt(3)/2,near=(actual,expected)=>assert.ok(Math.abs(actual-expected)<1e-9,`${actual} differs from ${expected}`);
+  near(v.width,(g.width+g.height)*slope+80);near(v.height,(g.width+g.height)*.5+160);
+  const origin=v.project(0,0),far=v.project(g.width,g.height),raised=v.project(220,140,45);
+  near(origin.x,g.height*slope+40);near(origin.y,80);near(far.x,g.width*slope+40);near(far.y,(g.width+g.height)*.5+80);
+  near(raised.x,(220-140+g.height)*slope+40);near(raised.y,(220+140)*.5+80-45);
   for(const [i,s]of v.stations.entries()){assert.equal(s.key,g.stations[i].key);assert.deepEqual(s.point,g.stations[i].point);assert.deepEqual(s.desk,g.stations[i].desk);assert.deepEqual(s.screen,v.project(s.desk.x,s.desk.y,45));assert.ok(s.screen.x>0&&s.screen.x<v.width&&s.screen.y>0&&s.screen.y<v.height);}
 });
 
@@ -270,11 +272,19 @@ test('top-down is a presentation projection of the same computers and conference
 });
 
 test('orbit projection keeps every physical computer on its own monitor through a full turn',()=>{
- const g=O.layout(),home=O.sceneLayout(g);assert.deepEqual(home.project(100,200),{x:100-200*.5+g.height*.5+40,y:100*.2+200*.65+80});
+ const g=O.layout(),home=O.sceneLayout(g);assert.ok(Math.abs(home.project(100,200).x-(100-200+g.height)*Math.sqrt(3)/2-40)<1e-9);
  for(const view of ['isometric','top-down'])for(const angle of [0,30,90,180,270,359]){
    const scene=O.sceneLayout(g,view,angle);
+   if(view==='isometric'){
+     const p=scene.project(200,200),x=scene.project(201,200),y=scene.project(200,201),z=scene.project(200,200,1),length=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+     if(angle%90===0)assert.ok(Math.abs(length(x,p)-length(y,p))<1e-9,'cardinal views balance X and Y');
+     assert.ok(Math.abs(Math.abs((x.x-p.x)*(y.y-p.y)-(x.y-p.y)*(y.x-p.x))-Math.sqrt(3)/2)<1e-9,'rotating the floor preserves projected area');
+     assert.ok(Math.abs(z.y-p.y+1)<1e-9,'Z raises a point by one projected unit');assert.equal(z.x,p.x);
+   }
    for(const station of scene.stations){const physical=g.stations.find(s=>s.key===station.key);assert.deepEqual(station.point,physical.point);assert.deepEqual(station.screen,scene.project(physical.desk.x,physical.desk.y,view==='top-down'?0:45));assert.ok(station.screen.x>0&&station.screen.x<scene.width&&station.screen.y>0&&station.screen.y<scene.height);}
    assert.notDeepEqual(scene.project(100,200),scene.project(200,100));
  }
  assert.notDeepEqual(O.sceneLayout(g,'isometric',180).project(100,200),home.project(100,200));
+ assert.deepEqual([0,90,180,270].map(angle=>O.sceneLayout(g,'isometric',angle).visibleFaces([100,100,200,200])),[['east','south'],['north','east'],['north','west'],['south','west']]);
+ assert.deepEqual(O.sceneLayout(g,'top-down').visibleFaces([100,100,200,200]),[]);
 });

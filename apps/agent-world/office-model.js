@@ -42,13 +42,18 @@
   }
   // Movement stays in world coordinates; only presentation uses this projection.
   function sceneLayout(geometry,view='isometric',angle=0) {
-    const flat=view==='top-down',radians=(Number.isFinite(angle)?angle:0)*Math.PI/180,cos=Math.cos(radians),sin=Math.sin(radians);
+    const flat=view==='top-down',radians=(Number.isFinite(angle)?angle:0)*Math.PI/180,cos=Math.cos(radians),sin=Math.sin(radians),isoX=Math.sqrt(3)/2;
     const centerX=geometry.width/2,centerY=geometry.height/2;
-    const raw=(x,y,z=0)=>{const dx=x-centerX,dy=y-centerY,u=dx*cos-dy*sin,v=dx*sin+dy*cos;return flat?{x:u,y:v}:{x:u-v*.5,y:u*.2+v*.65-z};};
+    const raw=(x,y,z=0)=>{const dx=x-centerX,dy=y-centerY,u=dx*cos-dy*sin,v=dx*sin+dy*cos;return flat?{x:u,y:v}:{x:(u-v)*isoX,y:(u+v)*.5-z};};
     const corners=[[0,0],[geometry.width,0],[geometry.width,geometry.height],[0,geometry.height]].map(([x,y])=>raw(x,y));
     const minX=Math.min(...corners.map(p=>p.x)),maxX=Math.max(...corners.map(p=>p.x)),minY=Math.min(...corners.map(p=>p.y)),maxY=Math.max(...corners.map(p=>p.y));
     const project=(x,y,z=0)=>{const p=raw(x,y,flat?0:z);return {x:p.x-minX+40,y:p.y-minY+(flat?40:80)};};
-    return {width:maxX-minX+80,height:maxY-minY+(flat?80:160),project,stations:geometry.stations.map(s=>({...s,screen:project(s.desk.x,s.desk.y,flat?0:45)}))};
+    const visibleFaces=bounds=>{
+      if(flat)return [];
+      const [x,y,r,b]=bounds,points=[project(x,y),project(r,y),project(r,b),project(x,b)],center=points.reduce((sum,p)=>sum+p.y,0)/4;
+      return [[0,1,'north'],[1,2,'east'],[2,3,'south'],[3,0,'west']].filter(([a,c])=>(points[a].y+points[c].y)/2>center+1e-7).map(([, ,side])=>side);
+    };
+    return {width:maxX-minX+80,height:maxY-minY+(flat?80:160),project,visibleFaces,stations:geometry.stations.map(s=>({...s,screen:project(s.desk.x,s.desk.y,flat?0:45)}))};
   }
   // The manual/demo floor retains its original two desks; live departments use layout().
   const workstations=roles.flatMap(role=>[0,1].map(index=>{const lower=roles.indexOf(role)>=3,x=desks[role].x+index*78,y=desks[role].y;return {key:`${role}:${index}`,role,index,point:{x,y},screen:{x:x-3,y:y-(lower?92:94)},desk:{x,y:y-(lower?85:87)}};}));
