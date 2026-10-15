@@ -237,14 +237,14 @@ window.OfficeWorldView=(()=>{
     const actor=a.data,view=O.presentation(actor),bubble=a.element.querySelector('.character-bubble');
     const reported=Boolean(actor.taskLabel||actor.handoff?.taskLabel);
     const detail=actor.colleague?`${view.word}: ${actor.colleague.label} · ${view.title}`:actor.handoff?`To ${view.destination}: ${view.title}`:actor.id.startsWith('job-')?actor.activity:actor.taskLabel;
-    const output=a.bubbleValue;
-    bubble.hidden=!output&&!reported;
-    a.element.dataset.bubble=output?'transcript':reported?'reported':'none';
-    a.element.dataset.taskKnown=String(Boolean(output||reported));
-    a.element.querySelector('.worker-action').textContent=output?.speaker||view.word;
-    a.element.querySelector('.worker-task').textContent=output?.text||detail||view.title;
-    const eventTime=a.element.querySelector('.worker-event-time'),at=output?.at||actor.updatedAt;
-    eventTime.hidden=!output&&!reported;
+    const output=a.bubbleValue,activity=O.activityBubble(actor),visible=Boolean(output||reported||activity);
+    bubble.hidden=!visible;
+    a.element.dataset.bubble=output?'transcript':visible?'reported':'none';
+    a.element.dataset.taskKnown=String(visible);
+    a.element.querySelector('.worker-action').textContent=output?.speaker||(reported?view.word:activity?.speaker)||view.word;
+    a.element.querySelector('.worker-task').textContent=output?.text||detail||activity?.text||view.title;
+    const eventTime=a.element.querySelector('.worker-event-time'),at=output?.at||activity?.at||actor.updatedAt;
+    eventTime.hidden=!visible;
     if(!eventTime.hidden&&at){eventTime.dateTime=at;eventTime.textContent=`Updated ${new Date(at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;}
   }
   function refreshBubble(a){

@@ -136,11 +136,17 @@
     const characters=Array.from(entry.text.trim()),text=characters.slice(0,180).join('');
     return {speaker:`${entry.speaker} · ${transcript.live?'Live':'Last recorded'}`,text:text+(characters.length>180?'…':''),at:entry.at};
   }
+  function activityBubble(actor,now=Date.now()) {
+    const event=actor.recentEvents?.at(-1),at=Date.parse(event?.at);
+    if(!event?.label||!Number.isFinite(at)||at>now+5000)return null;
+    if(!actor.working&&now-at>120000)return null;
+    return {speaker:actor.working?'Latest reported activity':'Recent reported activity',text:event.label,at:event.at};
+  }
   // Only an explicitly reported idle role may take a visual waiting walk.
   function canRoam(actor) {return Boolean(actor.role)&&actor.state==='adapter-idle'&&!actor.working&&!actor.handoff;}
   function idleStops(actor,index,geometry) {
     const shift=geometry?.topExtra||0,coffee=geometry?{x:1020,y:445+shift}:{x:790,y:310},middle=geometry?{x:570,y:388+shift}:{x:480,y:330};
     return [coffee,middle,actor.station?.point||desks[actor.role]];
   }
-  return {roles,roleNames,actions,desks,workstations,layout,isPlanning,sceneLayout,assignWorkstations,lobby,project,destination,departureTarget,sceneActors,presentation,workerLabel,transcriptBubble,focusActor,canRoam,idleStops};
+  return {roles,roleNames,actions,desks,workstations,layout,isPlanning,sceneLayout,assignWorkstations,lobby,project,destination,departureTarget,sceneActors,presentation,workerLabel,transcriptBubble,activityBubble,focusActor,canRoam,idleStops};
 });

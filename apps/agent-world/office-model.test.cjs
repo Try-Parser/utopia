@@ -164,6 +164,14 @@ test('speech bubbles use the latest bounded real session text and preserve its s
   assert.equal(Array.from(long.text).length,181);
   assert.match(long.speaker,/Last recorded/);
 });
+test('a reported activity event supplies a bubble when transcript text is unavailable',()=>{
+  const now=Date.parse('2026-10-15T04:00:00Z');
+  const actor={working:false,recentEvents:[{at:new Date(now-30000).toISOString(),label:'Tool activity'}]};
+  assert.deepEqual(O.activityBubble(actor,now),{speaker:'Recent reported activity',text:'Tool activity',at:actor.recentEvents[0].at});
+  assert.equal(O.activityBubble(actor,now+121000),null,'a waiting worker does not keep stale activity on screen');
+  assert.equal(O.activityBubble({...actor,recentEvents:[]},now),null,'an open session without an event stays silent');
+  assert.equal(O.activityBubble({...actor,working:true},now).speaker,'Latest reported activity');
+});
 test('five computers circle a shared clear workspace in every live department',()=>{
   const g=O.layout();M.configure(g);
   try{assert.equal(g.stations.length,35);for(const role of O.roles){const seats=g.stations.filter(s=>s.role===role);assert.equal(seats.length,5);assert.ok(M.free(seats[0].center.x,seats[0].center.y));const room=g.rooms.find(r=>r.role===role);assert.ok(M.free(room.x+160,room.y+30),'door entrance clear');assert.ok(M.free(room.x+115,room.y+30),'space beside first desk through door');
