@@ -129,10 +129,11 @@ window.OfficeWorldView=(()=>{
   const node=(tag,cls,text)=>{const n=document.createElement(tag);n.className=cls||'';if(text!==undefined)n.textContent=text;return n;};
   function updateBubbleDensity(){
     const active=[...actors.values()].filter(a=>a.data.working||a.data.handoff).sort((a,b)=>Date.parse(b.data.updatedAt||0)-Date.parse(a.data.updatedAt||0));
-    const detailed=new Set(active.slice(0,2).map(a=>a.data.id));
+    const detailed=new Set(active.slice(0,matchMedia('(max-width:560px)').matches?1:2).map(a=>a.data.id));
     if(active.some(a=>a.data.id===selected))detailed.add(selected);
     for(const a of actors.values())a.element.classList.toggle('bubble-detailed',detailed.has(a.data.id));
   }
+  window.addEventListener('resize',updateBubbleDensity);
   function inspect(actor,manual=false) {
     const focusedChild=document.activeElement?.dataset?.relatedAgent;
     const focusedHeading=selected===actor.id&&document.activeElement===$('agent-detail').querySelector('h3');
@@ -215,9 +216,9 @@ window.OfficeWorldView=(()=>{
       if(best.dx||best.dy){const line=document.createElementNS('http://www.w3.org/2000/svg','line'),x=point=>(point-world.left)/world.width*sceneGeometry.width,y=point=>(point-world.top)/world.height*sceneGeometry.height;line.setAttribute('class','bubble-leader');line.setAttribute('x1',x((best.rect.left+best.rect.right)/2));line.setAttribute('y1',y(best.rect.bottom));line.setAttribute('x2',x(actorRect.left+actorRect.width/2));line.setAttribute('y2',y(actorRect.top+actorRect.height*.4));links.append(line);}
     }
   }
-  function clear() {for(const a of actors.values()){a.element.classList.remove('office-walking','at-desk','at-conference-seat');if(a.owned)a.element.remove();}actors.clear();routeQueue.clear();workstations=[];for(const p of packets.values())p.element.remove();packets.clear();seen.clear();helpLinks.clear();links.replaceChildren();lastStage=null;}
+  function clear() {for(const a of actors.values()){clearTimeout(a.bubbleTimer);a.element.classList.remove('office-walking','at-desk','at-conference-seat');if(a.owned)a.element.remove();}actors.clear();routeQueue.clear();workstations=[];for(const p of packets.values())p.element.remove();packets.clear();seen.clear();helpLinks.clear();links.replaceChildren();lastStage=null;}
   function queueRoute(actor,target){actor.route=[];routeQueue.set(actor.data.id,{actor,target,assignment:actor.assignment});}
-  function removeActor(id,a){if(a.owned)a.element.remove();actors.delete(id);routeQueue.delete(id);}
+  function removeActor(id,a){clearTimeout(a.bubbleTimer);if(a.owned)a.element.remove();actors.delete(id);routeQueue.delete(id);}
   function beginDeparture(a,kind){
     const target=O.departureTarget(geometry,kind);
     a.departure={kind,target,started:performance.now(),arrived:null};
@@ -226,6 +227,7 @@ window.OfficeWorldView=(()=>{
     a.element.classList.remove('working','at-desk','at-conference-seat','at-help');a.element.classList.add('departing');
     a.element.dataset.action='departing';a.element.title=kind==='breakout'?'Session finished / heading to breakout':'Session closed / heading to exit';
     a.element.querySelector('.character-bubble').hidden=true;a.element.dataset.bubble='none';
+    clearTimeout(a.bubbleTimer);a.bubbleExpiry=null;
     a.bubbleGeneration++;
     if(motionEnabled())queueRoute(a,target);else a.position={...target};
   }
@@ -238,6 +240,8 @@ window.OfficeWorldView=(()=>{
     const reported=Boolean(actor.taskLabel||actor.handoff?.taskLabel);
     const detail=actor.colleague?`${view.word}: ${actor.colleague.label} · ${view.title}`:actor.handoff?`To ${view.destination}: ${view.title}`:actor.id.startsWith('job-')?actor.activity:actor.taskLabel;
     const output=a.bubbleValue,activity=O.activityBubble(actor),visible=Boolean(output||reported||activity);
+    const expiry=activity&&!actor.working&&!output&&!reported?Date.parse(activity.at)+120000:null;
+    if(a.bubbleExpiry!==expiry){clearTimeout(a.bubbleTimer);a.bubbleExpiry=expiry;if(expiry)a.bubbleTimer=setTimeout(()=>{a.bubbleTimer=null;a.bubbleExpiry=null;if(actors.get(actor.id)===a){showBubble(a);layoutBubbles();}},Math.max(0,expiry-Date.now()+20));}
     bubble.hidden=!visible;
     a.element.dataset.bubble=output?'transcript':visible?'reported':'none';
     a.element.dataset.taskKnown=String(visible);
@@ -299,7 +303,7 @@ window.OfficeWorldView=(()=>{
       if(!a) {
         const owned=mode==='office',el=owned?node('button','character office-character'):document.getElementById(`character-${actor.id}`);
         if(owned) {el.type='button';el.dataset.office=actor.id;const bubble=node('span','character-bubble');bubble.append(node('strong','worker-action'),node('span','worker-task'),node('time','worker-event-time'));el.append(bubble,node('span','person'),node('span','action-prop'),node('span','character-name'));$('office-characters').append(el);el.addEventListener('click',()=>{const current=actors.get(actor.id);if(current)inspect(current.data,true);});}
-        a={element:el,owned,position:mode==='office'?geometry.lobby(actor.arrivalIndex):O.lobby(index),route:[],goal:null,assignment:null,data:actor,roamStep:0,rest:0,index:mode==='office'?actor.arrivalIndex:index,bubbleValue:null,bubbleVersion:null,bubbleGeneration:0};actors.set(actor.id,a);
+        a={element:el,owned,position:mode==='office'?geometry.lobby(actor.arrivalIndex):O.lobby(index),route:[],goal:null,assignment:null,data:actor,roamStep:0,rest:0,index:mode==='office'?actor.arrivalIndex:index,bubbleValue:null,bubbleVersion:null,bubbleGeneration:0,bubbleTimer:null,bubbleExpiry:null};actors.set(actor.id,a);
       }
       if(a.departure){a.departure=null;a.element.classList.remove('departing');}
       a.data=actor;
