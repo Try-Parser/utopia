@@ -184,6 +184,28 @@ $('world').addEventListener('keydown',event=>{if(event.key==='+'||event.key==='=
 const officePhone=matchMedia('(max-width:560px)');officePhone.addEventListener('change',()=>{if(mode==='office'){officeCameraManual=false;setOfficeZoom(officePhone.matches,true);}});
 const officeResizeObserver=new ResizeObserver(()=>{if(officePhone.matches&&!officeCameraManual&&cameraScale>1){const scale=preferredCloseScale();if(scale!==cameraScale){cameraScale=scale;focusOfficeCamera();}}applyOfficeCamera();$('world').style.setProperty('--actor-scale',String(document.body.dataset.mode==='office'?Math.max(.44,Math.min(.64,$('world').clientWidth/(window.OfficeWorldView?.getSceneLayout().width||1280)*.98)):Math.max(.42,Math.min(1.2,$('world').clientWidth/1280))));});
 officeResizeObserver.observe($('world'));officeResizeObserver.observe(officeViewport);
+let lastCameraFollow=0;
+function followActiveWorker(now){
+  requestAnimationFrame(followActiveWorker);
+  if(now-lastCameraFollow<80||!officePhone.matches||officeCameraManual||cameraScale<=1||document.hidden)return;
+  lastCameraFollow=now;
+  const crew=window.OfficeWorldView.getState(),actor=crew.find(a=>a.awaitingHuman)||crew.find(a=>a.working),scene=window.OfficeWorldView.getSceneLayout();
+  if(!actor||!scene.project)return;
+  const point=scene.project(actor.x,actor.y),floor=$('world'),viewport=floor.parentElement;
+  const onScreenX=viewport.clientWidth/2+cameraX+(point.x/scene.width-.5)*floor.clientWidth*cameraScale;
+  const onScreenY=viewport.clientHeight/2+cameraY+(point.y/scene.height-.5)*floor.clientHeight*cameraScale;
+  let moved=false;
+  if(onScreenX<viewport.clientWidth*.35||onScreenX>viewport.clientWidth*.65){
+    const target=(.5-point.x/scene.width)*floor.clientWidth*cameraScale;
+    cameraX+=(target-cameraX)*.28;moved=true;
+  }
+  if(onScreenY<viewport.clientHeight*.35||onScreenY>viewport.clientHeight*.65){
+    const target=(.5-point.y/scene.height)*floor.clientHeight*cameraScale;
+    cameraY+=(target-cameraY)*.28;moved=true;
+  }
+  if(moved)applyOfficeCamera();
+}
+requestAnimationFrame(followActiveWorker);
 function accessOptions() { const canEdit = L.get().allowEdits && ['planner', 'builder'].includes($('mission-role').value); $('mission-access').options[1].disabled = !canEdit; if (!canEdit) $('mission-access').value = 'read-only'; }
 $('mission-role').addEventListener('change', accessOptions);
 $('new-mission').addEventListener('click',()=>{$('mission-role').value=selected;$('mission-access').value='read-only';accessOptions();$('mission-description').textContent=`Assign a native Codex task in ${L.get().workspace}. Choose a specialist and access.`;$('mission-note').textContent='Uses your Codex account. Local edits are possible when selected. Commits, publication, and deployment are not part of task execution.';$('mission-error').textContent='';$('mission-title').setCustomValidity('');$('mission-dialog').showModal();$('mission-title').focus();});$('close-dialog').addEventListener('click',()=>$('mission-dialog').close());

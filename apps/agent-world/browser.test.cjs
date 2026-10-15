@@ -61,6 +61,20 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     await page.locator(`[data-office="${unconnected.id}"]`).click();assert.match(await page.locator('#agent-detail').textContent(),/No current task or tool event is visible/);assert.match(await page.locator(`[data-office="${unconnected.id}"] .worker-action`).textContent(),/Session open/);assert.match(await page.locator(`[data-office="${unconnected.id}"] .character-name`).textContent(),/Shared computer/);assert.equal(await page.locator(`[data-office="${unconnected.id}"] .character-bubble`).isVisible(),false);assert.match(await page.locator('#task-flow-list').textContent(),/open session has no task or tool event yet/);await page.keyboard.press('Escape');
     await page.screenshot({path:path.join(process.env.EVIDENCE_DIR||'/tmp','unconnected-session-desktop.png'),fullPage:true});
     await page.setViewportSize({width:390,height:844});await page.locator(`[data-office="${unconnected.id}"]`).scrollIntoViewIfNeeded();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);await page.screenshot({path:path.join(process.env.EVIDENCE_DIR||'/tmp','unconnected-session-mobile.png'),fullPage:true});await page.setViewportSize({width:1440,height:1050});
+    const rotatedPhoneContext=await browser.newContext({viewport:{width:390,height:844}});
+    await rotatedPhoneContext.addInitScript(()=>{localStorage.setItem('agent-world.office-view.v1','top-down');localStorage.setItem('agent-world.office-angle.v1','90');});
+    const rotatedPhone=await rotatedPhoneContext.newPage();
+    try{
+      const traveler={provider:'Office Fixture',sessionId:'rotated-phone-traveler',state:'working',workspace:'/work/demo',pid:null,role:'builder',taskId:'rotated-phone-task',taskLabel:'Implement office task',action:'coding'},travelerId=await report(traveler);
+      await rotatedPhone.goto('http://127.0.0.1:8787');
+      await rotatedPhone.waitForFunction(id=>document.querySelector(`[data-office="session-${id}"]`)?.classList.contains('at-desk'),travelerId,{timeout:20000});
+      assert.equal(await rotatedPhone.locator('#world').getAttribute('data-view'),'top-down');assert.match(await rotatedPhone.locator('#camera-angle').textContent(),/90/);
+      await report({...traveler,state:'waiting',awaitingHuman:true});
+      await rotatedPhone.waitForFunction(id=>document.querySelector(`[data-office="session-${id}"]`)?.classList.contains('at-conference-seat'),travelerId,{timeout:20000});
+      await rotatedPhone.waitForFunction(id=>{const actor=document.querySelector(`[data-office="session-${id}"]`),bubble=actor?.querySelector('.character-bubble'),viewport=document.querySelector('.world-scroll')?.getBoundingClientRect();if(!actor||!bubble||!viewport)return false;const a=actor.getBoundingClientRect(),b=bubble.getBoundingClientRect(),x=a.left+a.width/2,y=a.top+a.height/2;return x>viewport.left+40&&x<viewport.right-40&&y>viewport.top+40&&y<viewport.bottom-40&&b.left>=viewport.left&&b.right<=viewport.right&&b.top>=viewport.top&&b.bottom<=viewport.bottom;},travelerId,{timeout:5000});
+      await rotatedPhone.screenshot({path:path.join(process.env.EVIDENCE_DIR||'/tmp','rotated-phone-follow.png'),fullPage:true});
+      await report({...traveler,state:'ended'});
+    }finally{await rotatedPhoneContext.close();}
     console.log('PASS: process-only detections stay in the journal; identified open session sits at a shared computer without a fabricated task');
     const idleFixtureId=await report({provider:'Office Fixture',sessionId:'idle-workflow',state:'idle',workspace:'/work/demo',pid:null,role:'planner',taskId:'idle-task'});await page.waitForFunction(id=>window.OfficeWorldView.getState().some(a=>a.id===`session-${id}`),idleFixtureId);
     const idle=await page.evaluate(id=>window.OfficeWorldView.getState().find(a=>a.id===`session-${id}`),idleFixtureId);
@@ -92,12 +106,20 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     await page.waitForFunction(()=>window.OfficeWorldView.getState().some(a=>a.state==='event-working'&&a.role==='builder'&&a.action==='coding'));
     assert.ok(Date.now()-activityStarted<2500,'known file event reaches office without five-second wait');assert.equal(snapshotRequests,beforeLiveRequests,'activity arrives by persistent push, not snapshot GET polling');assert.equal(streamRequests,1,'native and sessions share one stream');
     const observedActor=await page.evaluate(()=>window.OfficeWorldView.getState().find(a=>a.state==='event-working'));
+    let protectedOverlap=0;
+    for(let sample=0;sample<8;sample++){
+      protectedOverlap=Math.max(protectedOverlap,await page.evaluate(id=>{const bubble=document.querySelector(`[data-office="${id}"] .character-bubble`);if(!bubble||bubble.hidden)return 0;const a=bubble.getBoundingClientRect(),targets=[...document.querySelectorAll('[data-room-sign],.heading>*,.toolbar,.world-panel>.panel-heading')];return targets.reduce((max,node)=>{const b=node.getBoundingClientRect();return Math.max(max,Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left))*Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)));},0);},observedActor.id));
+      await page.waitForTimeout(120);
+    }
+    assert.ok(protectedOverlap<400,`moving activity bubble avoids room signs and office controls: ${protectedOverlap}`);
     await page.waitForSelector(`[data-office="${observedActor.id}"].at-desk:not(.office-walking)`,{timeout:20000});
     const observedStation=await page.evaluate(id=>window.OfficeWorldView.getState().find(a=>a.id===id)?.station,observedActor.id);
     await page.waitForFunction(id=>document.querySelector(`[data-office="${id}"] .worker-task`)?.textContent.includes('ACTIVITY_PRIVATE_CODE'),observedActor.id);
     assert.match(await page.locator(`[data-office="${observedActor.id}"] .worker-action`).textContent(),/Tool call/);
     const bubblePhone=await browser.newPage({viewport:{width:390,height:844}});
     try{await bubblePhone.goto('http://127.0.0.1:8787');await bubblePhone.waitForSelector(`[data-office="${observedActor.id}"] .character-bubble:not([hidden])`);await bubblePhone.waitForFunction(()=>document.getElementById('world').classList.contains('zoomed'));
+      await bubblePhone.waitForSelector(`[data-office="${observedActor.id}"].at-desk:not(.office-walking)`,{timeout:20000});
+      await bubblePhone.waitForFunction(id=>{const actor=document.querySelector(`[data-office="${id}"]`),bubble=actor?.querySelector('.character-bubble');if(!actor||!bubble)return false;const a=actor.getBoundingClientRect(),b=bubble.getBoundingClientRect();return a.left+a.width/2>40&&a.left+a.width/2<innerWidth-40&&b.left>=0&&b.right<=innerWidth;},observedActor.id);
       const bounds=await bubblePhone.locator(`[data-office="${observedActor.id}"] .character-bubble`).boundingBox();assert.ok(bounds.width<=175,`mobile activity bubble stays compact: ${JSON.stringify(bounds)}`);
       assert.equal(await bubblePhone.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'mobile activity creates no page overflow');
       await bubblePhone.screenshot({path:path.join(process.env.EVIDENCE_DIR||'/tmp','activity-bubble-mobile.png'),fullPage:true});

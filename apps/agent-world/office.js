@@ -198,18 +198,23 @@ window.OfficeWorldView=(()=>{
   function layoutBubbles(){
     if(mode!=='office')return;
     const world=$('world').getBoundingClientRect(),viewport=$('world').parentElement.getBoundingClientRect(),safe={left:Math.max(world.left,viewport.left),right:Math.min(world.right,viewport.right),top:Math.max(world.top,viewport.top),bottom:Math.min(world.bottom,viewport.bottom)},people=[...actors.values()].filter(a=>a.owned&&a.element.isConnected);
+    const drawer=document.querySelector('.office-sidebar.open,.team-panel:not([hidden])')?.getBoundingClientRect();
+    if(drawer&&drawer.left>safe.left+120)safe.right=Math.min(safe.right,drawer.left);
     for(const line of links.querySelectorAll('.bubble-leader'))line.remove();
-    const labels=people.map(a=>a.element.querySelector('.character-name')?.getBoundingClientRect()).filter(Boolean),bodies=people.map(a=>a.element.getBoundingClientRect()),monitors=[...document.querySelectorAll('.desk-screen')].map(e=>e.getBoundingClientRect()),placed=[];
+    const labels=people.map(a=>a.element.querySelector('.character-name')?.getBoundingClientRect()).filter(Boolean),bodies=people.map(a=>a.element.getBoundingClientRect()),monitors=[...document.querySelectorAll('.desk-screen')].map(e=>e.getBoundingClientRect());
+    const signs=[...document.querySelectorAll('[data-room-sign]')].map(e=>e.getBoundingClientRect());
+    const controls=[...document.querySelectorAll('.heading>*,.toolbar,.world-panel>.panel-heading,.world-footer')].filter(e=>e.getClientRects().length).map(e=>e.getBoundingClientRect()),placed=[];
     const overlap=(a,b)=>Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left))*Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top));
     people.sort((a,b)=>Number(b.data.id===selected)-Number(a.data.id===selected)||Number(b.data.working)-Number(a.data.working));
     const anchors=people.map(a=>{const bubble=a.element.querySelector('.character-bubble');bubble.style.translate='none';return {a,bubble,actorRect:a.element.getBoundingClientRect()};}).filter(({actorRect})=>actorRect.right>=safe.left&&actorRect.left<=safe.right&&actorRect.bottom>=safe.top&&actorRect.top<=safe.bottom).map(item=>({...item,base:item.bubble.getBoundingClientRect()})).filter(item=>item.base.width&&item.base.height);
+    const crowded=anchors.length>2;
     for(const [index,{a,bubble,actorRect,base}] of anchors.entries()){
       let best={score:Infinity,dx:0,dy:0,rect:base};
-      for(const dy of [0,-38,-76,38,76,-114,114,-152,152])for(const dx of [0,-70,70,-140,140]){
+      for(const dy of crowded?[0,-38,-76,38,76,-114,114,-152,152]:[0,-38,38,-76,76])for(const dx of [0,-70,70,-140,140]){
         const rect={left:base.left+dx,right:base.right+dx,top:base.top+dy,bottom:base.bottom+dy};
         const overflow=Math.max(0,safe.left+4-rect.left)+Math.max(0,rect.right-safe.right+4)+Math.max(0,safe.top+4-rect.top)+Math.max(0,rect.bottom-safe.bottom+4);
-        const collision=placed.reduce((sum,p)=>sum+overlap(rect,p),0)+labels.reduce((sum,p)=>sum+overlap(rect,p),0)+bodies.reduce((sum,p)=>sum+overlap(rect,p),0)+monitors.reduce((sum,p)=>sum+overlap(rect,p)*1.4,0)+anchors.slice(index+1).reduce((sum,p)=>sum+overlap(rect,p.base)*.8,0);
-        const score=collision+overflow*500+Math.abs(dx)*.2+Math.abs(dy)*.3;
+        const collision=placed.reduce((sum,p)=>sum+overlap(rect,p),0)+labels.reduce((sum,p)=>sum+overlap(rect,p),0)+bodies.reduce((sum,p)=>sum+overlap(rect,p),0)+monitors.reduce((sum,p)=>sum+overlap(rect,p)*1.4,0)+signs.reduce((sum,p)=>sum+overlap(rect,p)*4,0)+controls.reduce((sum,p)=>sum+overlap(rect,p)*4,0)+anchors.slice(index+1).reduce((sum,p)=>sum+overlap(rect,p.base)*.8,0);
+        const score=collision+overflow*500+Math.abs(dx)*(crowded?.2:8)+Math.abs(dy)*(crowded?.3:5);
         if(score<best.score)best={score,dx,dy,rect};
       }
       const scale=actorRect.width/a.element.offsetWidth||1;bubble.style.translate=`${best.dx/scale}px ${best.dy/scale}px`;placed.push(best.rect);
