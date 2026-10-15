@@ -34,28 +34,43 @@ test('automatically observed threads keep shared computers and expand capacity',
   const actors=Array.from({length:32},(_,i)=>({id:`session-auto-${i}`,provider:'Codex',role:null,working:false,state:'event-waiting',note}));
   let seats=O.assignWorkstations(actors,[]);
   assert.equal(seats.filter(s=>s.occupant).length,32);
-  assert.equal(seats.find(s=>s.occupant?.id===actors[0].id).key,'builder:31');
+  assert.equal(seats.find(s=>s.occupant?.id===actors[0].id).key,'shared:31');
   seats=O.assignWorkstations([...actors].reverse(),[],seats);
-  assert.equal(seats.find(s=>s.occupant?.id===actors[0].id).key,'builder:31');
+  assert.equal(seats.find(s=>s.occupant?.id===actors[0].id).key,'shared:31');
   const geometry=O.layout(actors,seats),scene=O.sceneActors(actors,seats,()=>true,geometry);
   assert.equal(geometry.conferenceSeats.length,32);
   assert.deepEqual(O.destination(scene[0],0,geometry),scene[0].conferenceSeat.point);
   assert.match(O.presentation(scene[0]).destination,/Conference room/);
 });
-test('a roleless worker retains its old department desk without displacing parallel specialists',()=>{
+test('every parallel arrival and idle waypoint stays clear of shared computers',()=>{
+  const actors=Array.from({length:32},(_,index)=>({id:`session-${index}`,role:null,working:true,state:'running'}));
+  const seats=O.assignWorkstations(actors,[]),geometry=O.layout(actors,seats);
+  M.configure(geometry);
+  try{
+    for(const [index,actor] of actors.entries()){
+      const start=geometry.lobby(index),desk=seats.find(seat=>seat.occupant?.id===actor.id);
+      assert.ok(M.free(start.x,start.y),`arrival ${index} overlaps furniture`);
+      assert.ok(M.path(start,desk.point).length,`arrival ${index} cannot reach ${desk.key}`);
+    }
+    for(const point of O.idleStops({role:'builder',station:seats.find(seat=>seat.role==='builder')},0,geometry)){
+      assert.ok(M.free(point.x,point.y),`idle waypoint ${point.x},${point.y} overlaps furniture`);
+    }
+  }finally{M.configure(null);}
+});
+test('a roleless worker moves to shared space without occupying a specialist desk',()=>{
   const prior={id:'session-prior',role:'planner',working:true,state:'adapter-working'};
   const priorSeats=O.assignWorkstations([prior],[]);
   const shared={...prior,role:null,working:false,state:'running'};
   const planners=Array.from({length:25},(_,index)=>({id:`session-planner-${index}`,role:'planner',working:true,state:'adapter-working'}));
   const actors=[shared,...planners],seats=O.assignWorkstations(actors,[],priorSeats);
-  assert.equal(seats.find(s=>s.occupant?.id===shared.id).key,'planner:0');
-  assert.equal(seats.filter(s=>s.role==='planner').length,26);
+  assert.equal(seats.find(s=>s.occupant?.id===shared.id).key,'shared:4');
+  assert.equal(seats.filter(s=>s.role==='planner').length,25);
   assert.equal(planners.filter(actor=>seats.some(s=>s.occupant?.id===actor.id&&s.role==='planner')).length,25);
 });
 test('a newly identified agent leaves its shared desk for its own department',()=>{
   const unknown={id:'session-promoted',provider:'Codex',role:null,working:false,state:'event-waiting',note:'Codex local runtime activity observed; current task state unavailable'};
   const before=O.assignWorkstations([unknown],[]);
-  assert.equal(before.find(s=>s.occupant?.id===unknown.id).role,'builder');
+  assert.equal(before.find(s=>s.occupant?.id===unknown.id).role,'shared');
   const known={...unknown,role:'qa'},after=O.assignWorkstations([known],[],before);
   assert.equal(after.find(s=>s.occupant?.id===known.id).role,'qa');
   const geometry=O.layout([known],after),scene=O.sceneActors([known],after,()=>true,geometry);
@@ -151,7 +166,7 @@ test('speech bubbles use the latest bounded real session text and preserve its s
 });
 test('five computers circle a shared clear workspace in every live department',()=>{
   const g=O.layout();M.configure(g);
-  try{assert.equal(g.stations.length,30);for(const role of O.roles){const seats=g.stations.filter(s=>s.role===role);assert.equal(seats.length,5);assert.ok(M.free(seats[0].center.x,seats[0].center.y));const room=g.rooms.find(r=>r.role===role);assert.ok(M.free(room.x+160,room.y+30),'door entrance clear');assert.ok(M.free(room.x+115,room.y+30),'space beside first desk through door');
+  try{assert.equal(g.stations.length,35);for(const role of O.roles){const seats=g.stations.filter(s=>s.role===role);assert.equal(seats.length,5);assert.ok(M.free(seats[0].center.x,seats[0].center.y));const room=g.rooms.find(r=>r.role===role);assert.ok(M.free(room.x+160,room.y+30),'door entrance clear');assert.ok(M.free(room.x+115,room.y+30),'space beside first desk through door');
     for(const seat of seats){assert.ok(Math.abs(Math.hypot(seat.desk.x-seat.center.x,seat.desk.y-seat.center.y)-100)<1e-6);assert.ok(M.free(seat.point.x,seat.point.y));assert.ok(M.path(g.lobby(0),seat.point).length,`${seat.key} seat reachable`);assert.equal(M.free(seat.desk.x,seat.desk.y),false);}}
   }finally{M.configure(null);}
 });
@@ -163,7 +178,7 @@ test('every cubicle has a reachable named help and handoff entrance',()=>{
 });
 test('expanded departments and reception connect all new desks with matching collision geometry',()=>{
   const actors=Array.from({length:8},(_,i)=>({id:`session-${i}`,role:i<5?'builder':'qa',working:true}));
-  const seats=O.assignWorkstations(actors,[]),g=O.layout(actors,seats);assert.equal(g.stations.filter(s=>s.role==='builder').length,5);assert.equal(g.height,850);
+  const seats=O.assignWorkstations(actors,[]),g=O.layout(actors,seats);assert.equal(g.stations.filter(s=>s.role==='builder').length,5);assert.equal(g.height,990);
   M.configure(g);
   try{for(const s of g.stations){assert.equal(M.free(s.point.x,s.point.y),true);assert.ok(M.path(g.lobby(0),s.point).length,`${s.key} reachable`);assert.equal(M.free(s.desk.x,s.desk.y),false);}
     const unknown={role:null,working:true,station:null};assert.deepEqual(O.destination(unknown,0,g),g.lobby(0));assert.ok(M.free(O.destination(unknown,0,g).x,O.destination(unknown,0,g).y));
@@ -176,7 +191,7 @@ test('unlinked processes stay off the floor while an identified open session sit
   const result=O.project({entries:[{...base,kind:'process'}, {...base,id:'b'.repeat(32),kind:'session'}, {...base,id:'c'.repeat(32),kind:'session',status:'recent'}, {...base,id:'d'.repeat(32),kind:'session',status:'adapter-stale',role:'builder'}]}, {jobs:[]});
   assert.equal(result.actors.length,1);assert.equal(result.actors[0].working,false);assert.equal(result.actors[0].role,null);
   const seats=O.assignWorkstations(result.actors,[]),g=O.layout(result.actors,seats),actor=O.sceneActors(result.actors,seats,()=>true,g)[0];
-  assert.equal(actor.station.role,'builder');assert.notDeepEqual(O.destination(actor,0,g),g.lobby(0));
+  assert.equal(actor.station.role,'shared');assert.notDeepEqual(O.destination(actor,0,g),g.lobby(0));
   assert.deepEqual(O.destination(actor,0,g),actor.station.point);assert.equal(O.canRoam(actor),false);
   assert.match(O.presentation(actor).destination,/Shared computer/);assert.equal(O.presentation(actor).word,'Session open');
 });
@@ -212,9 +227,9 @@ test('local session events seat observed coding activity without adapter or infe
 });
 
 test('game presentation projects world positions without changing movement or station ownership',()=>{
-  const g=O.layout(),v=O.sceneLayout(g);assert.equal(v.width,2105);assert.equal(v.height,1032.5);
-  assert.deepEqual(v.project(0,0),{x:465,y:80});assert.deepEqual(v.project(1600,850),{x:1640,y:952.5});
-  assert.deepEqual(v.project(220,140,45),{x:615,y:170});
+  const g=O.layout(),v=O.sceneLayout(g);assert.equal(v.width,2175);assert.equal(v.height,1123.5);
+  assert.deepEqual(v.project(0,0),{x:535,y:80});assert.deepEqual(v.project(1600,g.height),{x:1640,y:1043.5});
+  assert.deepEqual(v.project(220,140,45),{x:685,y:170});
   for(const [i,s]of v.stations.entries()){assert.equal(s.key,g.stations[i].key);assert.deepEqual(s.point,g.stations[i].point);assert.deepEqual(s.desk,g.stations[i].desk);assert.deepEqual(s.screen,v.project(s.desk.x,s.desk.y,45));assert.ok(s.screen.x>0&&s.screen.x<v.width&&s.screen.y>0&&s.screen.y<v.height);}
 });
 

@@ -32,12 +32,12 @@ window.OfficeWorldView=(()=>{
     }}
     const carpets=['#87a89b','#aaa1bc','#8aa4b6','#b2a38d','#8bada9','#b69698'];
     const accents=['#335b4d','#66517e','#3e607b','#735b3b','#306760','#7b4951'];
-    for(const room of g.rooms){const group=shape('g',{'data-department':room.role});shape('title',{},group,`${room.name} department / circular computer workspaces`);
-      floor([room.x,room.y+42,room.x+room.width,room.y+room.height],{fill:carpets[O.roles.indexOf(room.role)],stroke:'#6c7e83','stroke-width':1},group);
-      for(let y=room.y+53;y<room.y+room.height;y+=17)line(P(room.x+8,y),P(room.x+room.width-8,y),{stroke:'#ffffff',opacity:.055,'stroke-width':2},group);
+    for(const room of g.rooms){const shared=room.role==='shared',group=shape('g',{'data-department':room.role});shape('title',{},group,shared?'Shared workspace / role not yet verified':`${room.name} department / circular computer workspaces`);
+      floor([room.x,room.y+(shared?0:42),room.x+room.width,room.y+room.height],{fill:shared?'#a4b7ae':carpets[O.roles.indexOf(room.role)],stroke:'#6c7e83','stroke-width':1},group);
+      for(let y=room.y+(shared?8:53);y<room.y+room.height;y+=17)line(P(room.x+8,y),P(room.x+room.width-8,y),{stroke:'#ffffff',opacity:.055,'stroke-width':2},group);
     }
     // Carpet inlays organize each five-computer pod; these are unobstructed floor markings.
-    for(const room of g.rooms){const accent=accents[O.roles.indexOf(room.role)],pods=new Map(g.stations.filter(s=>s.role===room.role).map(s=>[s.center.y,s.center]));
+    for(const room of g.rooms.filter(r=>r.role!=='shared')){const accent=accents[O.roles.indexOf(room.role)],pods=new Map(g.stations.filter(s=>s.role===room.role).map(s=>[s.center.y,s.center]));
       const group=shape('g',{'data-room-inlays':room.role,'aria-hidden':'true'});
       for(const center of pods.values()){
         polygon(Array.from({length:60},(_,i)=>{const angle=i*Math.PI/30;return P(center.x+Math.cos(angle)*79,center.y+Math.sin(angle)*79);}),{fill:'none',stroke:accent,'stroke-width':1.6,opacity:.45},group);
@@ -61,7 +61,7 @@ window.OfficeWorldView=(()=>{
     const outerX=backWest?25:w-34,vertical=[outerX,25,outerX+9,h-25];
     object(vertical,()=>{const wall=shape('g',{'data-outer-wall':backWest?'west':'east'});box(vertical,58,['#e5e9df','#a7b9b7','#c1ccc7'],wall);for(let y=110;y<h-100;y+=180){polygon([P(outerX,y,45),P(outerX,y+100,45),P(outerX,y+100,20),P(outerX,y,20)],{fill:'#93c3d0',stroke:'#648e9c','stroke-width':2},wall);line(P(outerX,y+50,45),P(outerX,y+50,20),{stroke:'#d5eced','stroke-width':2},wall);}});
     for(const station of g.stations){const {x,y}=station.desk,p=station.point,bounds=[x-28,y-20,x+28,y+20];
-      object(bounds,()=>{const group=shape('g',{'data-workstation':station.key});shape('title',{},group,`COMPUTER ${station.index+1}`);
+      object(bounds,()=>{const group=shape('g',{'data-workstation':station.key});shape('title',{},group,`${station.role==='shared'?'SHARED ':''}COMPUTER ${station.index+1}`);
         floor([x-25,y-15,x+36,y+29],{fill:'#33464c',opacity:.2},group);
         for(const [lx,ly]of [[x-24,y-15],[x+20,y-15],[x-24,y+12],[x+20,y+12]])box([lx,ly,lx+4,ly+4],25,['#677780','#3b4c56','#52616b'],group);
         box(bounds,29,['#f1e1c9','#bb9d7b','#d1b48f'],group,25);
@@ -85,7 +85,7 @@ window.OfficeWorldView=(()=>{
       }else{box(bounds,12,['#57748b','#334d65','#425f79']);const p=P((bounds[0]+bounds[2])/2,bounds[1],25);shape('rect',{x:p.x-13,y:p.y-7,width:26,height:17,rx:5,fill:'#607f96',stroke:'#36546c','stroke-width':1.5});}
     });
     // Static wall boards distinguish office functions; they never display synthetic task activity.
-    for(const room of view==='top-down'||!backNorth?[]:g.rooms){const index=O.roles.indexOf(room.role),accent=accents[index],x=room.x+16,y=room.y+20;
+    for(const room of view==='top-down'||!backNorth?[]:g.rooms.filter(r=>r.role!=='shared')){const index=O.roles.indexOf(room.role),accent=accents[index],x=room.x+16,y=room.y+20;
       object([x,y,x+108,y+2],()=>{const group=shape('g',{'data-department-board':room.role});shape('title',{},group,`${room.name} decorative wall board / not live task data`);
         polygon([P(x,y,51),P(x+108,y,51),P(x+108,y,8),P(x,y,8)],{fill:'#f1f0e8',stroke:'#6f8284','stroke-width':2},group);
         const segment=(a,b)=>line(P(x+a[0],y,a[1]),P(x+b[0],y,b[1]),{stroke:accent,'stroke-width':2,'stroke-linecap':'round'},group);
@@ -104,7 +104,8 @@ window.OfficeWorldView=(()=>{
     // Room names sit on their back walls, readable at the game overview scale.
     const roomSign=(point,title,number,accent,width=190)=>{const group=shape('g',{'data-room-sign':title});shape('rect',{x:point.x,y:point.y-28,width,height:38,rx:5,fill:'#203744',stroke:'#d8e4de','stroke-width':1},group);shape('rect',{x:point.x+4,y:point.y-24,width:27,height:30,rx:3,fill:accent},group);shape('text',{x:point.x+17.5,y:point.y-3,'text-anchor':'middle',fill:'#ffffff','font-size':12,'font-weight':750},group,number);shape('text',{x:point.x+39,y:point.y-3,fill:'#f7f6eb','font-size':18,'font-weight':700,'letter-spacing':0},group,title);};
     const signPoint=(room,z,width)=>{const x=room.x,y=room.y,r=x+room.width,b=y+room.height;const edge=[[x+room.width/2,y+20],[x+room.width/2,b-20],[x+20,y+room.height/2],[r-20,y+room.height/2]].map(([px,py])=>P(px,py,z)).sort((a,b)=>a.y-b.y)[0];return {x:edge.x-width/2,y:edge.y};};
-    for(const room of g.rooms){const index=O.roles.indexOf(room.role);roomSign(signPoint(room,41,190),room.name,String(index+1).padStart(2,'0'),accents[index]);}
+    for(const room of g.rooms.filter(r=>r.role!=='shared')){const index=O.roles.indexOf(room.role);roomSign(signPoint(room,41,190),room.name,String(index+1).padStart(2,'0'),accents[index]);}
+    const sharedLabel=P(570,393+g.topExtra,3);shape('text',{x:sharedLabel.x,y:sharedLabel.y,fill:'#203b43','font-size':13,'font-weight':800,'text-anchor':'middle','data-shared-label':'true'},scene,'SHARED WORKSPACE · ROLE PENDING');
     roomSign(signPoint(g.conference,44,198),'Conference','M','#546674',198);
     const reception=P(72,385+g.topExtra,54),coffee=P(1025,385+g.topExtra,54);
     for(const [point,title]of [[reception,'RECEPTION'],[coffee,'COFFEE']]){shape('rect',{x:point.x-4,y:point.y-18,width:title==='RECEPTION'?105:76,height:25,rx:4,fill:'#203744'},scene);shape('text',{x:point.x+4,y:point.y,fill:'#f7f6eb','font-size':12,'font-weight':700},scene,title);}

@@ -6,6 +6,10 @@ test('computer binding isolates same-department native and external sessions and
   const external=M.project('builder','office',{jobs},{entries},sim,{id:'session-c'});assert.equal(external.jobId,null);assert.equal(external.title,'External C');
   assert.equal(M.project('builder','office',{jobs},{entries},sim,null).jobId,null);
 });
+test('a shared computer identifies its open session without inventing task output',()=>{
+  const screen=M.project('shared','office',{jobs:[]},{entries:[{id:'open',kind:'session',role:null,status:'running',label:'Local session'}]},sim,{id:'session-open'});
+  assert.equal(screen.source,'Local session detected');assert.match(screen.activity,/No task or tool event/);assert.equal(screen.sessionId,'open');assert.equal(screen.jobId,null);assert.deepEqual(screen.events,[]);
+});
 test('native screen prioritizes active role task and keeps completion semantics',()=>{
   const old={id:'a',role:'builder',status:'completed',result:'old'},running={id:'b',role:'builder',status:'running',result:''};
   assert.equal(M.project('builder','office',{jobs:[old,running]},{entries:[]},sim).jobId,'b');

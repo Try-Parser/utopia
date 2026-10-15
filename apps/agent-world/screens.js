@@ -37,7 +37,7 @@ window.ComputerScreens=(()=>{
   function render() {
     if(!dialog.open)return;
     const data=projection(),info=window.AgentWorld.ROLES.find(r=>r.id===role);
-    $('computer-title').textContent=`${info.role} / Computer ${station+1}`;$('computer-source').textContent=data.source;$('computer-state').textContent=data.status;$('computer-task').textContent=data.title;$('computer-activity').textContent=data.activity;
+    $('computer-title').textContent=`${info?.role||'Shared workspace'} / Computer ${station+1}`;$('computer-source').textContent=data.source;$('computer-state').textContent=data.status;$('computer-task').textContent=data.title;$('computer-activity').textContent=data.activity;
     const events=$('computer-events'),scroll=events.scrollTop,nearBottom=events.scrollHeight-events.clientHeight-scroll<30;
     events.replaceChildren();for(const e of (data.events||[]).slice(-30)){const li=make('li');li.append(make('time','',e.at?new Date(e.at).toLocaleTimeString():String(e.time)),make('span','',e.text));events.append(li);}
     if(!events.children.length)events.append(make('li','empty','No task events are available for this computer.'));
@@ -79,7 +79,7 @@ window.ComputerScreens=(()=>{
     for(const [id,button]of monitors)if(!keys.has(id)){button.remove();monitors.delete(id);const preview=previews.get(id);if(preview){preview.frame.src='about:blank';preview.frame.remove();preview.holder.remove();previews.delete(id);}}
     for(const seat of current){
       let button=monitors.get(seat.key);
-      if(!button){const info=window.AgentWorld.ROLES.find(r=>r.id===seat.role);button=make('button','desk-screen');button.type='button';button.dataset.computer=seat.role;button.dataset.station=String(seat.index);button.setAttribute('aria-label',`Open ${info.role} computer ${seat.index+1} code and activity`);button.append(make('span','monitor-state','IDLE'));button.addEventListener('click',()=>open(seat.role,'code',button,seat.index));$('computer-screens').append(button);monitors.set(seat.key,button);}
+      if(!button){const info=window.AgentWorld.ROLES.find(r=>r.id===seat.role);button=make('button','desk-screen');button.type='button';button.dataset.computer=seat.role;button.dataset.station=String(seat.index);button.setAttribute('aria-label',`Open ${info?.role||'Shared workspace'} computer ${seat.index+1} code and activity`);button.append(make('span','monitor-state','IDLE'));button.addEventListener('click',()=>open(seat.role,'code',button,seat.index));$('computer-screens').append(button);monitors.set(seat.key,button);}
       button.style.left=`${seat.screen.x/(floor().width/100)}%`;button.style.top=`${seat.screen.y/(floor().height/100)}%`;
     }
     const choices=current.filter(s=>s.role===role);if(!choices.some(s=>s.index===station)){station=0;selectedPath=null;patchKey='';patchGeneration++;$('preview-url').value=previewState().url;$('preview-error').textContent='';}

@@ -10,29 +10,35 @@
   function isPlanning(actor) {return actor.awaitingHuman||actor.working&&!actor.handoff&&actor.action!=='helping'&&(actor.action==='planning'||actor.role==='planner'&&['research','coordination'].includes(actor.action));}
   function isConferenceBound(actor) {return isPlanning(actor)||!actor.handoff&&['event-waiting','adapter-waiting','queued'].includes(actor.state);}
   function layout(actors=[],previous=[],previousConference=[]) {
-    const sharedActors=actors.filter(sharedSeatWithoutRole),retained=Object.fromEntries(roles.map(role=>[role,previous.filter(s=>s.role===role&&sharedActors.some(a=>a.id===s.occupant?.id)).length]));
-    const unseatedShared=sharedActors.length-Object.values(retained).reduce((sum,count)=>sum+count,0);
-    const counts=Object.fromEntries(roles.map(role=>[role,Math.max(5,actors.filter(a=>a.role===role).length+retained[role]+(role==='builder'?unseatedShared:0),...previous.filter(s=>s.role===role).map(s=>s.index+1))]));
+    const shared=actors.filter(sharedSeatWithoutRole).length;
+    const counts=Object.fromEntries(roles.map(role=>[role,Math.max(5,actors.filter(a=>a.role===role).length,...previous.filter(s=>s.role===role).map(s=>s.index+1))]));
+    counts.shared=Math.max(5,shared,...previous.filter(s=>s.role==='shared').map(s=>s.index+1));
     const extra=group=>Math.max(...group.map(role=>Math.ceil(counts[role]/5)-1))*300;
-    const topExtra=extra(roles.slice(0,3)),bottomExtra=extra(roles.slice(3));
-    const lobbyExtra=Math.max(0,Math.ceil(actors.filter(a=>!a.role).length/15)-1)*44,bottomShift=topExtra+lobbyExtra;
+    const topExtra=extra(roles.slice(0,3)),bottomExtra=extra(roles.slice(3)),sharedExtra=(Math.ceil(counts.shared/5)-1)*120;
+    const lobbyExtra=Math.max(0,Math.ceil(actors.filter(a=>!a.role).length/15)-1)*44,bottomShift=topExtra+lobbyExtra+140+sharedExtra;
     const conferenceCount=Math.max(8,actors.filter(isConferenceBound).length,previousConference.length);
     const height=Math.max(850+bottomShift+bottomExtra,conferenceCount>8?630+Math.ceil((conferenceCount-8)/6)*60:0);
     const rooms=roles.map((role,i)=>({role,x:60+(i%3)*350,y:i>=3?465+bottomShift:65,width:320,height:300+(i>=3?bottomExtra:topExtra),name:roleNames[role],color:['#e4ebf5','#ece8f5','#e2eef2','#f1e9dd','#e2efe8','#f2e6e4'][i]}));
+    rooms.push({role:'shared',x:160,y:385+topExtra,width:850,height:215+sharedExtra,name:'Shared workspace',color:'#d4ded9'});
     const stations=roles.flatMap(role=>Array.from({length:counts[role]},(_,index)=>{
       const room=rooms.find(r=>r.role===role),row=Math.floor(index/5),angle=(-90+(index%5)*72)*Math.PI/180,center={x:room.x+160,y:room.y+175+row*300};
       const radial=radius=>({x:center.x+Math.cos(angle)*radius,y:center.y+Math.sin(angle)*radius});
       const desk=radial(100),point=radial(45),approach=radial(15);
       return {key:`${role}:${index}`,role,index,center,angle,point,approach,screen:{x:desk.x-3,y:desk.y-6},desk};
     }));
+    for(let index=0;index<counts.shared;index++){
+      const center={x:220+(index%5)*170,y:445+topExtra+Math.floor(index/5)*120},desk={x:center.x,y:center.y-9};
+      stations.push({key:`shared:${index}`,role:'shared',index,center,angle:0,point:{x:center.x,y:center.y+23},approach:{x:center.x,y:center.y+36},screen:{x:desk.x-3,y:desk.y-6},desk});
+    }
     const furniture=[[70,385+topExtra,145,415+topExtra],[1030,385+topExtra,1095,415+topExtra],[1250,205,1430,385],[1320,155,1350,180],[1320,405,1350,430]];
     for(const x of [1200,1460])for(const y of [215,285,355])furniture.push([x,y,x+28,y+35]);
     // Conference chairs are intentional sitting destinations, not walking obstacles.
     for(let i=8;i<conferenceCount;i++){const x=1180+(i-8)%6*65,y=510+Math.floor((i-8)/6)*60;furniture.push([x-14,y-20,x+14,y+8]);}
     const conferenceSeats=furniture.slice(3).map((b,index)=>{const point={x:(b[0]+b[2])/2,y:b[3]-8};const approach=index===0?{x:point.x,y:130}:index===1?{x:point.x,y:455}:index<5?{x:1182,y:point.y}:index<8?{x:1510,y:point.y}:{x:point.x,y:point.y+30};return {key:`conference:${index}`,index,point,approach};});
-    const walls=rooms.flatMap(r=>[[r.x-10,r.y+15,r.x-5,r.y+r.height-20],[r.x,r.y+15,r.x+125,r.y+20],[r.x+195,r.y+15,r.x+r.width,r.y+20]]);
+    const walls=rooms.filter(r=>r.role!=='shared').flatMap(r=>[[r.x-10,r.y+15,r.x-5,r.y+r.height-20],[r.x,r.y+15,r.x+125,r.y+20],[r.x+195,r.y+15,r.x+r.width,r.y+20]]);
     walls.push([1120,65,1540,70],[1115,65,1120,375],[1115,475,1120,height-80]);
-    return {width:1600,height,topExtra,bottomExtra,bottomShift,lobbyExtra,stations,conferenceSeats,rooms,partitions:[],furniture,walls,conference:{x:1120,y:65,width:420,height:height-145},lobby:index=>({x:160+(index%15)*55,y:445+topExtra+Math.floor(index/15)*44})};
+    // Arrivals use the clear aisle above the shared desks; never spawn inside a workstation.
+    return {width:1600,height,topExtra,bottomExtra,bottomShift,lobbyExtra,stations,conferenceSeats,rooms,partitions:[],furniture,walls,conference:{x:1120,y:65,width:420,height:height-145},lobby:index=>({x:160+(index%15)*55,y:380+topExtra+(Math.floor(index/15)%3)*8})};
   }
   // Movement stays in world coordinates; only presentation uses this projection.
   function sceneLayout(geometry,view='isometric',angle=0) {
@@ -49,10 +55,10 @@
   function assignWorkstations(actors,jobs,previous=[]) {
     const seats=layout(actors,previous).stations.map(s=>({...s,occupant:null})),assigned=new Set();
     const department=a=>a.role;
-    for(const old of previous){const actor=actors.find(a=>a.id===old.occupant?.id),seat=seats.find(s=>s.key===old.key);if(actor&&seat&&(seat.role===department(actor)||sharedSeatWithoutRole(actor))){seat.occupant=actor;assigned.add(actor.id);}}
+    for(const old of previous){const actor=actors.find(a=>a.id===old.occupant?.id),seat=seats.find(s=>s.key===old.key);if(actor&&seat&&(seat.role===department(actor)||seat.role==='shared'&&sharedSeatWithoutRole(actor))){seat.occupant=actor;assigned.add(actor.id);}}
     for(const actor of actors){if(assigned.has(actor.id))continue;const seat=seats.find(s=>s.role===department(actor)&&!s.occupant);if(seat){seat.occupant=actor;assigned.add(actor.id);}}
-    // Active threads without a verified department still work at a free computer.
-    for(const actor of actors){if(assigned.has(actor.id)||!sharedSeatWithoutRole(actor))continue;const seat=seats.findLast(s=>s.role==='builder'&&!s.occupant)||seats.findLast(s=>!s.occupant);if(seat){seat.occupant=actor;assigned.add(actor.id);}}
+    // Active threads without a verified department use neutral shared computers.
+    for(const actor of actors){if(assigned.has(actor.id)||!sharedSeatWithoutRole(actor))continue;const seat=seats.findLast(s=>s.role==='shared'&&!s.occupant);if(seat){seat.occupant=actor;assigned.add(actor.id);}}
     for(const old of previous){const job=jobs.find(j=>`job-${j.id}`===old.occupant?.id&&['completed','failed','cancelled','timed-out','interrupted'].includes(j.status)),seat=seats.find(s=>s.key===old.key);if(job&&seat.role===job.role&&!seat.occupant&&!assigned.has(old.occupant.id)){seat.occupant=old.occupant;assigned.add(old.occupant.id);}}
     // Keep the latest native result visible in spare desks; active workers take priority.
     for(const job of jobs){const id=`job-${job.id}`;if(assigned.has(id)||!['completed','failed','cancelled','timed-out','interrupted'].includes(job.status))continue;const seat=seats.find(s=>s.role===job.role&&!s.occupant);if(seat){seat.occupant={id,sourceId:job.id,role:job.role,provider:'Codex',label:job.title};assigned.add(id);}}
@@ -133,7 +139,7 @@
   // Only an explicitly reported idle role may take a visual waiting walk.
   function canRoam(actor) {return Boolean(actor.role)&&actor.state==='adapter-idle'&&!actor.working&&!actor.handoff;}
   function idleStops(actor,index,geometry) {
-    const shift=geometry?.topExtra||0,coffee=geometry?{x:1020,y:445+shift}:{x:790,y:310},middle=geometry?{x:570,y:445+shift}:{x:480,y:330};
+    const shift=geometry?.topExtra||0,coffee=geometry?{x:1020,y:445+shift}:{x:790,y:310},middle=geometry?{x:570,y:388+shift}:{x:480,y:330};
     return [coffee,middle,actor.station?.point||desks[actor.role]];
   }
   return {roles,roleNames,actions,desks,workstations,layout,isPlanning,sceneLayout,assignWorkstations,lobby,project,destination,departureTarget,sceneActors,presentation,workerLabel,transcriptBubble,focusActor,canRoam,idleStops};
