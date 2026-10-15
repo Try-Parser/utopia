@@ -54,13 +54,22 @@ window.OfficeWorldView=(()=>{
     const meetingMark=P(1335,555,0);shape('text',{x:meetingMark.x,y:meetingMark.y,fill:'#e8e1d1','font-size':17,'text-anchor':'middle','data-conference-label':'true'},scene,'BREAKOUT');
     const exitMark=P(w/2,h-32,0);shape('text',{x:exitMark.x,y:exitMark.y,fill:'#314f59','font-size':16,'font-weight':800,'text-anchor':'middle','data-office-exit':'true'},scene,'EXIT');
     const objects=[];const object=(bounds,draw)=>objects.push({depth:P((bounds[0]+bounds[2])/2,(bounds[1]+bounds[3])/2).y,draw});
-    // A rotating cutaway shows only walls behind the rooms. Physical collision walls do not change.
-    const backNorth=P(w/2,25).y<=P(w/2,h-25).y,backWest=P(25,h/2).y<=P(w-25,h/2).y;
-    for(const bounds of g.walls){const vertical=bounds[3]-bounds[1]>bounds[2]-bounds[0];if((vertical&&backWest)||(!vertical&&backNorth))object(bounds,()=>box(bounds,32,['#e4e8df','#a7b9b7','#bcc9c4']));}
-    const outerY=backNorth?25:h-34,horizontal=[25,outerY,w-25,outerY+9];
-    object(horizontal,()=>{const wall=shape('g',{'data-outer-wall':backNorth?'north':'south'}),insideY=backNorth?outerY+9:outerY;box(horizontal,58,['#e5e9df','#bbc9c6','#97abae'],wall);for(let x=100;x<w-100;x+=180){polygon([P(x,insideY,45),P(x+100,insideY,45),P(x+100,insideY,20),P(x,insideY,20)],{fill:'#93c3d0',stroke:'#648e9c','stroke-width':2,'data-window-face':backNorth?'south':'north'},wall);line(P(x+50,insideY,45),P(x+50,insideY,20),{stroke:'#d5eced','stroke-width':2},wall);}});
-    const outerX=backWest?25:w-34,vertical=[outerX,25,outerX+9,h-25];
-    object(vertical,()=>{const wall=shape('g',{'data-outer-wall':backWest?'west':'east'}),insideX=backWest?outerX+9:outerX;box(vertical,58,['#e5e9df','#a7b9b7','#c1ccc7'],wall);for(let y=110;y<h-100;y+=180){polygon([P(insideX,y,45),P(insideX,y+100,45),P(insideX,y+100,20),P(insideX,y,20)],{fill:'#93c3d0',stroke:'#648e9c','stroke-width':2,'data-window-face':backWest?'east':'west'},wall);line(P(insideX,y+50,45),P(insideX,y+50,20),{stroke:'#d5eced','stroke-width':2},wall);}});
+    // Keep every physical wall present. Near walls lower into a cutaway instead of vanishing mid-orbit.
+    const backNorth=P(w/2,25).y<=P(w/2,h-25).y,radians=angle*Math.PI/180,northDepth=Math.cos(radians)-Math.sin(radians),westDepth=Math.cos(radians)+Math.sin(radians);
+    const cutaway=(depth,low,high)=>low+(high-low)*Math.max(0,Math.min(1,depth+.5));
+    for(const bounds of g.walls){const vertical=bounds[3]-bounds[1]>bounds[2]-bounds[0],height=cutaway(vertical?westDepth:northDepth,10,32);object(bounds,()=>{const wall=shape('g',{'data-room-wall':vertical?'west':'north','data-wall-height':height.toFixed(1)});box(bounds,height,['#e4e8df','#a7b9b7','#bcc9c4'],wall);});}
+    const outerWalls=[
+      {side:'north',bounds:[25,25,w-25,34],depth:northDepth,inside:34},
+      {side:'south',bounds:[25,h-34,w-25,h-25],depth:-northDepth,inside:h-34},
+      {side:'west',bounds:[25,25,34,h-25],depth:westDepth,inside:34},
+      {side:'east',bounds:[w-34,25,w-25,h-25],depth:-westDepth,inside:w-34}
+    ];
+    for(const {side,bounds,depth,inside} of outerWalls){const height=cutaway(depth,9,58),horizontal=side==='north'||side==='south';object(bounds,()=>{const wall=shape('g',{'data-outer-wall':side,'data-wall-height':height.toFixed(1)});box(bounds,height,['#e5e9df','#bbc9c6','#97abae'],wall);
+      if(view==='top-down'||height<35)return;
+      const top=Math.min(45,height-8),bottom=Math.max(10,top-25),face={north:'south',south:'north',west:'east',east:'west'}[side];
+      if(horizontal)for(let x=100;x<w-100;x+=180){polygon([P(x,inside,top),P(x+100,inside,top),P(x+100,inside,bottom),P(x,inside,bottom)],{fill:'#93c3d0',stroke:'#648e9c','stroke-width':2,'data-window-face':face},wall);line(P(x+50,inside,top),P(x+50,inside,bottom),{stroke:'#d5eced','stroke-width':2},wall);}
+      else for(let y=110;y<h-100;y+=180){polygon([P(inside,y,top),P(inside,y+100,top),P(inside,y+100,bottom),P(inside,y,bottom)],{fill:'#93c3d0',stroke:'#648e9c','stroke-width':2,'data-window-face':face},wall);line(P(inside,y+50,top),P(inside,y+50,bottom),{stroke:'#d5eced','stroke-width':2},wall);}
+    });}
     for(const station of g.stations){const {x,y}=station.desk,p=station.point,bounds=[x-28,y-20,x+28,y+20];
       object(bounds,()=>{const group=shape('g',{'data-workstation':station.key});shape('title',{},group,`${station.role==='shared'?'SHARED ':''}COMPUTER ${station.index+1}`);
         floor([x-25,y-15,x+36,y+29],{fill:'#33464c',opacity:.2},group);

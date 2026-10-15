@@ -17,15 +17,24 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
     const errors=[];page.on('pageerror',error=>errors.push(error.message));
     await page.goto('http://127.0.0.1:8787');
     await page.waitForFunction(()=>window.OfficeWorldView?.getSceneLayout()?.stations?.length===35);
+    for(let step=0;step<12;step++){
+      const walls=await page.evaluate(()=>({room:document.querySelectorAll('[data-room-wall]').length,expected:window.OfficeWorldView.getLayout().walls.length,outer:[...document.querySelectorAll('[data-outer-wall]')].map(w=>w.dataset.outerWall),outline:document.querySelectorAll('[data-platform-edge]').length}));
+      assert.equal(walls.room,walls.expected,`room walls survive rotation ${step*30}°`);
+      assert.deepEqual(walls.outer.sort(),['east','north','south','west'],`perimeter survives rotation ${step*30}°`);
+      assert.equal(walls.outline,1,`floor outline stays continuous at ${step*30}°`);
+      await page.getByRole('button',{name:'Rotate office right 30 degrees'}).click();
+    }
+    assert.equal(await page.locator('#camera-angle').textContent(),'0°','full orbit returns to the starting angle');
     const floorPoint=()=>page.evaluate(()=>{const r=document.querySelector('.world-scroll').getBoundingClientRect();for(let row=2;row<9;row++)for(let col=2;col<9;col++){const x=r.left+r.width*col/10,y=r.top+r.height*row/10;if(document.elementFromPoint(x,y)?.closest('svg.office'))return {x,y};}return null;});
     const start=await floorPoint();assert.ok(start,'an exposed floor point accepts pointer input');
     await page.mouse.move(start.x,start.y);await page.mouse.down();await page.mouse.move(start.x+120,start.y-75,{steps:8});await page.mouse.up();
     const orbit=await page.evaluate(()=>({yaw:document.getElementById('camera-angle').value,pitch:document.getElementById('camera-elevation').value,storedYaw:localStorage.getItem('agent-world.office-angle.v1'),storedPitch:localStorage.getItem('agent-world.office-elevation.v1')}));
     assert.notEqual(orbit.yaw,'0°','horizontal drag orbits the office');assert.notEqual(orbit.pitch,'35°','vertical drag tilts the camera');
     assert.equal(Math.round(Number(orbit.storedYaw)),Number(orbit.yaw.replace('°','')));assert.equal(Math.round(Number(orbit.storedPitch)),Number(orbit.pitch.replace('°','')));
-    const geometry=await page.evaluate(()=>{const scene=window.OfficeWorldView.getSceneLayout(),g=window.OfficeWorldView.getLayout(),corner=[[25,25],[g.width-25,25],[g.width-25,g.height-25],[25,g.height-25]].map(p=>scene.project(...p));return {aligned:scene.stations.every(s=>{const b=document.querySelector(`[data-computer="${s.role}"][data-station="${s.index}"]`)?.getBoundingClientRect(),floor=document.getElementById('world').getBoundingClientRect();return b&&Math.abs(b.x+b.width/2-floor.x-s.screen.x/scene.width*floor.width)<1&&Math.abs(b.y+b.height/2-floor.y-s.screen.y/scene.height*floor.height)<1;}),corner,edgeCount:document.querySelectorAll('[data-platform-edge]').length,wallFaces:[...document.querySelectorAll('[data-outer-wall]')].map(w=>({wall:w.dataset.outerWall,face:w.querySelector('[data-window-face]')?.getAttribute('data-window-face')}))};});
+    const geometry=await page.evaluate(()=>{const scene=window.OfficeWorldView.getSceneLayout(),g=window.OfficeWorldView.getLayout(),corner=[[25,25],[g.width-25,25],[g.width-25,g.height-25],[25,g.height-25]].map(p=>scene.project(...p));return {aligned:scene.stations.every(s=>{const b=document.querySelector(`[data-computer="${s.role}"][data-station="${s.index}"]`)?.getBoundingClientRect(),floor=document.getElementById('world').getBoundingClientRect();return b&&Math.abs(b.x+b.width/2-floor.x-s.screen.x/scene.width*floor.width)<1&&Math.abs(b.y+b.height/2-floor.y-s.screen.y/scene.height*floor.height)<1;}),corner,edgeCount:document.querySelectorAll('[data-platform-edge]').length,roomWalls:document.querySelectorAll('[data-room-wall]').length,expectedWalls:g.walls.length,wallFaces:[...document.querySelectorAll('[data-outer-wall]')].map(w=>({wall:w.dataset.outerWall,height:Number(w.dataset.wallHeight),face:w.querySelector('[data-window-face]')?.getAttribute('data-window-face')}))};});
     assert.equal(geometry.aligned,true,'monitor overlays remain attached after a two-axis orbit');assert.equal(geometry.edgeCount,1,'perimeter has one continuous top outline');
-    for(const {wall,face}of geometry.wallFaces)assert.equal(face,{north:'south',south:'north',west:'east',east:'west'}[wall],'windows face the office interior');
+    assert.equal(geometry.roomWalls,geometry.expectedWalls,'physical room walls remain present at the dragged angle');assert.equal(geometry.wallFaces.length,4,'all four perimeter walls remain present');
+    for(const {wall,height,face}of geometry.wallFaces)assert.equal(face,height>=35?{north:'south',south:'north',west:'east',east:'west'}[wall]:undefined,'raised wall windows face the office interior');
     const [a,b,c,d]=geometry.corner;assert.ok(Math.hypot((b.x-a.x)+(d.x-c.x),(b.y-a.y)+(d.y-c.y))<1e-7,'opposite projected edges are parallel and equal');
     await page.screenshot({path:path.join(process.env.EVIDENCE_DIR||'/tmp','orbit-drag-desktop.png'),fullPage:true});
     await page.reload();assert.equal(await page.locator('#camera-angle').textContent(),orbit.yaw);assert.equal(await page.locator('#camera-elevation').textContent(),orbit.pitch);
