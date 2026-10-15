@@ -56,7 +56,7 @@ def install(home, port):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--codex-home", type=Path, default=Path.home() / ".codex")
-    parser.add_argument("--port", type=int, default=8790)
+    parser.add_argument("--port", type=int, default=8787)
     args = parser.parse_args()
     print(f"Installed Agent World Codex hooks in {install(args.codex_home, args.port)}")
     print("Open /hooks in Codex to review and trust these hooks, then start or resume a session.")
