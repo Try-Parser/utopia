@@ -41,10 +41,12 @@
     return {width:1600,height,topExtra,bottomExtra,bottomShift,lobbyExtra,stations,conferenceSeats,rooms,partitions:[],furniture,walls,conference:{x:1120,y:65,width:420,height:height-145},lobby:index=>({x:160+(index%15)*55,y:380+topExtra+(Math.floor(index/15)%3)*8})};
   }
   // Movement stays in world coordinates; only presentation uses this projection.
-  function sceneLayout(geometry,view='isometric',angle=0) {
+  function sceneLayout(geometry,view='isometric',angle=0,elevation=Math.asin(1/Math.sqrt(3))*180/Math.PI) {
     const flat=view==='top-down',radians=(Number.isFinite(angle)?angle:0)*Math.PI/180,cos=Math.cos(radians),sin=Math.sin(radians),isoX=Math.sqrt(3)/2;
+    const elevationDegrees=Math.max(15,Math.min(70,Number.isFinite(elevation)?elevation:35.264389682754654)),pitch=elevationDegrees*Math.PI/180;
+    const floorY=isoX*Math.sin(pitch),heightZ=Math.sqrt(3/2)*Math.cos(pitch);
     const centerX=geometry.width/2,centerY=geometry.height/2;
-    const raw=(x,y,z=0)=>{const dx=x-centerX,dy=y-centerY,u=dx*cos-dy*sin,v=dx*sin+dy*cos;return flat?{x:u,y:v}:{x:(u-v)*isoX,y:(u+v)*.5-z};};
+    const raw=(x,y,z=0)=>{const dx=x-centerX,dy=y-centerY,u=dx*cos-dy*sin,v=dx*sin+dy*cos;return flat?{x:u,y:v}:{x:(u-v)*isoX,y:(u+v)*floorY-z*heightZ};};
     const corners=[[0,0],[geometry.width,0],[geometry.width,geometry.height],[0,geometry.height]].map(([x,y])=>raw(x,y));
     const minX=Math.min(...corners.map(p=>p.x)),maxX=Math.max(...corners.map(p=>p.x)),minY=Math.min(...corners.map(p=>p.y)),maxY=Math.max(...corners.map(p=>p.y));
     const project=(x,y,z=0)=>{const p=raw(x,y,flat?0:z);return {x:p.x-minX+40,y:p.y-minY+(flat?40:80)};};
@@ -53,7 +55,7 @@
       const [x,y,r,b]=bounds,points=[project(x,y),project(r,y),project(r,b),project(x,b)],center=points.reduce((sum,p)=>sum+p.y,0)/4;
       return [[0,1,'north'],[1,2,'east'],[2,3,'south'],[3,0,'west']].filter(([a,c])=>(points[a].y+points[c].y)/2>center+1e-7).map(([, ,side])=>side);
     };
-    return {width:maxX-minX+80,height:maxY-minY+(flat?80:160),project,visibleFaces,stations:geometry.stations.map(s=>({...s,screen:project(s.desk.x,s.desk.y,flat?0:45)}))};
+    return {width:maxX-minX+80,height:maxY-minY+(flat?80:160),project,visibleFaces,elevation:flat?90:elevationDegrees,stations:geometry.stations.map(s=>({...s,screen:project(s.desk.x,s.desk.y,flat?0:45)}))};
   }
   // The manual/demo floor retains its original two desks; live departments use layout().
   const workstations=roles.flatMap(role=>[0,1].map(index=>{const lower=roles.indexOf(role)>=3,x=desks[role].x+index*78,y=desks[role].y;return {key:`${role}:${index}`,role,index,point:{x,y},screen:{x:x-3,y:y-(lower?92:94)},desk:{x,y:y-(lower?85:87)}};}));

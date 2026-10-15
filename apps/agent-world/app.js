@@ -6,11 +6,13 @@ const S = window.LocalSessions;
 const $ = id => document.getElementById(id);
 const VIEW_STORAGE='agent-world.office-view.v1';
 const ANGLE_STORAGE='agent-world.office-angle.v1';
+const ELEVATION_STORAGE='agent-world.office-elevation.v1';
 const state={missions:[],events:[],paused:false};
 let storageAvailable=true;
 let officeView='isometric';
 let officeAngle=0;
-try{const saved=localStorage.getItem(VIEW_STORAGE),angle=Number(localStorage.getItem(ANGLE_STORAGE));if(['isometric','top-down'].includes(saved))officeView=saved;if(Number.isFinite(angle)&&angle>=0&&angle<360)officeAngle=angle;}catch(_){storageAvailable=false;}
+let officeElevation=Math.asin(1/Math.sqrt(3))*180/Math.PI;
+try{const saved=localStorage.getItem(VIEW_STORAGE),angle=Number(localStorage.getItem(ANGLE_STORAGE)),storedElevation=localStorage.getItem(ELEVATION_STORAGE),elevation=Number(storedElevation);if(['isometric','top-down'].includes(saved))officeView=saved;if(Number.isFinite(angle)&&angle>=0&&angle<360)officeAngle=angle;if(storedElevation!==null&&Number.isFinite(elevation)&&elevation>=15&&elevation<=70)officeElevation=elevation;}catch(_){storageAvailable=false;}
 let officeCameraPending=false,officeCameraManual=false,cameraRevision=0,cameraScale=1,cameraX=0,cameraY=0;
 let mode = 'office', selected = 'planner', observed = [], observedMessage = 'Connecting to the local checkpoint reader…', pollGeneration = 0;
 function node(tag, className, text) { const n = document.createElement(tag); if (className) n.className = className; if (text !== undefined) n.textContent = text; return n; }
@@ -53,6 +55,7 @@ function render() {
   $('new-mission').title=L.get().enabled?'Assign a native Codex task.':L.get().warning||'Native runner unavailable.';
   $('camera-view').value=officeView;
   $('camera-angle').value=`${Math.round(officeAngle)}°`;
+  $('camera-elevation').value=`${officeView==='top-down'?90:Math.round(officeElevation)}°`;
   if(!storageAvailable)$('storage-note').textContent='Browser storage unavailable. View choices last only for this visit.';
   $('connection-health').textContent=S.get().scannedAt?S.get().partial?'Live / partial':'Live':S.get().warnings.length?'Reader offline':'Connecting';
   const connected=S.get().entries.filter(e=>['running','event-working','event-waiting','adapter-working','adapter-waiting'].includes(e.status));
@@ -86,6 +89,7 @@ async function pollObserved() {
 function startOffice(){
   window.OfficeWorldView.setView(officeView);
   window.OfficeWorldView.setAngle(officeAngle);
+  window.OfficeWorldView.setElevation(officeElevation);
   L.activate(true,render);S.activate(true,render);pollObserved();render();setOfficeZoom(officePhone.matches,true);
 }
 $('camera-view').addEventListener('change',event=>{
@@ -118,10 +122,15 @@ $('conference-focus').addEventListener('click',()=>{
     announce('Conference room centered.');
   });
 });
-const cameraFloor=document.querySelector('svg.office');let panDrag=null;
-cameraFloor.addEventListener('pointerdown',event=>{if(event.button!==0)return;panDrag={id:event.pointerId,x:event.clientX,y:event.clientY,cameraX,cameraY};cameraFloor.setPointerCapture(event.pointerId);});
-cameraFloor.addEventListener('pointermove',event=>{if(!panDrag||event.pointerId!==panDrag.id)return;cameraX=panDrag.cameraX+event.clientX-panDrag.x;cameraY=panDrag.cameraY+event.clientY-panDrag.y;officeCameraManual=true;officeCameraPending=false;cameraRevision++;applyOfficeCamera();});
-for(const type of ['pointerup','pointercancel','lostpointercapture'])cameraFloor.addEventListener(type,event=>{if(panDrag&&event.pointerId===panDrag.id)panDrag=null;});
+const cameraFloor=document.querySelector('svg.office');let cameraDrag=null;
+cameraFloor.addEventListener('pointerdown',event=>{if(event.button!==0||mode!=='office')return;event.preventDefault();cameraDrag={id:event.pointerId,x:event.clientX,y:event.clientY,cameraX,cameraY,angle:officeAngle,elevation:officeElevation,mode:officeView==='top-down'||event.shiftKey?'pan':'orbit',moved:false};cameraFloor.setPointerCapture(event.pointerId);});
+cameraFloor.addEventListener('pointermove',event=>{if(!cameraDrag||event.pointerId!==cameraDrag.id)return;const dx=event.clientX-cameraDrag.x,dy=event.clientY-cameraDrag.y;if(Math.hypot(dx,dy)<3&&!cameraDrag.moved)return;cameraDrag.moved=true;officeCameraManual=true;officeCameraPending=false;cameraRevision++;
+  if(cameraDrag.mode==='pan'){cameraX=cameraDrag.cameraX+dx;cameraY=cameraDrag.cameraY+dy;applyOfficeCamera();return;}
+  officeAngle=((Math.round((cameraDrag.angle+dx*.45)*10)/10%360)+360)%360;
+  officeElevation=Math.max(15,Math.min(70,Math.round((cameraDrag.elevation-dy*.25)*10)/10));
+  window.OfficeWorldView.setAngle(officeAngle);window.OfficeWorldView.setElevation(officeElevation);render();applyOfficeCamera();
+});
+for(const type of ['pointerup','pointercancel','lostpointercapture'])cameraFloor.addEventListener(type,event=>{if(!cameraDrag||event.pointerId!==cameraDrag.id)return;const dragged=cameraDrag;cameraDrag=null;if(dragged.mode==='orbit'&&dragged.moved)try{localStorage.setItem(ANGLE_STORAGE,String(officeAngle));localStorage.setItem(ELEVATION_STORAGE,String(officeElevation));}catch(_){storageAvailable=false;render();}});
 let inspectedSession=null;
 $('local-missions').addEventListener('click',event=>{
   const button=event.target.closest('[data-inspect]'); if(!button)return;

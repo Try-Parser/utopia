@@ -288,3 +288,16 @@ test('orbit projection keeps every physical computer on its own monitor through 
  assert.deepEqual([0,90,180,270].map(angle=>O.sceneLayout(g,'isometric',angle).visibleFaces([100,100,200,200])),[['east','south'],['north','east'],['north','west'],['south','west']]);
  assert.deepEqual(O.sceneLayout(g,'top-down').visibleFaces([100,100,200,200]),[]);
 });
+
+test('camera elevation changes the floor and Z together without bending room edges',()=>{
+ const g=O.layout(),point=[220,140],low=O.sceneLayout(g,'isometric',32,15),high=O.sceneLayout(g,'isometric',32,70);
+ for(const scene of [low,high]){
+   const floor=scene.project(...point),raised=scene.project(...point,45),outline=[[25,25],[g.width-25,25],[g.width-25,g.height-25],[25,g.height-25]].map(p=>scene.project(...p));
+   assert.equal(raised.x,floor.x);assert.ok(raised.y<floor.y);
+   for(let i=0;i<2;i++){const a=outline[i],b=outline[(i+1)%4],c=outline[i+2],d=outline[(i+3)%4];assert.ok(Math.abs((b.x-a.x)+(d.x-c.x))<1e-9);assert.ok(Math.abs((b.y-a.y)+(d.y-c.y))<1e-9);}
+   for(const station of scene.stations)assert.deepEqual(station.screen,scene.project(station.desk.x,station.desk.y,45));
+ }
+ assert.ok(high.project(220,140).y!==low.project(220,140).y,'floor pitch changes the projected room position');
+ assert.ok(low.project(...point).y-low.project(...point,45).y>high.project(...point).y-high.project(...point,45).y,'walls get shorter as camera looks down');
+ assert.equal(O.sceneLayout(g,'isometric',0,-500).elevation,15);assert.equal(O.sceneLayout(g,'isometric',0,500).elevation,70);
+});
