@@ -253,3 +253,75 @@ dialog{background:#213c4a;border-color:#617b8b;color:#e6edf0;border-radius:11px;
 .zoom-controls button{min-width:30px;min-height:28px;padding:2px 6px;font-size:17px;line-height:1;border:0}
 .zoom-controls output{min-width:38px;text-align:center;color:#dce8ec;font:10px ui-monospace,monospace}
 @media(max-width:560px){.scene-actions{gap:5px;flex-wrap:wrap;justify-content:flex-end}.scene-actions #world-status{display:none}.zoom-controls button{min-width:34px;min-height:34px}}
+
+/* The live floor fills the window; controls and evidence open over it. */
+html,body{width:100%;height:100%;overflow:hidden}
+main{position:relative;width:100%;height:100dvh;min-height:0;max-width:none;margin:0;padding:0;gap:0;overflow:hidden}
+.rail,.topbar,.page-footer{display:none}
+.workspace-grid{position:absolute;inset:0;display:block;min-height:0;gap:0}
+.world-panel{position:absolute;inset:0;border:0;border-radius:0;box-shadow:none}
+.world-scroll{width:100%;height:100%;min-height:0}
+.heading{position:absolute;top:12px;left:12px;right:12px;z-index:12;display:flex;align-items:flex-start;gap:12px;padding:0;pointer-events:none}
+.heading>*{pointer-events:auto}
+.title-lockup{gap:0;padding:9px 13px;border:1px solid #78909a99;border-radius:10px;background:#19323edb;box-shadow:0 6px 22px #071a2790;backdrop-filter:blur(10px)}
+.title-lockup .world-logo,.title-lockup .subtitle{display:none}
+.title-lockup h1{font-size:15px;line-height:1.15;white-space:nowrap}
+.header-actions{display:flex;align-items:center;gap:6px;margin-left:auto;padding:5px;border:1px solid #78909a99;border-radius:10px;background:#19323edb;box-shadow:0 6px 22px #071a2790;backdrop-filter:blur(10px)}
+.header-actions button{min-height:34px;padding:6px 10px;white-space:nowrap;font-size:11px}
+.header-actions .connection-health{position:static;margin:0 7px 0 4px;white-space:nowrap;font-size:10px}
+#office-feed-toggle{display:inline-flex;align-items:center;width:auto;min-height:34px;padding:6px 10px;text-align:center}
+#mobile-flow-count{display:none}
+.toolbar{position:absolute;left:12px;bottom:12px;z-index:12;max-width:calc(100vw - 24px);padding:5px;border:1px solid #78909a99;border-radius:10px;background:#19323edb;box-shadow:0 6px 22px #071a2790;backdrop-filter:blur(10px)}
+.office-view{flex-wrap:nowrap;gap:5px;font-size:10px}
+.office-view label,.camera-hint{display:none}
+.office-view select{min-height:34px;padding:5px 7px;font-size:10px}
+.camera-orbit button{min-width:32px;min-height:32px}
+#conference-focus{min-height:34px;padding:5px 8px;font-size:10px}
+.office-hud{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.world-panel>.panel-heading{position:absolute;right:12px;bottom:12px;z-index:12;width:auto;padding:5px;border:1px solid #78909a99;border-radius:10px;background:#19323edb;box-shadow:0 6px 22px #071a2790;backdrop-filter:blur(10px)}
+.world-panel>.panel-heading h2,.world-panel>.panel-heading #world-status{display:none}
+.world-panel .scene-actions{gap:5px}
+.world-panel .scene-actions button{min-height:32px;padding:5px 8px;font-size:10px}
+.world-footer{position:absolute;left:50%;bottom:13px;z-index:8;transform:translateX(-50%);padding:6px 10px;border:1px solid #78909a99;border-radius:8px;background:#19323edb;box-shadow:0 6px 22px #071a2790}
+.world-footer #game-prompt{display:none}
+.office-sidebar,.workspace-grid.inspector-open .team-panel{position:fixed;inset:0 0 0 auto;width:min(390px,100vw);min-width:0;max-width:none;height:100dvh;z-index:30;border:0;border-left:1px solid #67818d;border-radius:0;box-shadow:-18px 0 40px #071a2780}
+.office-sidebar{display:flex;transform:translateX(100%);visibility:hidden;transition:transform .24s ease,visibility .24s ease}
+.office-sidebar.open{transform:translateX(0);visibility:visible}
+#office-sidebar-close{display:block;min-width:40px;min-height:40px}
+.office-sidebar .sidebar-body{flex:1;overflow:auto;padding:12px}
+.office-sidebar .activity-panel{min-height:180px;flex-shrink:0}
+.office-sidebar #activity{max-height:none}
+.office-sidebar #work-tray,.office-sidebar .source-details{flex-shrink:0;width:100%;margin:0}
+.office-sidebar #work-tray .lower-grid{max-height:min(55dvh,520px);overflow:auto}
+.office-sidebar #work-tray .mission-panel{width:100%}
+.office-sidebar .source-details .source-note{max-height:none}
+.workspace-grid.inspector-open .team-panel{display:flex;overflow:auto}
+.team-panel[hidden]{display:none!important}
+@media(max-width:800px){
+  main{height:100dvh;min-height:0;padding:0}
+  .workspace-grid{position:absolute;inset:0;min-height:0}
+  .office-sidebar,.workspace-grid.inspector-open .team-panel{inset:0;width:100vw;height:100dvh;border:0}
+  .office-sidebar:not(.open){visibility:hidden}
+  .heading{top:8px;left:8px;right:8px;flex-wrap:wrap;gap:5px}
+  .title-lockup{padding:7px 10px}.title-lockup h1{font-size:13px}
+  .header-actions{margin-left:auto;gap:3px;padding:3px}
+  .header-actions button,#office-feed-toggle{min-height:34px;padding:5px 7px;font-size:9px}
+  .header-actions .connection-health{font-size:9px;margin:0 3px}
+  .world-panel>.panel-heading{right:8px;bottom:8px}
+  .toolbar{left:8px;bottom:60px;max-width:calc(100vw - 16px)}
+  .world-footer{display:none}
+}
+@media(max-width:560px){
+  .heading{display:block}
+  .title-lockup{display:inline-flex}
+  .header-actions{display:flex;width:max-content;max-width:100%;margin:5px 0 0;overflow-x:auto}
+  .header-actions .connection-health{width:12px;max-width:12px;overflow:visible;white-space:nowrap;font-size:0;margin:0 3px}
+  .toolbar{bottom:57px;padding:3px}
+  .office-view{gap:3px}.office-view select{max-width:103px}
+  .camera-orbit button{min-width:30px;min-height:30px}
+  .camera-orbit output{min-width:28px;font-size:9px}
+  #conference-focus{font-size:9px;padding:4px 6px}
+  .world-panel>.panel-heading{left:8px;right:8px;bottom:8px;justify-content:center}
+  .world-panel .scene-actions{margin:auto;justify-content:center;flex-wrap:nowrap}
+  .world-panel .scene-actions button{font-size:9px;padding:4px 6px}
+}

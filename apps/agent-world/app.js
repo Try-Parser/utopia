@@ -102,10 +102,12 @@ function rotateOffice(next,save=true){
 $('camera-left').addEventListener('click',()=>rotateOffice(officeAngle-30));
 $('camera-right').addEventListener('click',()=>rotateOffice(officeAngle+30));
 const feedButton=$('office-feed-toggle'),feed=$('office-sidebar');
-function setFeedOpen(open,moveFocus=true){feed.classList.toggle('open',open);feedButton.setAttribute('aria-expanded',String(open));if(moveFocus)(open?$('office-sidebar-close'):feedButton).focus({preventScroll:true});}
+$('team-toggle').before(feedButton);
+feed.querySelector('.sidebar-body').append($('work-tray'),document.querySelector('.source-details'));
+function setFeedOpen(open,moveFocus=true){if(open&&!$('team-panel').hidden)closeInspector(false);feed.classList.toggle('open',open);feedButton.setAttribute('aria-expanded',String(open));if(moveFocus)(open?$('office-sidebar-close'):feedButton).focus({preventScroll:true});}
 feedButton.addEventListener('click',()=>setFeedOpen(true));
 $('office-sidebar-close').addEventListener('click',()=>setFeedOpen(false));
-document.addEventListener('keydown',event=>{if(event.key==='Escape'&&feed.classList.contains('open')){event.preventDefault();setFeedOpen(false);}});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&feed.classList.contains('open')&&!document.querySelector('dialog[open]')){event.preventDefault();setFeedOpen(false);}});
 $('conference-focus').addEventListener('click',()=>{
   if(cameraScale===1)setOfficeZoom(true);
   const revision=++cameraRevision;officeCameraManual=true;officeCameraPending=false;
@@ -124,7 +126,7 @@ let inspectedSession=null;
 $('local-missions').addEventListener('click',event=>{
   const button=event.target.closest('[data-inspect]'); if(!button)return;
   const actor=Array.from(document.querySelectorAll('.office-character')).find(el=>el.dataset.office===`session-${button.dataset.inspect}`);
-  if(actor){actor.click(); inspectorReturn=button; return;}
+  if(actor){actor.click(); return;}
   const entry=S.get().entries.find(e=>e.id===button.dataset.inspect); if(!entry)return;
   inspectedSession=entry.id;
   $('session-record-title').textContent=entry.label;
@@ -134,8 +136,8 @@ $('local-missions').addEventListener('click',event=>{
 $('session-record-close').addEventListener('click',()=>$('session-record-dialog').close());
 $('session-record-dialog').addEventListener('close',()=>{const button=Array.from($('local-missions').querySelectorAll('[data-inspect]')).find(el=>el.dataset.inspect===inspectedSession);(button||$('team-toggle')).focus(); inspectedSession=null;});
 let inspectorReturn=null;
-function showInspector(returnTo) {const taskTrigger=document.activeElement?.dataset?.flowAgent?document.activeElement:null,fromFeed=feed.classList.contains('open')&&matchMedia('(max-width:800px)').matches;if(feed.classList.contains('open'))setFeedOpen(false,false);inspectorReturn=fromFeed?feedButton:taskTrigger||returnTo||$('team-toggle');$('team-panel').hidden=false;document.querySelector('.workspace-grid').classList.add('inspector-open');$('team-toggle').setAttribute('aria-expanded','true');$('team-close').focus({preventScroll:true});}
-function closeInspector() {$('team-panel').hidden=true;document.querySelector('.workspace-grid').classList.remove('inspector-open');$('team-toggle').setAttribute('aria-expanded','false');const currentSession=inspectorReturn?.dataset?.inspect?Array.from($('local-missions').querySelectorAll('[data-inspect]')).find(button=>button.dataset.inspect===inspectorReturn.dataset.inspect):null;const currentFlow=inspectorReturn?.dataset?.flowAgent?Array.from($('task-flow-list').querySelectorAll('[data-flow-agent]')).find(button=>button.dataset.flowAgent===inspectorReturn.dataset.flowAgent):null;(currentSession||currentFlow||inspectorReturn?.isConnected&&inspectorReturn||$('team-toggle')).focus({preventScroll:true});}
+function showInspector(returnTo) {const taskTrigger=document.activeElement?.dataset?.flowAgent?document.activeElement:null,fromFeed=feed.classList.contains('open');if(fromFeed)setFeedOpen(false,false);inspectorReturn=fromFeed?feedButton:taskTrigger||returnTo||$('team-toggle');$('team-panel').hidden=false;document.querySelector('.workspace-grid').classList.add('inspector-open');$('team-toggle').setAttribute('aria-expanded','true');$('team-close').focus({preventScroll:true});}
+function closeInspector(moveFocus=true) {$('team-panel').hidden=true;document.querySelector('.workspace-grid').classList.remove('inspector-open');$('team-toggle').setAttribute('aria-expanded','false');if(moveFocus){const currentSession=inspectorReturn?.dataset?.inspect?Array.from($('local-missions').querySelectorAll('[data-inspect]')).find(button=>button.dataset.inspect===inspectorReturn.dataset.inspect):null;const currentFlow=inspectorReturn?.dataset?.flowAgent?Array.from($('task-flow-list').querySelectorAll('[data-flow-agent]')).find(button=>button.dataset.flowAgent===inspectorReturn.dataset.flowAgent):null;(currentSession||currentFlow||inspectorReturn?.isConnected&&inspectorReturn||$('team-toggle')).focus({preventScroll:true});}}
 $('team-toggle').addEventListener('click',()=>{$('team-panel').hidden?showInspector($('team-toggle')):closeInspector();});
 $('team-close').addEventListener('click',closeInspector);
 $('world').addEventListener('click',event=>{const actor=event.target.closest('.character');if(actor&&mode==='office')showInspector(actor);});
@@ -176,11 +178,10 @@ officeViewport.addEventListener('wheel',event=>{if(mode!=='office')return;event.
 $('world').addEventListener('keydown',event=>{if(event.key==='+'||event.key==='='){event.preventDefault();zoomOffice(cameraScale*1.25);}else if(event.key==='-'){event.preventDefault();zoomOffice(cameraScale/1.25);}else if(event.key==='0'){event.preventDefault();setOfficeZoom(false);}});
 const officePhone=matchMedia('(max-width:560px)');officePhone.addEventListener('change',()=>{if(mode==='office'){officeCameraManual=false;setOfficeZoom(officePhone.matches,true);}});
 new ResizeObserver(()=>{applyOfficeCamera();$('world').style.setProperty('--actor-scale',String(document.body.dataset.mode==='office'?Math.max(.44,Math.min(.64,$('world').clientWidth/(window.OfficeWorldView?.getSceneLayout().width||1280)*.98)):Math.max(.42,Math.min(1.2,$('world').clientWidth/1280))));}).observe($('world'));
-$('new-mission').addEventListener('click',()=>{$('work-tray').open=true;});
 function accessOptions() { const canEdit = L.get().allowEdits && ['planner', 'builder'].includes($('mission-role').value); $('mission-access').options[1].disabled = !canEdit; if (!canEdit) $('mission-access').value = 'read-only'; }
 $('mission-role').addEventListener('change', accessOptions);
 $('new-mission').addEventListener('click',()=>{$('mission-role').value=selected;$('mission-access').value='read-only';accessOptions();$('mission-description').textContent=`Assign a native Codex task in ${L.get().workspace}. Choose a specialist and access.`;$('mission-note').textContent='Uses your Codex account. Local edits are possible when selected. Commits, publication, and deployment are not part of task execution.';$('mission-error').textContent='';$('mission-title').setCustomValidity('');$('mission-dialog').showModal();$('mission-title').focus();});$('close-dialog').addEventListener('click',()=>$('mission-dialog').close());
 $('mission-title').addEventListener('input', () => $('mission-title').setCustomValidity(''));
-$('mission-form').addEventListener('submit',async event=>{event.preventDefault();$('launch-mission').disabled=true;$('mission-error').textContent='';try{await L.submit($('mission-title').value,$('mission-brief').value,$('mission-role').value,$('mission-access').value);render();$('mission-dialog').close();event.target.reset();announce('Native task queued.');}catch(error){$('mission-error').textContent=error.message;}finally{$('launch-mission').disabled=false;}});
+$('mission-form').addEventListener('submit',async event=>{event.preventDefault();$('launch-mission').disabled=true;$('mission-error').textContent='';try{await L.submit($('mission-title').value,$('mission-brief').value,$('mission-role').value,$('mission-access').value);render();$('mission-dialog').close();event.target.reset();$('work-tray').open=true;setFeedOpen(true);announce('Native task queued.');}catch(error){$('mission-error').textContent=error.message;}finally{$('launch-mission').disabled=false;}});
 startOffice();
 setInterval(()=>{if(!document.hidden)pollObserved();},5000);
