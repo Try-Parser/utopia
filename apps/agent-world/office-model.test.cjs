@@ -37,9 +37,10 @@ test('automatically observed threads keep shared computers and expand capacity',
   assert.equal(seats.find(s=>s.occupant?.id===actors[0].id).key,'builder:0');
   seats=O.assignWorkstations([...actors].reverse(),[],seats);
   assert.equal(seats.find(s=>s.occupant?.id===actors[0].id).key,'builder:0');
-  const scene=O.sceneActors(actors,seats,()=>true,O.layout(actors,seats));
-  assert.deepEqual(O.destination(scene[0],0),scene[0].station.point);
-  assert.match(O.presentation(scene[0]).destination,/Shared computer/);
+  const geometry=O.layout(actors,seats),scene=O.sceneActors(actors,seats,()=>true,geometry);
+  assert.equal(geometry.conferenceSeats.length,32);
+  assert.deepEqual(O.destination(scene[0],0,geometry),scene[0].conferenceSeat.point);
+  assert.match(O.presentation(scene[0]).destination,/Conference room/);
 });
 test('a newly identified agent leaves its shared desk for its own department',()=>{
   const unknown={id:'session-promoted',provider:'Codex',role:null,working:false,state:'event-waiting',note:'Codex local runtime activity observed; current task state unavailable'};
@@ -47,8 +48,10 @@ test('a newly identified agent leaves its shared desk for its own department',()
   assert.equal(before.find(s=>s.occupant?.id===unknown.id).role,'builder');
   const known={...unknown,role:'qa'},after=O.assignWorkstations([known],[],before);
   assert.equal(after.find(s=>s.occupant?.id===known.id).role,'qa');
-  const scene=O.sceneActors([known],after,()=>true,O.layout([known],after));
-  assert.deepEqual(O.destination(scene[0],0,O.layout([known],after)),scene[0].station.point);
+  const geometry=O.layout([known],after),scene=O.sceneActors([known],after,()=>true,geometry);
+  assert.deepEqual(O.destination(scene[0],0,geometry),scene[0].conferenceSeat.point);
+  const active={...known,state:'event-working',working:true},resumed=O.sceneActors([active],after,()=>true,geometry,scene);
+  assert.equal(resumed[0].conferenceSeat,null);assert.deepEqual(O.destination(resumed[0],0,geometry),resumed[0].station.point);
 });
 test('recent Codex thread metadata can seat a specialist without claiming tool work',()=>{
   const entry={...base,provider:'Codex',kind:'session',status:'event-waiting',role:'qa',action:null,
@@ -69,11 +72,30 @@ test('explicit human questions sit in conference and release the seat after an a
     const answered=O.project({entries:[{...question,awaitingHuman:false,status:'event-waiting'}]},{jobs:[]}).actors[0];
     const replyGap=O.sceneActors([answered],O.assignWorkstations([answered],[],seats),M.free,g,[scene])[0];
     assert.equal(replyGap.station.key,scene.station.key,'the reply-to-work gap retains the same computer');
-    assert.equal(replyGap.conferenceSeat,null);
+    assert.equal(replyGap.conferenceSeat.key,scene.conferenceSeat.key,'a still-waiting session stays in conference after the reply');
     const resumed=O.project({entries:[{...question,awaitingHuman:false,status:'event-working',action:'coding'}]},{jobs:[]}).actors[0];
     const home=O.sceneActors([resumed],O.assignWorkstations([resumed],[],seats),M.free,g,[replyGap])[0];
     assert.equal(home.conferenceSeat,null);assert.equal(home.station.key,scene.station.key);
     assert.deepEqual(O.destination(home,0,g),home.station.point);
+  }finally{M.configure(null);}
+});
+test('reported waiting sessions and queued agents move to conference, then return to their own department',()=>{
+  const entry={...base,kind:'session',status:'adapter-working',role:'builder',action:'coding'};
+  const working=O.project({entries:[entry]},{jobs:[]}).actors[0],home=O.assignWorkstations([working],[]);
+  const waiting=O.project({entries:[{...entry,status:'adapter-waiting',action:null}]},{jobs:[]}).actors[0];
+  const seats=O.assignWorkstations([waiting],[],home),g=O.layout([waiting],seats);M.configure(g);
+  try{
+    const inConference=O.sceneActors([waiting],seats,M.free,g)[0];
+    assert.equal(inConference.station.key,home.find(s=>s.occupant?.id===working.id).key);
+    assert.ok(inConference.conferenceSeat);assert.deepEqual(O.destination(inConference,0,g),inConference.conferenceSeat.point);
+    assert.match(O.presentation(inConference).destination,/Conference room/);
+    const eventWait=O.project({entries:[{...entry,status:'event-waiting',role:null,action:null}]},{jobs:[]}).actors[0];
+    assert.ok(O.sceneActors([eventWait],[],M.free,g)[0].conferenceSeat,'an observed roleless Codex wait also has a conference seat');
+    const queued=O.project({entries:[]},{jobs:[{id:'q'.repeat(32),role:'qa',status:'queued',title:'Run tests'}]}).actors[0];
+    assert.ok(O.sceneActors([queued],O.assignWorkstations([queued],[]),M.free,g)[0].conferenceSeat);
+    const resumed=O.project({entries:[{...entry,role:'qa',action:'testing'}]},{jobs:[]}).actors[0];
+    const newSeats=O.assignWorkstations([resumed],[],seats),next=O.sceneActors([resumed],newSeats,M.free,g,[inConference])[0];
+    assert.equal(next.conferenceSeat,null);assert.equal(next.station.role,'qa');assert.deepEqual(O.destination(next,0,g),next.station.point);
   }finally{M.configure(null);}
 });
 test('completed workers can reach breakout and the office exit from every computer',()=>{

@@ -8,13 +8,14 @@
   const lobby=index=>({x:200+(index%12)*48,y:310});
   const observedWithoutRole=a=>!a.role&&(a.working||a.awaitingHuman||a.state==='event-waiting'&&a.provider==='Codex'&&a.note?.startsWith('Codex local runtime activity observed'));
   function isPlanning(actor) {return actor.awaitingHuman||actor.working&&!actor.handoff&&actor.action!=='helping'&&(actor.action==='planning'||actor.role==='planner'&&['research','coordination'].includes(actor.action));}
+  function isConferenceBound(actor) {return isPlanning(actor)||!actor.handoff&&['event-waiting','adapter-waiting','queued'].includes(actor.state);}
   function layout(actors=[],previous=[],previousConference=[]) {
     const shared=actors.filter(observedWithoutRole).length;
     const counts=Object.fromEntries(roles.map(role=>[role,Math.max(5,actors.filter(a=>a.role===role).length+(role==='builder'?shared:0),...previous.filter(s=>s.role===role).map(s=>s.index+1))]));
     const extra=group=>Math.max(...group.map(role=>Math.ceil(counts[role]/5)-1))*300;
     const topExtra=extra(roles.slice(0,3)),bottomExtra=extra(roles.slice(3));
     const lobbyExtra=Math.max(0,Math.ceil(actors.filter(a=>!a.role).length/15)-1)*44,bottomShift=topExtra+lobbyExtra;
-    const conferenceCount=Math.max(8,actors.filter(isPlanning).length,previousConference.length);
+    const conferenceCount=Math.max(8,actors.filter(isConferenceBound).length,previousConference.length);
     const height=Math.max(850+bottomShift+bottomExtra,conferenceCount>8?630+Math.ceil((conferenceCount-8)/6)*60:0);
     const rooms=roles.map((role,i)=>({role,x:60+(i%3)*350,y:i>=3?465+bottomShift:65,width:320,height:300+(i>=3?bottomExtra:topExtra),name:roleNames[role],color:['#e4ebf5','#ece8f5','#e2eef2','#f1e9dd','#e2efe8','#f2e6e4'][i]}));
     const stations=roles.flatMap(role=>Array.from({length:counts[role]},(_,index)=>{
@@ -80,8 +81,8 @@
   function sceneActors(actors,stations,isFree,geometry,previous=[]) {
     const result=actors.map(a=>({...a,station:stations.find(s=>s.occupant?.id===a.id)||null,visitPoint:null,colleague:null,conferenceSeat:null}));
     const occupied=new Set();
-    for(const actor of result.filter(isPlanning)){const old=previous.find(a=>a.id===actor.id)?.conferenceSeat,seat=geometry?.conferenceSeats?.find(s=>s.key===old?.key);if(seat&&!occupied.has(seat.key)){actor.conferenceSeat=seat;occupied.add(seat.key);}}
-    for(const actor of result.filter(a=>isPlanning(a)&&!a.conferenceSeat)){const seat=geometry?.conferenceSeats?.find(s=>!occupied.has(s.key));if(seat){actor.conferenceSeat=seat;occupied.add(seat.key);}}
+    for(const actor of result.filter(isConferenceBound)){const old=previous.find(a=>a.id===actor.id)?.conferenceSeat,seat=geometry?.conferenceSeats?.find(s=>s.key===old?.key);if(seat&&!occupied.has(seat.key)){actor.conferenceSeat=seat;occupied.add(seat.key);}}
+    for(const actor of result.filter(a=>isConferenceBound(a)&&!a.conferenceSeat)){const seat=geometry?.conferenceSeats?.find(s=>!occupied.has(s.key));if(seat){actor.conferenceSeat=seat;occupied.add(seat.key);}}
     for(const actor of result){
       const reference=actor.handoff?.targetRef||actor.targetRef,kind=actor.handoff?.targetKind||actor.targetKind||'session',target=reference?result.find(a=>a.id===`${kind}-${reference}`&&a.id!==actor.id&&a.role&&a.station):null;
       const helping=actor.working&&actor.action==='helping';
@@ -96,6 +97,7 @@
     if(actor.awaitingHuman)return {title:'Question waiting for your answer',action:'awaiting-human',word:'Waiting for your answer',icon:'?',destination:actor.conferenceSeat?`Conference room / Seat ${actor.conferenceSeat.index+1}`:'Conference room',detail:'The session requested human input. It will return to work after an answer is recorded.'};
     const title=actor.handoff?.taskLabel||actor.taskLabel||(actor.activeChildCount?`${actor.activeChildCount} subagent${actor.activeChildCount===1?'':'s'} working`:actor.state==='running'?'No current task event':'Task details not connected');
     if(actor.handoff)return {title,action:'handoff',word:'Passing task',icon:'→',destination:actor.colleague?.label||`${roleNames[actor.handoff.toRole]} department`,detail:`Taking ${title} to ${actor.colleague?.label||roleNames[actor.handoff.toRole]+' department'}`};
+    if(actor.conferenceSeat&&['event-waiting','adapter-waiting','queued'].includes(actor.state))return {title,action:'waiting',word:actor.state==='queued'?'Queued':'Waiting',icon:'…',destination:`Conference room · Seat ${actor.conferenceSeat.index+1}`,detail:actor.activity||'Waiting for the next task or turn.'};
     if(actor.working&&actor.action==='helping')return {title,action:actor.colleague?'helping':'waiting',word:actor.colleague?'Helping':'Colleague not connected',icon:'↔',destination:actor.colleague?.label||'Own computer',detail:actor.colleague?`Helping ${actor.colleague.label} with ${title}`:'Helping was reported, but the colleague is not currently connected to a working desk.'};
     const known=actor.working&&actions[actor.action];
     return {title,action:known?actor.action:'unknown',word:known?known[0]:actor.working?'Working · details missing':actor.activeChildCount?'Connected team':actor.state==='running'?'Session open':actor.activity||'Waiting',icon:known?known[1]:'?',destination:actor.conferenceSeat?`Conference room · Seat ${actor.conferenceSeat.index+1}`:actor.role?`${roleNames[actor.role]} · Computer ${(actor.station?.index||0)+1}`:actor.station?`Shared computer ${actor.station.index+1}`:'Reception',detail:actor.activity};
