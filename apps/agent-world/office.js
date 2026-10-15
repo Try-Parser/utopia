@@ -120,7 +120,8 @@ window.OfficeWorldView=(()=>{
     if(live)paintOffice();if(physicsChanged)for(const [id]of packets){dropPacket(id);seen.delete(id);}return physicsChanged;
   }
   const motionEnabled=()=>motionOverride===null?!reduced.matches:motionOverride;
-  function motionLabel() {const playing=motionEnabled();$('motion-toggle').textContent=playing?'Pause movement':'Play movement';$('motion-toggle').setAttribute('aria-pressed',String(!playing));$('world').dataset.motion=playing?'playing':'paused';$('world').dataset.motionExplicit=String(motionOverride===true&&reduced.matches);if(!playing)for(const a of actors.values()){a.element.classList.remove('office-walking');if(a.data.working||a.data.handoff||a.departure){routeQueue.delete(a.data.id);a.position={...(a.departure?.target||O.destination(a.data,a.index,mode==='office'?geometry:null))};a.route=[];place(a);}}}
+  const atHomeComputer=actor=>Boolean(actor.station)&&!actor.conferenceSeat&&!actor.handoff&&(actor.working||actor.state==='running'||actor.state==='adapter-idle'&&!O.canRoam(actor)||actor.state==='event-waiting'&&actor.recentEvents?.length);
+  function motionLabel() {const playing=motionEnabled();$('motion-toggle').textContent=playing?'Pause movement':'Play movement';$('motion-toggle').setAttribute('aria-pressed',String(!playing));$('world').dataset.motion=playing?'playing':'paused';$('world').dataset.motionExplicit=String(motionOverride===true&&reduced.matches);if(!playing)for(const a of actors.values()){a.element.classList.remove('office-walking');routeQueue.delete(a.data.id);a.position={...(a.departure?.target||O.destination(a.data,a.index,mode==='office'?geometry:null))};a.route=[];place(a);}}
   $('motion-toggle').addEventListener('click',()=>{motionOverride=!motionEnabled();motionLabel();});
   reduced.addEventListener('change',()=>{motionOverride=null;motionLabel();});
   motionLabel();
@@ -310,7 +311,7 @@ window.OfficeWorldView=(()=>{
         if(motionEnabled())queueRoute(a,a.ambient?O.idleStops(actor,a.index,mode==='office'?geometry:null)[a.roamStep++]:goal);
         else {routeQueue.delete(a.data.id);a.position={...goal};}
       }
-      a.element.classList.toggle('at-desk',(actor.working||actor.state==='event-waiting'&&actor.recentEvents?.length)&&!actor.conferenceSeat&&Boolean(actor.station)&&!actor.handoff);
+      a.element.classList.toggle('at-desk',atHomeComputer(actor)&&Math.hypot(a.position.x-actor.station.point.x,a.position.y-actor.station.point.y)<2);
       a.element.classList.toggle('at-conference-seat',Boolean(actor.conferenceSeat)&&Math.hypot(a.position.x-actor.conferenceSeat.point.x,a.position.y-actor.conferenceSeat.point.y)<2);
       if(a.owned) {
         const r=window.AgentWorld.ROLES.find(r=>r.id===actor.role);a.element.style.setProperty('--agent',r?.color||'#8999aa');
@@ -348,7 +349,7 @@ window.OfficeWorldView=(()=>{
           if(departure.arrived&&now-departure.arrived>(departure.kind==='breakout'?4000:1200)||now-departure.started>60000){removeActor(a.data.id,a);continue;}
         }
         if(mode==='office')a.element.classList.toggle('at-conference-seat',Boolean(a.data.conferenceSeat)&&Math.hypot(a.position.x-a.data.conferenceSeat.point.x,a.position.y-a.data.conferenceSeat.point.y)<2);
-        if(mode==='office')a.element.classList.toggle('at-desk',(a.data.working||a.data.state==='event-waiting'&&a.data.recentEvents?.length)&&!a.data.conferenceSeat&&Boolean(a.data.station)&&!a.data.handoff&&Math.hypot(a.position.x-a.data.station.point.x,a.position.y-a.data.station.point.y)<2);
+        if(mode==='office')a.element.classList.toggle('at-desk',atHomeComputer(a.data)&&Math.hypot(a.position.x-a.data.station.point.x,a.position.y-a.data.station.point.y)<2);
         if(mode==='office'){const peer=actors.get(a.data.colleague?.id);a.element.classList.toggle('at-help',a.data.action==='helping'&&Boolean(peer)&&Math.hypot(a.position.x-peer.position.x,a.position.y-peer.position.y)<60);}
       }
       for(const [id,link]of helpLinks){const a=actors.get(id),b=actors.get(link.target);if(a&&b){const ap=sceneGeometry.project(a.position.x,a.position.y,15),bp=sceneGeometry.project(b.position.x,b.position.y,15);link.line.setAttribute('x1',ap.x);link.line.setAttribute('y1',ap.y);link.line.setAttribute('x2',bp.x);link.line.setAttribute('y2',bp.y);}}

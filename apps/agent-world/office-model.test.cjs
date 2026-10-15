@@ -34,13 +34,23 @@ test('automatically observed threads keep shared computers and expand capacity',
   const actors=Array.from({length:32},(_,i)=>({id:`session-auto-${i}`,provider:'Codex',role:null,working:false,state:'event-waiting',note}));
   let seats=O.assignWorkstations(actors,[]);
   assert.equal(seats.filter(s=>s.occupant).length,32);
-  assert.equal(seats.find(s=>s.occupant?.id===actors[0].id).key,'builder:0');
+  assert.equal(seats.find(s=>s.occupant?.id===actors[0].id).key,'builder:31');
   seats=O.assignWorkstations([...actors].reverse(),[],seats);
-  assert.equal(seats.find(s=>s.occupant?.id===actors[0].id).key,'builder:0');
+  assert.equal(seats.find(s=>s.occupant?.id===actors[0].id).key,'builder:31');
   const geometry=O.layout(actors,seats),scene=O.sceneActors(actors,seats,()=>true,geometry);
   assert.equal(geometry.conferenceSeats.length,32);
   assert.deepEqual(O.destination(scene[0],0,geometry),scene[0].conferenceSeat.point);
   assert.match(O.presentation(scene[0]).destination,/Conference room/);
+});
+test('a roleless worker retains its old department desk without displacing parallel specialists',()=>{
+  const prior={id:'session-prior',role:'planner',working:true,state:'adapter-working'};
+  const priorSeats=O.assignWorkstations([prior],[]);
+  const shared={...prior,role:null,working:false,state:'running'};
+  const planners=Array.from({length:25},(_,index)=>({id:`session-planner-${index}`,role:'planner',working:true,state:'adapter-working'}));
+  const actors=[shared,...planners],seats=O.assignWorkstations(actors,[],priorSeats);
+  assert.equal(seats.find(s=>s.occupant?.id===shared.id).key,'planner:0');
+  assert.equal(seats.filter(s=>s.role==='planner').length,26);
+  assert.equal(planners.filter(actor=>seats.some(s=>s.occupant?.id===actor.id&&s.role==='planner')).length,25);
 });
 test('a newly identified agent leaves its shared desk for its own department',()=>{
   const unknown={id:'session-promoted',provider:'Codex',role:null,working:false,state:'event-waiting',note:'Codex local runtime activity observed; current task state unavailable'};
@@ -162,10 +172,13 @@ test('expanded departments and reception connect all new desks with matching col
   const retained=O.assignWorkstations([],[],seats);assert.equal(retained.filter(s=>s.role==='builder').length,5);
   const all=Array.from({length:210},(_,i)=>({id:String(i),role:'builder'})),large=O.layout(all),full=O.assignWorkstations(all,[]);assert.equal(large.stations.filter(s=>s.role==='builder').length,210);assert.equal(new Set(full.filter(s=>s.occupant).map(s=>s.occupant.id)).size,210);
 });
-test('unlinked processes stay off the floor while an identified open session waits in reception',()=>{
+test('unlinked processes stay off the floor while an identified open session sits at a shared computer',()=>{
   const result=O.project({entries:[{...base,kind:'process'}, {...base,id:'b'.repeat(32),kind:'session'}, {...base,id:'c'.repeat(32),kind:'session',status:'recent'}, {...base,id:'d'.repeat(32),kind:'session',status:'adapter-stale',role:'builder'}]}, {jobs:[]});
   assert.equal(result.actors.length,1);assert.equal(result.actors[0].working,false);assert.equal(result.actors[0].role,null);
-  assert.deepEqual(O.destination(result.actors[0],0),O.lobby(0));assert.equal(O.canRoam(result.actors[0]),false);
+  const seats=O.assignWorkstations(result.actors,[]),g=O.layout(result.actors,seats),actor=O.sceneActors(result.actors,seats,()=>true,g)[0];
+  assert.equal(actor.station.role,'builder');assert.notDeepEqual(O.destination(actor,0,g),g.lobby(0));
+  assert.deepEqual(O.destination(actor,0,g),actor.station.point);assert.equal(O.canRoam(actor),false);
+  assert.match(O.presentation(actor).destination,/Shared computer/);assert.equal(O.presentation(actor).word,'Session open');
 });
 test('confirmed role changes retain session identity and route to the next department',()=>{
   const project=role=>O.project({entries:[{...base,status:'adapter-working',role}]},{jobs:[]}).actors[0];
@@ -185,7 +198,7 @@ test('only explicit fresh handoffs transfer work; completion never invents a nex
 });
 test('only explicitly role-reported idle sessions take cosmetic walks',()=>{
   const actor=O.project({entries:[{...base,kind:'session',status:'adapter-idle',role:'builder'}]},{jobs:[]}).actors[0];assert.equal(O.canRoam(actor),true);assert.equal(O.canRoam({...actor,role:null}),false);assert.equal(O.canRoam({...actor,state:'running'}),false);
-  for(let i=0;i<12;i++){let p=O.lobby(i);for(const q of O.idleStops(actor,i)){assert.equal(M.free(q.x,q.y),true);assert.ok(M.path(p,q).length>0);p=q;}}
+  for(let i=0;i<12;i++){let p=O.lobby(i);for(const q of O.idleStops(actor,i)){assert.notDeepEqual(q,O.lobby(i),'the lobby is transit only');assert.equal(M.free(q.x,q.y),true);assert.ok(M.path(p,q).length>0);p=q;}}
   assert.equal(actor.working,false);assert.equal(actor.role,'builder');
   assert.equal(O.canRoam({...actor,working:true}),false);assert.equal(O.canRoam({...actor,handoff:{toRole:'qa'}}),false);assert.equal(O.canRoam({...actor,state:'adapter-ended'}),false);
 });

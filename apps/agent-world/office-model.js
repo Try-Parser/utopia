@@ -6,12 +6,13 @@
   const actions={planning:['Planning','≡'],designing:['Designing','✎'],coding:['Coding','</>'],reviewing:['Reviewing','⌕'],testing:['Testing','▦'],auditing:['Auditing','◇'],helping:['Helping','↔'],command:['Terminal','>_'],research:['Research','⌕'],tool:['Using tool','⚙'],coordination:['Coordinating','⇄'],reporting:['Reporting','▤']};
   const desks={planner:{x:194,y:250},designer:{x:474,y:250},builder:{x:754,y:250},reviewer:{x:194,y:495},qa:{x:474,y:495},security:{x:754,y:495}};
   const lobby=index=>({x:200+(index%12)*48,y:310});
-  const observedWithoutRole=a=>!a.role&&(a.working||a.awaitingHuman||a.state==='event-waiting'&&a.provider==='Codex'&&a.note?.startsWith('Codex local runtime activity observed'));
+  const sharedSeatWithoutRole=a=>!a.role&&(a.working||a.awaitingHuman||['running','event-working','event-waiting','adapter-working','adapter-waiting','adapter-idle','adapter-ended'].includes(a.state));
   function isPlanning(actor) {return actor.awaitingHuman||actor.working&&!actor.handoff&&actor.action!=='helping'&&(actor.action==='planning'||actor.role==='planner'&&['research','coordination'].includes(actor.action));}
   function isConferenceBound(actor) {return isPlanning(actor)||!actor.handoff&&['event-waiting','adapter-waiting','queued'].includes(actor.state);}
   function layout(actors=[],previous=[],previousConference=[]) {
-    const shared=actors.filter(observedWithoutRole).length;
-    const counts=Object.fromEntries(roles.map(role=>[role,Math.max(5,actors.filter(a=>a.role===role).length+(role==='builder'?shared:0),...previous.filter(s=>s.role===role).map(s=>s.index+1))]));
+    const sharedActors=actors.filter(sharedSeatWithoutRole),retained=Object.fromEntries(roles.map(role=>[role,previous.filter(s=>s.role===role&&sharedActors.some(a=>a.id===s.occupant?.id)).length]));
+    const unseatedShared=sharedActors.length-Object.values(retained).reduce((sum,count)=>sum+count,0);
+    const counts=Object.fromEntries(roles.map(role=>[role,Math.max(5,actors.filter(a=>a.role===role).length+retained[role]+(role==='builder'?unseatedShared:0),...previous.filter(s=>s.role===role).map(s=>s.index+1))]));
     const extra=group=>Math.max(...group.map(role=>Math.ceil(counts[role]/5)-1))*300;
     const topExtra=extra(roles.slice(0,3)),bottomExtra=extra(roles.slice(3));
     const lobbyExtra=Math.max(0,Math.ceil(actors.filter(a=>!a.role).length/15)-1)*44,bottomShift=topExtra+lobbyExtra;
@@ -48,10 +49,10 @@
   function assignWorkstations(actors,jobs,previous=[]) {
     const seats=layout(actors,previous).stations.map(s=>({...s,occupant:null})),assigned=new Set();
     const department=a=>a.role;
-    for(const old of previous){const actor=actors.find(a=>a.id===old.occupant?.id),seat=seats.find(s=>s.key===old.key);if(actor&&seat&&(seat.role===department(actor)||!actor.role&&observedWithoutRole(actor))){seat.occupant=actor;assigned.add(actor.id);}}
+    for(const old of previous){const actor=actors.find(a=>a.id===old.occupant?.id),seat=seats.find(s=>s.key===old.key);if(actor&&seat&&(seat.role===department(actor)||sharedSeatWithoutRole(actor))){seat.occupant=actor;assigned.add(actor.id);}}
     for(const actor of actors){if(assigned.has(actor.id))continue;const seat=seats.find(s=>s.role===department(actor)&&!s.occupant);if(seat){seat.occupant=actor;assigned.add(actor.id);}}
     // Active threads without a verified department still work at a free computer.
-    for(const actor of actors){if(assigned.has(actor.id)||!observedWithoutRole(actor))continue;const seat=seats.find(s=>s.role==='builder'&&!s.occupant)||seats.find(s=>!s.occupant);if(seat){seat.occupant=actor;assigned.add(actor.id);}}
+    for(const actor of actors){if(assigned.has(actor.id)||!sharedSeatWithoutRole(actor))continue;const seat=seats.findLast(s=>s.role==='builder'&&!s.occupant)||seats.findLast(s=>!s.occupant);if(seat){seat.occupant=actor;assigned.add(actor.id);}}
     for(const old of previous){const job=jobs.find(j=>`job-${j.id}`===old.occupant?.id&&['completed','failed','cancelled','timed-out','interrupted'].includes(j.status)),seat=seats.find(s=>s.key===old.key);if(job&&seat.role===job.role&&!seat.occupant&&!assigned.has(old.occupant.id)){seat.occupant=old.occupant;assigned.add(old.occupant.id);}}
     // Keep the latest native result visible in spare desks; active workers take priority.
     for(const job of jobs){const id=`job-${job.id}`;if(assigned.has(id)||!['completed','failed','cancelled','timed-out','interrupted'].includes(job.status))continue;const seat=seats.find(s=>s.role===job.role&&!s.occupant);if(seat){seat.occupant={id,sourceId:job.id,role:job.role,provider:'Codex',label:job.title};assigned.add(id);}}
@@ -132,9 +133,8 @@
   // Only an explicitly reported idle role may take a visual waiting walk.
   function canRoam(actor) {return Boolean(actor.role)&&actor.state==='adapter-idle'&&!actor.working&&!actor.handoff;}
   function idleStops(actor,index,geometry) {
-    const shift=geometry?.topExtra||0,left=geometry?{x:160,y:445+shift}:{x:160,y:310},coffee=geometry?{x:1020,y:445+shift}:{x:790,y:310},middle=geometry?{x:570,y:445+shift}:{x:480,y:330};
-    const waiting=geometry?geometry.lobby(index):lobby(index);
-    return [index%2?left:coffee,middle,actor.station?.point||(actor.role?desks[actor.role]:waiting),index%2?coffee:left,waiting];
+    const shift=geometry?.topExtra||0,coffee=geometry?{x:1020,y:445+shift}:{x:790,y:310},middle=geometry?{x:570,y:445+shift}:{x:480,y:330};
+    return [coffee,middle,actor.station?.point||desks[actor.role]];
   }
   return {roles,roleNames,actions,desks,workstations,layout,isPlanning,sceneLayout,assignWorkstations,lobby,project,destination,departureTarget,sceneActors,presentation,workerLabel,transcriptBubble,focusActor,canRoam,idleStops};
 });
