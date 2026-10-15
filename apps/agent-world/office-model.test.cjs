@@ -50,6 +50,13 @@ test('a newly identified agent leaves its shared desk for its own department',()
   const scene=O.sceneActors([known],after,()=>true,O.layout([known],after));
   assert.deepEqual(O.destination(scene[0],0,O.layout([known],after)),scene[0].station.point);
 });
+test('recent Codex thread metadata can seat a specialist without claiming tool work',()=>{
+  const entry={...base,provider:'Codex',kind:'session',status:'event-waiting',role:'qa',action:null,
+    evidence:'Codex local thread metadata recently updated; current task state unavailable',
+    recentEvents:[{at:new Date().toISOString(),label:'Session updated'}]};
+  const actor=O.project({entries:[entry]},{jobs:[]}).actors[0],seat=O.assignWorkstations([actor],[]).find(s=>s.occupant?.id===actor.id);
+  assert.equal(actor.working,false);assert.equal(actor.activity,'Session recently updated');assert.equal(seat.role,'qa');
+});
 test('explicit human questions sit in conference and release the seat after an answer',()=>{
   const question={...base,kind:'session',status:'event-waiting',role:'builder',awaitingHuman:true,updatedAt:new Date().toISOString()};
   const waiting=O.project({entries:[question]},{jobs:[]}).actors[0];

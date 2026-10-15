@@ -50,9 +50,9 @@ def control_fixture():
                 logs.execute("INSERT INTO logs (ts, thread_id, target, feedback_log_body) VALUES (?, ?, ?, ?)",
                              (int(time.time()), identity, "codex_core::tools::parallel", "PRIVATE_RUNTIME_BODY"))
             with sqlite3.connect(codex_home / "state_2.sqlite") as state:
-                state.execute("CREATE TABLE IF NOT EXISTS threads (id TEXT PRIMARY KEY, cwd TEXT, agent_role TEXT, updated_at_ms INTEGER)")
-                state.execute("INSERT OR REPLACE INTO threads VALUES (?, ?, ?, ?)",
-                              (identity, "/work/demo", None, int(time.time() * 1000)))
+                state.execute("CREATE TABLE IF NOT EXISTS threads (id TEXT PRIMARY KEY, cwd TEXT, agent_role TEXT, updated_at_ms INTEGER, agent_path TEXT, archived INTEGER)")
+                state.execute("INSERT OR REPLACE INTO threads VALUES (?, ?, ?, ?, ?, ?)",
+                              (identity, "/work/demo", None, int(time.time() * 1000), None, 0))
         elif command.strip() == "runtime_departments":
             with sqlite3.connect(codex_home / "logs_2.sqlite") as logs:
                 for index in range(1, 4):
@@ -60,12 +60,16 @@ def control_fixture():
                     logs.execute("INSERT INTO logs (ts, thread_id, target, feedback_log_body) VALUES (?, ?, ?, ?)",
                                  (int(time.time()), identity, "codex_core::tools::parallel", "PRIVATE_RUNTIME_BODY"))
             with sqlite3.connect(codex_home / "state_2.sqlite") as state:
-                state.execute("ALTER TABLE threads ADD COLUMN agent_path TEXT")
                 for index, role in enumerate(("qa", "security", "correctness"), 1):
                     identity = f"77777777-8888-7777-6666-{index:012d}"
-                    state.execute("INSERT INTO threads VALUES (?, ?, ?, ?, ?)",
-                                  (identity, "/work/demo", None, int(time.time() * 1000), f"/root/{role}"))
+                    state.execute("INSERT INTO threads VALUES (?, ?, ?, ?, ?, ?)",
+                                  (identity, "/work/demo", None, int(time.time() * 1000), f"/root/{role}", 0))
         elif command.strip() == "runtime_clear":
+            with sqlite3.connect(codex_home / "logs_2.sqlite") as logs:
+                logs.execute("UPDATE logs SET ts=?", (int(time.time()) - 121,))
+            with sqlite3.connect(codex_home / "state_2.sqlite") as state:
+                state.execute("UPDATE threads SET updated_at_ms=?", (int((time.time() - 121) * 1000),))
+        elif command.strip() == "runtime_log_clear":
             with sqlite3.connect(codex_home / "logs_2.sqlite") as logs:
                 logs.execute("UPDATE logs SET ts=?", (int(time.time()) - 121,))
 threading.Thread(target=control_fixture, daemon=True).start()

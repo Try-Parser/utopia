@@ -298,6 +298,32 @@ class DiscoveryTests(unittest.TestCase):
         self.assertNotIn("PRIVATE_INPUT", json.dumps(result))
         self.assertNotIn(SESSION, json.dumps(result))
 
+    def test_claude_specialists_keep_parent_role_when_using_terminal(self):
+        parent = self.record("Claude Code")
+        children = self.claude / SESSION / "subagents"
+        children.mkdir(parents=True)
+        now = D.timestamp()
+        self.append_event(parent, {"type": "assistant", "sessionId": SESSION, "timestamp": now,  # ai-department-allow: session-export (synthetic fixture)
+                                   "message": {"content": [{"type": "tool_use", "id": "review-call", "name": "Agent",
+                                                            "input": {"subagent_type": "frank-reviewer", "prompt": "PRIVATE_PROMPT"}}]}})  # ai-department-allow: session-export (synthetic fixture)
+        self.append_event(parent, {"type": "user", "sessionId": SESSION, "timestamp": now,  # ai-department-allow: session-export (synthetic fixture)
+                                   "message": {"content": [{"type": "tool_result", "tool_use_id": "review-call",
+                                                            "content": [{"type": "text", "text": "agentId: review-child\nPRIVATE_RESULT"}]}]}})  # ai-department-allow: session-export (synthetic fixture)
+        for name in ("review-child", "other-child"):
+            self.append_event(children / f"agent-{name}.jsonl",
+                              {"type": "assistant", "sessionId": SESSION, "cwd": "/work/sample", "timestamp": now,  # ai-department-allow: session-export (synthetic fixture)
+                               "message": {"content": [{"type": "tool_use", "name": "Bash", "input": {"command": "PRIVATE_COMMAND"}}]}})  # ai-department-allow: session-export (synthetic fixture)
+        result = self.scanner().view()
+        by_label = {entry["label"]: entry for entry in result["entries"] if " agent " in entry["label"]}
+        self.assertEqual(len(by_label), 2)
+        reviewer = next(entry for entry in by_label.values() if entry["role"] == "reviewer")
+        builder = next(entry for entry in by_label.values() if entry["role"] == "builder")
+        self.assertEqual((reviewer["action"], builder["action"]), ("command", "command"))
+        self.assertTrue(reviewer["evidence"].startswith("Claude specialist role"))
+        self.assertFalse(builder["evidence"].startswith("Claude specialist role"))
+        self.assertNotIn("PRIVATE_", json.dumps(result))
+        self.assertNotIn("review-child", json.dumps(result))
+
     def test_cached_timeline_expires_each_event_even_when_latest_action_is_fresh(self):
         path = self.record("Claude Code")
         base = time.time()
@@ -489,6 +515,27 @@ class DiscoveryTests(unittest.TestCase):
                          ["qa", "security", "reviewer", None])
         self.assertNotIn("/root/", json.dumps(result))
         self.assertTrue(all(entry["action"] is None for entry in entries.values()))
+
+    def test_recent_codex_thread_is_detected_without_a_tool_log(self):
+        home = self.root / "codex-home"
+        home.mkdir()
+        now = int(time.time())
+        with closing(sqlite3.connect(home / "state_5.sqlite")) as state:
+            state.execute("CREATE TABLE threads (id TEXT PRIMARY KEY, cwd TEXT, agent_role TEXT, "
+                          "agent_path TEXT, updated_at_ms INTEGER, archived INTEGER)")
+            state.execute("INSERT INTO threads VALUES (?, ?, ?, ?, ?, ?)",
+                          (SESSION, "/work/sample", None, "/root/qa", now * 1000, 0))
+            state.commit()
+        scanner = D.Discovery(self.codex, self.claude, collector=lambda: ([], False),
+                              interval=0, codex_home=home)
+        entry = next(e for e in scanner.view()["entries"] if e["provider"] == "Codex")
+        self.assertEqual((entry["status"], entry["role"], entry["action"]), ("event-waiting", "qa", None))
+        self.assertEqual(entry["recentEvents"][0]["label"], "Session updated")
+        self.assertNotIn(SESSION, json.dumps(entry))
+        self.assertNotIn("/root/", json.dumps(entry))
+        with patch.object(D.time, "monotonic", return_value=time.monotonic() + 1), \
+                patch.object(D.time, "time", return_value=now + 121):
+            self.assertFalse(any(e["provider"] == "Codex" for e in scanner.view()["entries"]))
 
     def test_activity_is_bounded_and_explicit_heartbeat_wins(self):
         path = self.record("Claude Code")

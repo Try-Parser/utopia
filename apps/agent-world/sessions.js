@@ -10,7 +10,7 @@ window.LocalSessions = (() => {
   const n=(tag,cls,text)=>{const el=document.createElement(tag);el.className=cls||'';if(text!==undefined)el.textContent=text;return el;};
   const activeEntry=e=>['running','event-working','event-waiting'].includes(e.status)||['adapter-working','adapter-waiting','adapter-idle'].includes(e.status);
   const roles=window.AgentWorld.ROLES.map(r=>r.id),hex=v=>typeof v==='string'&&/^[a-f0-9]{32}$/.test(v);
-  const eventLabels=new Set(['New turn','Turn started','Turn finished','Turn activity','Tool activity','Assistant responding','Using tool','Awaiting your answer','Answer received',
+  const eventLabels=new Set(['New turn','Turn started','Turn finished','Turn activity','Tool activity','Assistant responding','Using tool','Awaiting your answer','Answer received','Session updated',
     'Editing files','Using terminal','Reading project files','Planning work','Coordinating agents','Waiting for agents','Researching']);
   const validEvents=events=>events==null||Array.isArray(events)&&events.length<=8&&events.every(event=>event&&typeof event.label==='string'&&eventLabels.has(event.label)&&typeof event.at==='string'&&Number.isFinite(Date.parse(event.at)));
   const transcriptCache=new Map();

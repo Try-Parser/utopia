@@ -33,6 +33,11 @@ PROCESS_LIMIT = 3000
 FILE_LIMIT = 2000
 RECORD_LIMIT = 200
 ROLES = ("planner", "designer", "builder", "reviewer", "qa", "security")
+CLAUDE_SPECIALISTS = {"frank-planner": "planner", "frank-designer": "designer",
+                      "frank-coder": "builder", "frank-reviewer": "reviewer",
+                      "frank-qa": "qa", "frank-security": "security",
+                      "correctness": "reviewer", "ui_design": "designer",
+                      "Explore": "planner", "Plan": "planner"}
 CODEX_AGENT_ROLES = {"correctness": "reviewer", "review": "reviewer", "ui_design": "designer",
                      "design": "designer", "planning": "planner", "plan": "planner",
                      "build": "builder", "coding": "builder", "test": "qa", "testing": "qa",
@@ -526,6 +531,62 @@ def tool_activity(record, root, now, previous_activity=None):
     return None
 
 
+def claude_subagent_roles(records, root, now):
+    """Match a child ID to its parent's explicit Agent call; keep only the role."""
+    children = [record for record in records if record.get("child") and 0 <= now - record["modified"] <= ACTIVITY_TTL]
+    parents = {}
+    for child in children:
+        parent = child["path"].parent.parent.parent / (child["session"] + ".jsonl")
+        if safe_path(parent, root):
+            parents.setdefault(parent, []).append(child)
+    flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_NOFOLLOW", 0)
+    for path, group in parents.items():
+        try:
+            with os.fdopen(os.open(path, flags), "rb") as stream:
+                info = os.fstat(stream.fileno())
+                if not stat.S_ISREG(info.st_mode):
+                    continue
+                offset = max(0, info.st_size - 2 * 1024 * 1024)
+                stream.seek(offset)
+                raw = stream.read(2 * 1024 * 1024)
+            if offset:
+                raw = raw.partition(b"\n")[2]
+            calls, matches = {}, {}
+            for line in raw.splitlines()[-512:]:
+                if len(line) > 65536:
+                    continue
+                try:
+                    row = json.loads(line)
+                except (ValueError, UnicodeDecodeError):
+                    continue
+                if not isinstance(row, dict) or not isinstance(row.get("sessionId"), str) or row["sessionId"].lower() != group[0]["session"]:
+                    continue
+                message = row.get("message")
+                content = message.get("content") if isinstance(message, dict) else None
+                if not isinstance(content, list):
+                    continue
+                for block in content[:24]:
+                    if not isinstance(block, dict):
+                        continue
+                    if block.get("type") == "tool_use" and block.get("name") in ("Agent", "Task"):
+                        tool_input = block.get("input")
+                        specialist = tool_input.get("subagent_type") if isinstance(tool_input, dict) else None
+                        role = specialist if isinstance(specialist, str) and specialist in ROLES else CLAUDE_SPECIALISTS.get(specialist) if isinstance(specialist, str) else None
+                        if role and isinstance(block.get("id"), str):
+                            calls[block["id"]] = role
+                    elif block.get("type") == "tool_result" and block.get("tool_use_id") in calls:
+                        for part in block.get("content", [])[:8] if isinstance(block.get("content"), list) else []:
+                            if isinstance(part, dict) and isinstance(part.get("text"), str) and len(part["text"]) <= 8192:
+                                for agent in re.findall(r"(?m)^\s*agentId:\s*([A-Za-z0-9_-]{1,64})\b", part["text"]):
+                                    matches[agent.lower()] = calls[block["tool_use_id"]]
+            for child in group:
+                role = matches.get(child["path"].stem.removeprefix("agent-").lower())
+                if role:
+                    child["specialistRole"] = role
+        except (OSError, ValueError, TypeError, RecursionError):
+            continue
+
+
 def session_records(provider, root):
     """Bounded metadata projection; no titles, messages, prompts or tool bodies."""
     root = Path(root).absolute()
@@ -621,6 +682,8 @@ def session_records(provider, root):
                     records[-1]["key"] = identity + ":" + path.stem.lower()
         except (OSError, ValueError, TypeError, RecursionError):
             partial = True
+    if provider == "Claude Code":
+        claude_subagent_roles(records, root, time.time())
     return records, "unavailable" if errors and not candidates else "scanned", partial or bool(errors)
 
 
@@ -665,16 +728,16 @@ class Discovery:
             logs_path = latest("logs")
         except OSError:
             return []
-        if logs_path is None:
-            return []
         try:
             state_path = latest("state")
         except OSError:
             state_path = None
         try:
             with ExitStack() as stack:
-                logs = stack.enter_context(closing(sqlite3.connect(logs_path.as_uri() + "?mode=ro", uri=True, timeout=.1)))
-                logs.execute("PRAGMA query_only=ON")
+                logs = None
+                if logs_path is not None:
+                    logs = stack.enter_context(closing(sqlite3.connect(logs_path.as_uri() + "?mode=ro", uri=True, timeout=.1)))
+                    logs.execute("PRAGMA query_only=ON")
                 state = None
                 if state_path is not None:
                     try:
@@ -688,7 +751,7 @@ class Discovery:
                                     "(SELECT id, thread_id, ts, target FROM logs ORDER BY id DESC LIMIT 4096) "
                                     "WHERE ts >= ? AND thread_id IS NOT NULL "
                                     "AND target IN ('codex_core::session::turn', 'codex_core::tools::parallel') "
-                                    "ORDER BY id DESC LIMIT 256", (now - 120,)).fetchall()
+                                    "ORDER BY id DESC LIMIT 256", (now - 120,)).fetchall() if logs is not None else []
                 history = {}
                 for identity, at, target in rows:
                     if not isinstance(identity, str) or not UUID.fullmatch(identity) or not isinstance(at, (int, float)) or not 0 <= now - at <= 120:
@@ -718,6 +781,26 @@ class Discovery:
                                              "recentEvents": recent,
                                              "updatedAt": timestamp(events[0][0]),
                                              "evidence": "Codex local runtime activity observed; current task state unavailable"})
+                if state is not None:
+                    try:
+                        threads = state.execute("SELECT id, cwd, agent_role, agent_path, updated_at_ms, archived "
+                                                "FROM threads WHERE updated_at_ms >= ? ORDER BY updated_at_ms DESC LIMIT 32",
+                                                (int((now - 120) * 1000),)).fetchall()
+                    except sqlite3.Error:
+                        threads = []  # Older state schemas still use the runtime log above.
+                    for identity, cwd, agent_role, agent_path, updated_ms, archived in threads:
+                        if (identity in history or archived or not isinstance(identity, str) or not UUID.fullmatch(identity)
+                                or type(updated_ms) is not int or not 0 <= now - updated_ms / 1000 <= 120):
+                            continue
+                        role = agent_role if agent_role in ROLES else codex_agent_role(agent_path)
+                        self._codex_live.append({"id": opaque("Codex", identity.lower()), "provider": "Codex",
+                                                 "label": "Codex session " + opaque("Codex", identity.lower())[:8],
+                                                 "kind": "session", "status": "event-waiting",
+                                                 "workspace": workspace_label(cwd), "pid": None, "parentPid": None,
+                                                 "role": role, "action": None,
+                                                 "recentEvents": [{"at": timestamp(updated_ms / 1000), "label": "Session updated"}],
+                                                 "updatedAt": timestamp(updated_ms / 1000),
+                                                 "evidence": "Codex local thread metadata recently updated; current task state unavailable"})
         except (OSError, sqlite3.Error, ValueError, TypeError):
             self._codex_live = []
         return self._codex_live
@@ -897,6 +980,9 @@ class Discovery:
                 activity = None
             if activity and (matched or activity["status"] == "event-working" or activity.get("awaitingHuman")):
                 entry.update({key: value for key, value in activity.items() if key != "_questionCall"})
+                if record.get("specialistRole"):
+                    entry["role"] = record["specialistRole"]
+                    entry["evidence"] = "Claude specialist role observed in parent Agent event; action follows local tool events"
                 if not matched:
                     entry["evidence"] += "; process linkage unknown"
         if cache:
