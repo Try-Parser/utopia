@@ -117,7 +117,7 @@ window.ComputerScreens=(()=>{
       window.Office3D?.updateMonitor?.(desk.key,data);
       button.querySelector('.monitor-state').textContent=data.changes?.length?`${data.changes.length} FILES`:['running','working'].includes(data.status)?'WORK':data.status==='Simulating'?'SIM':data.status==='Turn complete'?'DONE':'IDLE';button.classList.toggle('screen-working',['running','working','Simulating'].includes(data.status));button.title=`Computer ${desk.index+1} / ${occupant?.label||data.title} / ${data.source} / ${data.activity}`;
       const preview=previews.get(desk.key);
-      if(mode==='office'&&preview&&preview.owner!==(occupant?.id||null)){preview.owner=occupant?.id||null;preview.url='';preview.frame.src='about:blank';if(desk.key===key()){$('preview-url').value='';$('preview-error').textContent='Computer assignment changed. Connect the app for its new occupant.';}}
+      if(mode==='office'&&preview&&preview.owner!==(occupant?.id||null)){preview.owner=occupant?.id||null;preview.url='';preview.frame.src='about:blank';preview.frame.remove();if(desk.key===key()){$('preview-url').value='';$('preview-error').textContent='Computer assignment changed. Connect the app for its new occupant.';}}
     }
     locatePreview();render();
   }

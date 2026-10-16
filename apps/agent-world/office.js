@@ -18,8 +18,11 @@ window.OfficeWorldView=(()=>{
     for(const room of [...g.rooms.filter(r=>r.role!=='shared'),{...g.conference,name:'Conference',role:'meeting'}]){
       const points=[[room.x+room.width/2,room.y+20],[room.x+room.width/2,room.y+room.height-20],[room.x+20,room.y+room.height/2],[room.x+room.width-20,room.y+room.height/2]].map(([x,y])=>P(x,y,52)).sort((a,b)=>a.y-b.y),p=points[0],group=shape('g',{'data-room-sign':room.name});
       group.setAttribute('transform',`translate(${p.x} ${p.y}) scale(${unit})`);
-      shape('rect',{x:-74,y:-23,width:148,height:28,rx:6,fill:'#203744',stroke:'#9eb7b5','stroke-width':1},group);
-      shape('text',{x:0,y:-4,'text-anchor':'middle',fill:'#f5f1e6','font-size':13,'font-weight':700},group,room.name);
+      const number=room.role==='meeting'?'M':String(O.roles.indexOf(room.role)+1).padStart(2,'0'),width=Math.max(112,room.name.length*6.7+44),left=-width/2,accent=room.color||'#b6c8b4';
+      shape('rect',{x:left,y:-23,width,height:25,rx:7,fill:'#233c47',stroke:'#abc1b4','stroke-width':.8},group);
+      shape('rect',{x:left+4,y:-19,width:22,height:17,rx:4,fill:accent},group);
+      shape('text',{x:left+15,y:-7,'text-anchor':'middle',fill:'#29424b','font-size':8,'font-weight':800},group,number);
+      shape('text',{x:left+33,y:-6,fill:'#f5f1e6','font-size':11,'font-weight':650},group,room.name);
       if(room.role==='meeting')group.id='elastic-conference-room';
     }
     for(const s of sceneGeometry.stations){const group=shape('g',{'data-workstation':s.key});shape('title',{},group,`COMPUTER ${s.index+1}`);
