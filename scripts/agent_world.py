@@ -34,6 +34,8 @@ FILES = {"/": ("index.html", "text/html; charset=utf-8"),
          "/game-model.js": ("game-model.js", "text/javascript; charset=utf-8"),
          "/office-model.js": ("office-model.js", "text/javascript; charset=utf-8"),
          "/office.js": ("office.js", "text/javascript; charset=utf-8"),
+         "/office-3d.js": ("office-3d.js", "text/javascript; charset=utf-8"),
+         "/vendor/three.min.js": ("vendor/three.min.js", "text/javascript; charset=utf-8"),
          "/screens.js": ("screens.js", "text/javascript; charset=utf-8"),
          "/screen-model.js": ("screen-model.js", "text/javascript; charset=utf-8"),
          "/game.js": ("game.js", "text/javascript; charset=utf-8")}

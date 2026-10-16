@@ -301,3 +301,10 @@ test('camera elevation changes the floor and Z together without bending room edg
  assert.ok(low.project(...point).y-low.project(...point,45).y>high.project(...point).y-high.project(...point,45).y,'walls get shorter as camera looks down');
  assert.equal(O.sceneLayout(g,'isometric',0,-500).elevation,15);assert.equal(O.sceneLayout(g,'isometric',0,500).elevation,70);
 });
+test('expanded conference seats and approaches stay clear of collision-backed breakout furniture',()=>{
+  try{for(const count of [23,50,100]){const actors=Array.from({length:count},(_,i)=>({id:`meeting-${i}`,role:O.roles[i%6],working:true,action:'planning'})),g=O.layout(actors);M.configure(g);
+    for(const seat of g.conferenceSeats){assert.ok(M.free(seat.point.x,seat.point.y),`seat ${seat.index} clear with ${count} attendees`);assert.ok(M.free(seat.approach.x,seat.approach.y),`approach ${seat.index} clear`);}
+    for(const bounds of [g.breakout.sofa,g.breakout.table]){const [x,y,r,b]=bounds;assert.equal(M.free((x+r)/2,(y+b)/2),false,'rendered lounge equipment blocks walking');assert.ok(y>g.conferenceSeats.at(-1).approach.y);assert.ok(b<g.height-35);}
+    const target=O.departureTarget(g,'breakout');assert.ok(M.free(target.x,target.y));assert.ok(M.path(g.conferenceSeats.at(-1).point,target).length,'last meeting chair can reach breakout');
+  }}finally{M.configure(null);}
+});

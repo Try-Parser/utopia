@@ -219,6 +219,15 @@ dialog{background:#213c4a;border-color:#617b8b;color:#e6edf0;border-radius:11px;
   #conference-focus{min-height:40px;font-size:10px;padding:5px 8px}
 }
 
+/* Meshes supply depth; the SVG/DOM layer supplies readable signs and accessible controls. */
+.office-3d{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.office-3d[hidden]{display:none}
+.webgl-office .office-character .person,.webgl-office .office-character .action-prop{visibility:hidden}
+.world.webgl-office .desk-screen,.world.webgl-office .desk-screen.screen-working{background:transparent;box-shadow:none}
+.webgl-office .desk-screen .monitor-state{visibility:hidden}
+.world.webgl-office .desk-screen:hover,.world.webgl-office .desk-screen:focus-visible{background:#d4e9d72a;box-shadow:inset 0 0 0 1px #f2e3b5}
+.session-output pre{overflow-anchor:none}
+
 /* A seated worker fits the physical chair; status remains readable at overview zoom. */
 .office-character .character-bubble{transform:scale(1.45);transform-origin:center bottom}
 .office-character .character-name{transform:scale(1.45);transform-origin:center top}

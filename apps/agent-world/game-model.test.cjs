@@ -35,3 +35,14 @@ test('furnished office equipment blocks paths and all workstation aisles remain 
   for(const p of [{x:100,y:420},{x:552,y:163},{x:832,y:408}]){assert.equal(M.free(p.x,p.y),false);assert.deepEqual(M.path({x:480,y:325},p),[]);}
   for(const p of [{x:130,y:160},{x:410,y:160},{x:690,y:160},{x:130,y:420},{x:410,y:420},{x:690,y:420}])assert.ok(M.path({x:480,y:325},p).length>0);
 });
+test('slow frames consume multiple route waypoints at the same travel speed',()=>{
+  M.configure({width:1000,height:1000,furniture:[],walls:[],stations:[]});
+  try{const start={x:100,y:100},route=Array.from({length:20},(_,i)=>({x:110+i*10,y:100}));const slow=M.advanceRoute(start,route,70);let fast={position:start,route};for(let i=0;i<7;i++)fast=M.advanceRoute(fast.position,fast.route,10);assert.deepEqual(slow.position,{x:170,y:100});assert.deepEqual(slow.position,fast.position);assert.deepEqual(slow.route,fast.route);assert.equal(route.length,20,'caller route remains intact');const finish=M.advanceRoute(start,route,500);assert.deepEqual(finish.position,{x:300,y:100});assert.equal(finish.route.length,0);assert.equal(M.advanceRoute(finish.position,[],10).moved,false);
+  }finally{M.configure(null);}
+});
+
+test('large route budgets retain wall collision protection',()=>{
+  M.configure({width:1000,height:1000,furniture:[],walls:[[130,50,140,250]],stations:[]});
+  try{const result=M.advanceRoute({x:100,y:100},[{x:200,y:100}],100);assert.ok(result.position.x<=122);assert.ok(M.free(result.position.x,result.position.y));assert.equal(result.route.length,1);
+  }finally{M.configure(null);}
+});

@@ -87,6 +87,9 @@ async function pollObserved() {
   render();
 }
 function startOffice(){
+  $('camera-view').querySelector('[value=isometric]').textContent=window.Office3D?.available?'3D office':'Isometric';
+  if(!window.Office3D?.available)document.querySelector('.camera-hint').textContent='3D unavailable · Isometric view';
+  window.addEventListener('office3dfallback',()=>{$('camera-view').querySelector('[value=isometric]').textContent='Isometric';render();announce('3D graphics unavailable. The office is using the isometric view. Refresh to retry 3D.');});
   window.OfficeWorldView.setView(officeView);
   window.OfficeWorldView.setAngle(officeAngle);
   window.OfficeWorldView.setElevation(officeElevation);
@@ -96,7 +99,7 @@ $('camera-view').addEventListener('change',event=>{
   officeView=event.target.value;window.OfficeWorldView.setView(officeView);render();cameraRevision++;officeCameraManual=true;officeCameraPending=false;
   if($('world').classList.contains('zoomed'))focusOfficeCamera();
   try{localStorage.setItem(VIEW_STORAGE,officeView);}catch(_){storageAvailable=false;render();}
-  announce(officeView==='top-down'?'Top-down office view.':'Isometric office view.');
+  announce(officeView==='top-down'?'Top-down office view.':window.Office3D?.available&&!window.Office3D.diagnostics().contextLost?'3D office view.':'Isometric office view.');
 });
 function rotateOffice(next,save=true){
   officeAngle=((Math.round(next)%360)+360)%360;window.OfficeWorldView.setAngle(officeAngle);render();cameraRevision++;officeCameraManual=true;officeCameraPending=false;
@@ -191,8 +194,10 @@ const officeViewport=$('world').parentElement;
 officeViewport.addEventListener('wheel',event=>{if(mode!=='office')return;event.preventDefault();zoomOffice(cameraScale*(event.deltaY<0?1.12:1/1.12),event.clientX,event.clientY);},{passive:false});
 $('world').addEventListener('keydown',event=>{if(event.key==='+'||event.key==='='){event.preventDefault();zoomOffice(cameraScale*1.25);}else if(event.key==='-'){event.preventDefault();zoomOffice(cameraScale/1.25);}else if(event.key==='0'){event.preventDefault();setOfficeZoom(false);}});
 const officePhone=matchMedia('(max-width:560px)');officePhone.addEventListener('change',()=>{if(mode==='office'){officeCameraManual=false;setOfficeZoom(officePhone.matches,true);}});
+let officeResizeFrame=0;
 const officeResizeObserver=new ResizeObserver(()=>{if(officePhone.matches&&!officeCameraManual&&cameraScale>1){const scale=preferredCloseScale();if(scale!==cameraScale){cameraScale=scale;focusOfficeCamera();}}applyOfficeCamera();$('world').style.setProperty('--actor-scale',String(document.body.dataset.mode==='office'?Math.max(.44,Math.min(.64,$('world').clientWidth/(window.OfficeWorldView?.getSceneLayout().width||1280)*.98)):Math.max(.42,Math.min(1.2,$('world').clientWidth/1280))));});
 officeResizeObserver.observe($('world'));officeResizeObserver.observe(officeViewport);
+new ResizeObserver(()=>{if(!officeResizeFrame&&window.Office3D?.diagnostics?.().active)officeResizeFrame=requestAnimationFrame(()=>{officeResizeFrame=0;render();});}).observe(officeViewport);
 let lastCameraFollow=0;
 function followActiveWorker(now){
   requestAnimationFrame(followActiveWorker);

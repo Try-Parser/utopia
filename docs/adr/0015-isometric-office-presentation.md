@@ -5,7 +5,7 @@ Decision date: 2026-10-13
 Recorded date: 2026-10-13
 Owner: Local implementation coordinator
 Supersedes: None
-Superseded by: None
+Superseded by: [0016](0016-webgl-office.md) for the default office presentation; SVG remains Top-down and graphics fallback
 
 ## Context
 

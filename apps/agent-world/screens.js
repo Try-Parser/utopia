@@ -10,6 +10,14 @@ window.ComputerScreens=(()=>{
   const floor=()=>window.OfficeWorldView.getSceneLayout();
   const seat=()=>window.OfficeWorldView.getWorkstations().find(s=>s.key===key());
   const projection=()=>M.project(role,mode,source,sessions,simulation,mode==='office'?seat()?.occupant||null:station===0?undefined:null);
+  // Map the local iframe onto the four projected corners of the actual 3D screen.
+  function placePreview(holder,desk){
+    if(!desk.screenQuad){holder.style.transform='';holder.style.transformOrigin='';holder.style.width='';holder.style.height='';holder.style.left=`${(desk.screen.x-17)/(floor().width/100)}%`;holder.style.top=`${(desk.screen.y-9)/(floor().height/100)}%`;return;}
+    const width=$('world').clientWidth/floor().width,height=$('world').clientHeight/floor().height,p=desk.screenQuad.map(q=>({x:q.x*width,y:q.y*height})),[a,b,c,d]=p,dx1=b.x-c.x,dx2=d.x-c.x,dy1=b.y-c.y,dy2=d.y-c.y,sx=a.x-b.x+c.x-d.x,sy=a.y-b.y+c.y-d.y,den=dx1*dy2-dx2*dy1;
+    if(Math.abs(den)<.00001){holder.hidden=true;return;}
+    const g=(sx*dy2-dx2*sy)/den,h=(dx1*sy-sx*dy1)/den;
+    holder.style.width='38px';holder.style.height='22px';holder.style.left='0';holder.style.top='0';holder.style.transformOrigin='0 0';holder.style.transform=`matrix3d(${(b.x-a.x+g*b.x)/38},${(b.y-a.y+g*b.y)/38},0,${g/38},${(d.x-a.x+h*d.x)/22},${(d.y-a.y+h*d.y)/22},0,${h/22},0,0,1,0,${a.x},${a.y},0,1)`;
+  }
   function previewState() {
     if(!previews.has(key())){
       const frame=make('iframe','computer-preview');frame.title=`${role} computer ${station+1} local app preview`;frame.setAttribute('sandbox','allow-scripts allow-same-origin');frame.referrerPolicy='no-referrer';
@@ -23,9 +31,10 @@ window.ComputerScreens=(()=>{
     for(const [id,state] of previews){
       const large=dialog.open&&tab==='preview'&&id===key(),holder=large?$('preview-display'):state.holder;
       state.holder.hidden=!state.url||large;
-      const point=desks().find(s=>s.key===id)?.screen;
-      if(!point){state.holder.hidden=true;continue;}
-      state.holder.style.left=`${(point.x-17)/(floor().width/100)}%`;state.holder.style.top=`${(point.y-9)/(floor().height/100)}%`;
+      const desk=desks().find(s=>s.key===id);
+      if(!desk){state.holder.hidden=true;continue;}
+      if(desk.frontFacing===false)state.holder.hidden=true;
+      placePreview(state.holder,desk);
       if(state.url){const frame=state.frame;if(frame.parentElement!==holder)holder.append(frame);frame.tabIndex=large?0:-1;frame.setAttribute('aria-hidden',String(!large));frame.style.transform=large?'none':`scale(${holder.clientWidth/800})`;frame.style.width=large?'100%':'800px';frame.style.height=large?'100%':'500px';}
     }
     $('preview-empty').hidden=Boolean(preview);$('preview-display').hidden=!preview;$('preview-reload').disabled=!preview;
@@ -105,6 +114,7 @@ window.ComputerScreens=(()=>{
     for(const desk of desks()){
       const occupant=seats.find(s=>s.key===desk.key)?.occupant||null;
       const data=M.project(desk.role,mode,source,sessions,simulation,mode==='office'?occupant:desk.index===0?undefined:null),button=monitors.get(desk.key);
+      window.Office3D?.updateMonitor?.(desk.key,data);
       button.querySelector('.monitor-state').textContent=data.changes?.length?`${data.changes.length} FILES`:['running','working'].includes(data.status)?'WORK':data.status==='Simulating'?'SIM':data.status==='Turn complete'?'DONE':'IDLE';button.classList.toggle('screen-working',['running','working','Simulating'].includes(data.status));button.title=`Computer ${desk.index+1} / ${occupant?.label||data.title} / ${data.source} / ${data.activity}`;
       const preview=previews.get(desk.key);
       if(mode==='office'&&preview&&preview.owner!==(occupant?.id||null)){preview.owner=occupant?.id||null;preview.url='';preview.frame.src='about:blank';if(desk.key===key()){$('preview-url').value='';$('preview-error').textContent='Computer assignment changed. Connect the app for its new occupant.';}}

@@ -21,7 +21,7 @@
   function configure(geometry) {
     walls.splice(0,walls.length);bounds=geometry?{left:35,top:35,right:geometry.width-35,bottom:geometry.height-35}:{left:80,top:73,right:1210,bottom:505};
     if(!geometry){walls.push(...baseWalls);return;}
-    walls.push(...geometry.furniture.slice(0,3),...geometry.walls);
+    walls.push(...geometry.furniture.slice(0,3),...geometry.walls,...(geometry.decorations||[]).map(d=>d.bounds));
     for(const {desk:{x,y}} of geometry.stations)walls.push([x-28,y-20,x+28,y+20]);
     // Chairs mark intentional sitting positions; desk and shared furniture block walking.
   }
@@ -36,6 +36,15 @@
     for (let i=0;i<steps;i++) { if (free(x+dx/steps,y)) x+=dx/steps; if (free(x,y+dy/steps)) y+=dy/steps; }
     // Keep exact grid boundaries stable across fractional animation steps.
     return {x:Math.round(x*1e9)/1e9,y:Math.round(y*1e9)/1e9};
+  }
+  // Consume a distance budget across waypoints, independently of graphics frame rate.
+  function advanceRoute(position,route,distance){
+    let next={...position},remaining=Math.max(0,distance),index=0,heading=null,moved=false;
+    while(index<route.length){const target=route[index],dx=target.x-next.x,dy=target.y-next.y,d=Math.hypot(dx,dy);if(d<1){index++;continue;}if(remaining<=0)break;
+      const step=Math.min(d,remaining),after=move(next,dx/d*step,dy/d*step),travelled=Math.hypot(after.x-next.x,after.y-next.y);if(travelled>.000001){heading={x:after.x-next.x,y:after.y-next.y};moved=true;}next=after;remaining-=travelled;
+      if(travelled<step-.000001)break;if(Math.hypot(target.x-next.x,target.y-next.y)<1)index++;else break;
+    }
+    return {position:next,route:route.slice(index),heading,moved};
   }
   // A* on the bounded 10px floor grid; tall departments need directed search.
   function path(start, target) {
@@ -77,5 +86,5 @@
     }
     return [];
   }
-  return {free,move,path,configure};
+  return {free,move,path,configure,advanceRoute};
 });

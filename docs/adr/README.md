@@ -22,6 +22,7 @@ These records explain the AI department's important choices. Records 0001–0006
 | [0014](0014-live-office-stream.md) | Shared live push, cached activity and separate inventory refresh | Accepted | 2026-10-13 |
 
 | [0015](0015-isometric-office-presentation.md) | Shared world-to-scene projection for a believable office game | Accepted for local implementation | 2026-10-13 |
+| [0016](0016-webgl-office.md) | Local WebGL office with perspective camera and authoritative live agents | Accepted for local implementation | 2026-10-16 |
 
 Read the [ADR workflow](../../skills/autonomous-development/references/architecture-decisions.md). For a new material choice, copy the [template](../../skills/autonomous-development/assets/adr-template.md), allocate the next unused number, draft alternatives and consequences, and follow the project's decision authority before changing status to Accepted. Minor fixes under an existing decision do not need another record.
 

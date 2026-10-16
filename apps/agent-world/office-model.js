@@ -17,7 +17,9 @@
     const topExtra=extra(roles.slice(0,3)),bottomExtra=extra(roles.slice(3)),sharedExtra=(Math.ceil(counts.shared/5)-1)*120;
     const lobbyExtra=Math.max(0,Math.ceil(actors.filter(a=>!a.role).length/15)-1)*44,bottomShift=topExtra+lobbyExtra+140+sharedExtra;
     const conferenceCount=Math.max(8,actors.filter(isConferenceBound).length,previousConference.length);
-    const height=Math.max(850+bottomShift+bottomExtra,conferenceCount>8?630+Math.ceil((conferenceCount-8)/6)*60:0);
+    const overflowRows=Math.ceil(Math.max(0,conferenceCount-8)/6),breakoutTop=overflowRows?555+(overflowRows-1)*60:535;
+    const height=Math.max(850+bottomShift+bottomExtra,breakoutTop+260),loungeY=Math.max(breakoutTop,height-335);
+    const breakout={x:1160,y:breakoutTop,width:350,height:height-80-breakoutTop,sofa:[1240,loungeY+115,1420,loungeY+170],table:[1287.5,loungeY+45,1372.5,loungeY+87],point:{x:1220,y:loungeY+90}};
     const rooms=roles.map((role,i)=>({role,x:60+(i%3)*350,y:i>=3?465+bottomShift:65,width:320,height:300+(i>=3?bottomExtra:topExtra),name:roleNames[role],color:['#e4ebf5','#ece8f5','#e2eef2','#f1e9dd','#e2efe8','#f2e6e4'][i]}));
     rooms.push({role:'shared',x:160,y:385+topExtra,width:850,height:215+sharedExtra,name:'Shared workspace',color:'#d4ded9'});
     const stations=roles.flatMap(role=>Array.from({length:counts[role]},(_,index)=>{
@@ -36,9 +38,11 @@
     for(let i=8;i<conferenceCount;i++){const x=1180+(i-8)%6*65,y=510+Math.floor((i-8)/6)*60;furniture.push([x-14,y-20,x+14,y+8]);}
     const conferenceSeats=furniture.slice(3).map((b,index)=>{const point={x:(b[0]+b[2])/2,y:b[3]-8};const approach=index===0?{x:point.x,y:130}:index===1?{x:point.x,y:455}:index<5?{x:1182,y:point.y}:index<8?{x:1510,y:point.y}:{x:point.x,y:point.y+30};return {key:`conference:${index}`,index,point,approach};});
     const walls=rooms.filter(r=>r.role!=='shared').flatMap(r=>[[r.x-10,r.y+15,r.x-5,r.y+r.height-20],[r.x,r.y+15,r.x+125,r.y+20],[r.x+195,r.y+15,r.x+r.width,r.y+20]]);
+    const decorations=rooms.filter(r=>r.role!=='shared').flatMap(r=>[{kind:'bookcase',bounds:[r.x+12,r.y+47,r.x+39,r.y+110]},{kind:'plant',bounds:[r.x+r.width-31,r.y+43,r.x+r.width-11,r.y+63]}]);
+    decorations.push({kind:'sofa',bounds:breakout.sofa},{kind:'table',bounds:breakout.table});
     walls.push([1120,65,1540,70],[1115,65,1120,375],[1115,475,1120,height-80]);
     // Arrivals use the clear aisle above the shared desks; never spawn inside a workstation.
-    return {width:1600,height,topExtra,bottomExtra,bottomShift,lobbyExtra,stations,conferenceSeats,rooms,partitions:[],furniture,walls,conference:{x:1120,y:65,width:420,height:height-145},lobby:index=>({x:160+(index%15)*55,y:380+topExtra+(Math.floor(index/15)%3)*8})};
+    return {width:1600,height,topExtra,bottomExtra,bottomShift,lobbyExtra,stations,conferenceSeats,rooms,partitions:[],furniture,walls,decorations,breakout,conference:{x:1120,y:65,width:420,height:height-145},lobby:index=>({x:160+(index%15)*55,y:380+topExtra+(Math.floor(index/15)%3)*8})};
   }
   // Movement stays in world coordinates; only presentation uses this projection.
   function sceneLayout(geometry,view='isometric',angle=0,elevation=Math.asin(1/Math.sqrt(3))*180/Math.PI) {
@@ -130,7 +134,7 @@
     return observed||current||actors[0]||null;
   }
   function departureTarget(geometry,kind) {
-    return kind==='exit'?{x:geometry.width/2,y:geometry.height-57}:{x:1220,y:Math.min(geometry.height-175,620)};
+    return kind==='exit'?{x:geometry.width/2,y:geometry.height-57}:geometry.breakout?.point||{x:1220,y:Math.min(geometry.height-175,620)};
   }
   function workerLabel(actor,roleLabel) {
     if(actor.awaitingHuman)return 'Awaiting your answer';

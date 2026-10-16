@@ -88,9 +88,14 @@ class AgentWorldTests(unittest.TestCase):
                 self.assertIn("frame-ancestors 'none'", response.headers["Content-Security-Policy"])
             with urlopen(base + "/api/runs") as response:
                 self.assertEqual(len(json.load(response)["runs"]), 1)
+            for asset in ("/office-3d.js", "/vendor/three.min.js"):
+                with urlopen(base + asset) as response:
+                    self.assertEqual(response.status, 200)
+                    self.assertIn("text/javascript", response.headers["Content-Type"])
             for target, headers, status in [("/api/runs", {"Host": "evil.example"}, 403),
                                              ("/api/runs", {"Origin": "https://evil.example"}, 403),
-                                             ("/../scripts/agent_world.py", {}, 404)]:
+                                             ("/../scripts/agent_world.py", {}, 404),
+                                             ("/vendor/package-lock.json", {}, 404)]:
                 with self.assertRaises(HTTPError) as failure:
                     urlopen(Request(base + target, headers=headers))
                 self.assertEqual(failure.exception.code, status)
