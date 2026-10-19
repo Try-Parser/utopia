@@ -310,6 +310,161 @@ TOOL_ACTIVITY = {
     "WebSearch": ("planner", "research", "Researching"), "WebFetch": ("planner", "research", "Researching"),
 }
 HUMAN_INPUT_TOOLS = {"AskUserQuestion", "request_user_input", "request_user_input_async"}
+QUESTION_TEXT = 8000
+ANSWER_TEXT = 4000
+
+
+class ConferenceError(Exception):
+    def __init__(self, status, message):
+        super().__init__(message)
+        self.status = status
+
+
+def bounded_text(value, limit):
+    return (isinstance(value, str) and 0 < len(value) <= limit and bool(value.strip())
+            and not any(ord(c) < 32 and c not in "\n\t" or ord(c) == 127 for c in value))
+
+
+def validate_question(value):
+    if (not isinstance(value, dict) or not {"id", "text"} <= set(value) or set(value) - {"id", "text", "choices"}
+            or not isinstance(value["id"], str) or not re.fullmatch(r"[A-Za-z0-9_.:-]{1,80}", value["id"])
+            or not bounded_text(value["text"], QUESTION_TEXT)
+            or not isinstance(value.get("choices", []), list) or len(value.get("choices", [])) > 12
+            or any(not bounded_text(choice, 200) for choice in value.get("choices", []))):
+        raise ValueError("Invalid bounded question")
+    return {"id": value["id"], "text": value["text"], "choices": deepcopy(value.get("choices", []))}
+
+
+def written_question(blocks):
+    if isinstance(blocks, str):
+        text = blocks
+    elif isinstance(blocks, list):
+        text = "\n".join(block["text"] for block in blocks[:24] if isinstance(block, dict)
+                         and block.get("type") in ("text", "output_text") and isinstance(block.get("text"), str))
+    else:
+        return None
+    return text if bounded_text(text, QUESTION_TEXT) and text.strip().endswith("?") else None
+
+
+def structured_question(value):
+    """Read only exact question/choice fields, never invent a prompt from tool metadata."""
+    if isinstance(value, str):
+        if len(value) > 32768:
+            return None
+        try:
+            value = json.loads(value)
+        except (ValueError, RecursionError):
+            return None
+    questions = value.get("questions") if isinstance(value, dict) else None
+    if not isinstance(questions, list) or not 1 <= len(questions) <= 3:
+        return None
+    texts, choices = [], []
+    for question in questions:
+        if not isinstance(question, dict) or not bounded_text(question.get("question"), QUESTION_TEXT):
+            return None
+        texts.append(question["question"])
+        options = question.get("options", [])
+        if not isinstance(options, list) or len(options) > 12:
+            return None
+        for option in options:
+            choice = option.get("label") if isinstance(option, dict) else option
+            if not bounded_text(choice, 200):
+                return None
+            choices.append(choice)
+    text = "\n\n".join(texts)
+    if not bounded_text(text, QUESTION_TEXT) or len(choices) > 12:
+        return None
+    return {"text": text, "choices": choices if len(questions) == 1 else []}
+
+
+def session_question(record, root):
+    """Selected private read; older text is allowed only after the caller confirms a live wait."""
+    path, provider = record["path"], record["provider"]
+    if provider not in ("Codex", "Claude Code") or not safe_path(path, root):
+        return None
+    if provider == "Claude Code" and not record.get("child") and path.stem.lower() != record["key"]:
+        return None
+    flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        with os.fdopen(os.open(path, flags), "rb") as stream:
+            info = os.fstat(stream.fileno())
+            if not stat.S_ISREG(info.st_mode):
+                return None
+            offset = max(0, info.st_size - TRANSCRIPT_BYTES)
+            stream.seek(offset)
+            raw = stream.read(TRANSCRIPT_BYTES)
+        if offset:
+            raw = raw.partition(b"\n")[2]
+        if not raw.endswith(b"\n"):
+            return None
+        pending, candidate, mode, call = None, None, None, None
+        for line in raw.splitlines()[-512:]:
+            if len(line) > 131072:
+                return None
+            row = json.loads(line)
+            if not isinstance(row, dict):
+                continue
+            at = row.get("timestamp")
+            if not isinstance(at, str) or len(at) > 40:
+                continue
+            parsed = datetime.fromisoformat(at.replace("Z", "+00:00"))
+            if parsed.tzinfo is None or parsed.timestamp() > time.time() + 1:
+                continue
+            if provider == "Claude Code":
+                if row.get("sessionId", "").lower() != record.get("session", record["key"]):
+                    continue
+                message = row.get("message")
+                if not isinstance(message, dict):
+                    continue
+                content = message.get("content")
+                if row.get("type") == "user":
+                    results = [b for b in content if isinstance(b, dict) and b.get("type") == "tool_result"] if isinstance(content, list) else []
+                    if not results or mode == "claude" and any(b.get("tool_use_id") == call for b in results):
+                        pending = candidate = None
+                    continue
+                if row.get("type") != "assistant":
+                    continue
+                tools = [b for b in content if isinstance(b, dict) and b.get("type") == "tool_use"] if isinstance(content, list) else []
+                for tool in tools:
+                    if tool.get("name") in HUMAN_INPUT_TOOLS:
+                        detail = structured_question(tool.get("input"))
+                        call, mode = tool.get("id"), "claude"
+                        pending = {**detail, "source": [at, call]} if detail else None
+                if message.get("stop_reason") == "end_turn":
+                    text = written_question(content)
+                    pending = {"text": text, "choices": [], "source": [at, "text"]} if text else None
+                elif tools and not any(b.get("name") in HUMAN_INPUT_TOOLS for b in tools):
+                    pending = None
+            else:
+                payload = row.get("payload")
+                if not isinstance(payload, dict):
+                    continue
+                kind = payload.get("type")
+                if (row.get("type") == "event_msg" and kind in ("user_message", "turn_aborted")
+                        or row.get("type") == "response_item" and kind == "message" and payload.get("role") == "user"):
+                    pending = candidate = None
+                elif row.get("type") == "response_item" and kind in ("function_call_output", "custom_tool_call_output"):
+                    if mode == "sync" and payload.get("call_id") == call:
+                        pending = None
+                elif row.get("type") == "response_item" and kind == "message" and payload.get("role") == "assistant":
+                    text = written_question(payload.get("content"))
+                    candidate = {"text": text, "choices": [], "source": [at, "text"]} if text else None
+                elif row.get("type") == "event_msg" and kind == "task_complete":
+                    if candidate:
+                        pending = candidate
+                    candidate = None
+                elif row.get("type") == "response_item" and kind in ("function_call", "custom_tool_call"):
+                    candidate = None
+                    name = payload.get("name")
+                    if name in HUMAN_INPUT_TOOLS:
+                        detail = structured_question(payload.get("arguments", payload.get("input")))
+                        call, mode = payload.get("call_id"), "async" if name == "request_user_input_async" else "sync"
+                        pending = {**detail, "source": [at, call]} if detail else None
+                    else:
+                        pending = None
+        return pending
+    except (OSError, ValueError, TypeError, AttributeError, RecursionError):
+        return None
 
 
 def final_question(blocks):
@@ -706,6 +861,7 @@ class Discovery:
         self.cache = None
         self.scanned = 0.0
         self.heartbeats = {}
+        self._questions = {}  # Private bounded question/reply bodies; never enter view/SSE.
         self.handoffs = {}
         self._records, self._base_entries, self._activity_cache = [], {}, {}
         self._live_stop = None
@@ -807,7 +963,7 @@ class Discovery:
 
     def heartbeat(self, data):
         fields = {"provider", "sessionId", "state", "workspace", "pid"}
-        optional = {"role", "taskId", "handoffTo", "eventId", "taskLabel", "action", "targetProvider", "targetSessionId", "targetJobId", "awaitingHuman"}
+        optional = {"role", "taskId", "handoffTo", "eventId", "taskLabel", "action", "targetProvider", "targetSessionId", "targetJobId", "awaitingHuman", "question", "acceptsReplies"}
         if not isinstance(data, dict) or not fields <= set(data) or set(data) - fields - optional:
             raise ValueError("Invalid heartbeat fields")
         if (not isinstance(data["provider"], str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 ._-]{0,39}", data["provider"])
@@ -820,6 +976,11 @@ class Discovery:
             raise ValueError("Invalid department role")
         if "awaitingHuman" in data and (type(data["awaitingHuman"]) is not bool or data["awaitingHuman"] and data["state"] != "waiting"):
             raise ValueError("A human-input wait requires a waiting state")
+        if {"question", "acceptsReplies"} & set(data) and (data.get("awaitingHuman") is not True or data["state"] != "waiting"):
+            raise ValueError("Question fields require an explicit human-input wait")
+        if "acceptsReplies" in data and type(data["acceptsReplies"]) is not bool:
+            raise ValueError("Invalid reply capability")
+        question = validate_question(data["question"]) if "question" in data else None
         if any(name in data and (not isinstance(data[name], str) or not re.fullmatch(r"[A-Za-z0-9_.:-]{1,80}", data[name])) for name in ("taskId", "eventId")):
             raise ValueError("Invalid workflow reference")
         if "handoffTo" in data and not {"role", "taskId", "eventId"} <= set(data):
@@ -867,6 +1028,12 @@ class Discovery:
             self.heartbeats = {k: v for k, v in self.heartbeats.items() if time.monotonic() - v["seen"] <= 300}
             if key not in self.heartbeats and len(self.heartbeats) >= RECORD_LIMIT:
                 raise ValueError("Heartbeat registry is full")
+            if question:
+                self._publish_question(key, question["text"], question["choices"],
+                                       "adapter" if data.get("acceptsReplies", False) else "copy",
+                                       ["heartbeat", question["id"]], now)
+            else:
+                self._questions.pop(key, None)
             self.heartbeats[key] = {"provider": provider, "state": data["state"], "workspace": workspace_label(data["workspace"]),
                                     "pid": data["pid"], "seen": now, "updatedAt": timestamp(), "role": data.get("role"), "taskRef": task_ref,
                                     "taskLabel": data.get("taskLabel"), "action": data.get("action"), "targetRef": target_ref, "targetKind": target_kind,
@@ -1030,6 +1197,92 @@ class Discovery:
             return {"available": False, "reason": "This session has no readable transcript. Its provider may still be streaming only to the extension."}
         return session_transcript(record, root)
 
+    def _prune_questions(self, now):
+        self._questions = {key: value for key, value in self._questions.items() if 0 <= now - value["seen"] <= 300}
+
+    def _publish_question(self, entry_id, text, choices, delivery, source, now):
+        self._prune_questions(now)
+        signature = opaque(entry_id, json.dumps([source, text, choices, delivery], ensure_ascii=False, separators=(",", ":")))
+        previous = self._questions.get(entry_id)
+        if previous and previous["signature"] == signature:
+            previous["seen"] = now
+            return previous
+        if entry_id not in self._questions and len(self._questions) >= RECORD_LIMIT:
+            raise ConferenceError(503, "Private question capacity reached")
+        question = {"questionId": secrets.token_hex(16), "text": text, "choices": deepcopy(choices),
+                    "delivery": delivery, "answer": None, "seen": now,
+                    "signature": signature, "adapter": source[0] == "heartbeat"}
+        self._questions[entry_id] = question
+        return question
+
+    def _current_question(self, entry_id):
+        current = next((entry for entry in self.view()["entries"] if entry["id"] == entry_id), None)
+        now = time.monotonic()
+        self._prune_questions(now)
+        if not current or not current.get("awaitingHuman"):
+            self._questions.pop(entry_id, None)
+            return None
+        beat = self.heartbeats.get(entry_id)
+        if beat and 0 <= now - beat["seen"] <= 30:
+            question = self._questions.get(entry_id)
+            return question if question and question["adapter"] else None
+        record = next((item for item in self._records if opaque(item["provider"], item["key"]) == entry_id), None)
+        if record is None:
+            self._questions.pop(entry_id, None)
+            return None
+        question = session_question(record, self.roots[record["provider"]])
+        if question is None:
+            self._questions.pop(entry_id, None)
+            return None
+        return self._publish_question(entry_id, question["text"], question["choices"], "copy", question["source"], now)
+
+    def question(self, entry_id):
+        with self.lock:
+            question = self._current_question(entry_id)
+            if question is None:
+                return {"available": False, "reason": "No readable question is confirmed for this waiting session."}
+            return {"available": True, **{key: deepcopy(question[key]) for key in ("questionId", "text", "choices", "delivery")},
+                    "answer": {key: question["answer"][key] for key in ("id", "status")} if question["answer"] else None}
+
+    def answer(self, entry_id, data):
+        if (not isinstance(data, dict) or set(data) != {"questionId", "text"}
+                or not isinstance(data["questionId"], str) or not re.fullmatch(r"[a-f0-9]{32}", data["questionId"])
+                or not bounded_text(data["text"], ANSWER_TEXT)):
+            raise ValueError("Invalid bounded answer")
+        with self.lock:
+            question = self._current_question(entry_id)
+            if question is None or question["questionId"] != data["questionId"]:
+                raise ConferenceError(409, "The question changed or is no longer available")
+            if question["delivery"] != "adapter":
+                raise ConferenceError(409, "This session requires copying the answer to its provider")
+            answer = question["answer"]
+            if answer and answer["text"] != data["text"]:
+                raise ConferenceError(409, "An answer is already queued for this question")
+            if answer is None:
+                answer = question["answer"] = {"id": secrets.token_hex(16), "text": data["text"], "status": "queued"}
+            return {key: answer[key] for key in ("id", "status")}
+
+    def reply(self, entry_id):
+        with self.lock:
+            question = self._current_question(entry_id)
+            answer = question.get("answer") if question and question["delivery"] == "adapter" else None
+            if not answer or answer["status"] != "queued":
+                return {"available": False}
+            return {"available": True, "id": answer["id"], "questionId": question["questionId"], "text": answer["text"]}
+
+    def acknowledge(self, entry_id, data):
+        if (not isinstance(data, dict) or set(data) != {"id", "questionId"}
+                or any(not isinstance(value, str) or not re.fullmatch(r"[a-f0-9]{32}", value) for value in data.values())):
+            raise ValueError("Invalid acknowledgement")
+        with self.lock:
+            question = self._current_question(entry_id)
+            answer = question.get("answer") if question else None
+            if (not question or question["delivery"] != "adapter" or not answer
+                    or question["questionId"] != data["questionId"] or answer["id"] != data["id"]):
+                raise ConferenceError(409, "The queued reply changed or is no longer available")
+            answer["status"] = "acknowledged"
+            return {"id": answer["id"], "status": answer["status"]}
+
     def view(self):
         with self.lock:
             streaming = self._live_stop is not None and not self._live_stop.is_set()
@@ -1079,4 +1332,9 @@ class Discovery:
             result["token"] = self.token
             result["supported"] = list(PROVIDERS) + [provider for provider, _ in self.custom if provider not in PROVIDERS]
             result["limitations"] = "Codex, Claude Code and Gemini CLI local records appear automatically, including Claude subagents. Other hidden or cloud-only sessions need a provider activity source. Process existence alone cannot reveal task details."
+            self._prune_questions(time.monotonic())
+            for key, question in list(self._questions.items()):
+                beat = self.heartbeats.get(key)
+                if not entries.get(key, {}).get("awaitingHuman") or question["adapter"] and (not beat or time.monotonic() - beat["seen"] > 30):
+                    self._questions.pop(key, None)
             return result

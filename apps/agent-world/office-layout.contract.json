@@ -1,0 +1,449 @@
+{
+  "version": 8,
+  "circulation": {
+    "wallThickness": 10,
+    "doorWidth": 130,
+    "routePolicy": "start-and-target-rooms-only",
+    "corridors": [
+      {
+        "id": "cross",
+        "x": 45,
+        "y": 560,
+        "width": 2270,
+        "height": 140
+      },
+      {
+        "id": "main",
+        "x": 850,
+        "y": 700,
+        "width": 600,
+        "height": 1240
+      }
+    ],
+    "doors": [
+      {
+        "roomId": "planner",
+        "side": "south",
+        "x": 320,
+        "y": 560
+      },
+      {
+        "roomId": "designer",
+        "side": "south",
+        "x": 830,
+        "y": 560
+      },
+      {
+        "roomId": "builder",
+        "side": "south",
+        "x": 1690,
+        "y": 560
+      },
+      {
+        "roomId": "reviewer",
+        "side": "west",
+        "x": 1450,
+        "y": 900
+      },
+      {
+        "roomId": "qa",
+        "side": "west",
+        "x": 1450,
+        "y": 1320
+      },
+      {
+        "roomId": "security",
+        "side": "west",
+        "x": 1450,
+        "y": 1740
+      },
+      {
+        "roomId": "conference",
+        "side": "east",
+        "x": 850,
+        "y": 990
+      }
+    ]
+  },
+  "baselineComputers": {
+    "planner": 3,
+    "designer": 2,
+    "builder": 4,
+    "reviewer": 2,
+    "qa": 2,
+    "security": 3,
+    "shared": 1
+  },
+  "stationScale": 2.2,
+  "staffScale": 2.2,
+  "ceilingHeight": 176,
+  "podPitch": 500,
+  "regularPodCapacity": 4,
+  "sharedPodCapacity": 5,
+  "world": {
+    "width": 2360,
+    "height": 2000
+  },
+  "rooms": [
+    {
+      "role": "planner",
+      "name": "Planning",
+      "x": 60,
+      "y": 60,
+      "width": 520,
+      "height": 500
+    },
+    {
+      "role": "designer",
+      "name": "Design",
+      "x": 600,
+      "y": 60,
+      "width": 460,
+      "height": 500
+    },
+    {
+      "role": "builder",
+      "name": "Development",
+      "x": 1080,
+      "y": 60,
+      "width": 1220,
+      "height": 500
+    },
+    {
+      "role": "reviewer",
+      "name": "Code Review",
+      "x": 1450,
+      "y": 700,
+      "width": 850,
+      "height": 400
+    },
+    {
+      "role": "qa",
+      "name": "QA Testing",
+      "x": 1450,
+      "y": 1120,
+      "width": 850,
+      "height": 400
+    },
+    {
+      "role": "security",
+      "name": "Security",
+      "x": 1450,
+      "y": 1540,
+      "width": 850,
+      "height": 400
+    },
+    {
+      "role": "shared",
+      "name": "Reception hotdesks",
+      "x": 850,
+      "y": 1400,
+      "width": 600,
+      "height": 540,
+      "annex": true
+    }
+  ],
+  "devops": {
+    "x": 2260,
+    "y": 260,
+    "width": 30,
+    "height": 60,
+    "name": "Wall utility",
+    "annex": true
+  },
+  "conference": {
+    "x": 60,
+    "y": 700,
+    "width": 790,
+    "height": 580,
+    "name": "Conference",
+    "target": {
+      "x": 455,
+      "y": 960
+    },
+    "tableBounds": [
+      300,
+      850,
+      610,
+      1070
+    ]
+  },
+  "cafe": {
+    "x": 60,
+    "y": 1300,
+    "width": 790,
+    "height": 640,
+    "name": "Caf\u00e9",
+    "point": {
+      "x": 760,
+      "y": 1550
+    }
+  },
+  "breakout": {
+    "x": 100,
+    "y": 1675,
+    "width": 660,
+    "height": 230,
+    "name": "Cafe lounge",
+    "annex": true,
+    "sofa": [
+      130,
+      1790,
+      360,
+      1850
+    ],
+    "table": [
+      175,
+      1690,
+      315,
+      1750
+    ],
+    "point": {
+      "x": 430,
+      "y": 1810
+    }
+  },
+  "entrance": {
+    "x": 850,
+    "y": 1690,
+    "width": 600,
+    "height": 250,
+    "name": "Welcome",
+    "point": {
+      "x": 1150,
+      "y": 1943
+    }
+  },
+  "reception": {
+    "deskBounds": [
+      1010,
+      1770,
+      1290,
+      1840
+    ],
+    "point": {
+      "x": 1150,
+      "y": 1880
+    }
+  },
+  "invariants": [
+    "Reference rear workrooms, left Conference/Cafe and right Review/QA/Security surround a substantial central hall",
+    "Shared is a public reception annex; only shared:0 uses the single real reception counter; unknown roles remain unassigned",
+    "Seven closed enclosures have exactly one real hall-facing doorway; Cafe and Shared reception are public",
+    "Four-slot regular benches and five-slot shared pods use coherent 2.2 desk and employee proportions and signed seat offsets",
+    "Rear band and side-wing growth never overlap rooms; conference overflow shifts Cafe",
+    "Every desk, conference seat, arrival, idle and departure target is physically reachable",
+    "Reception counter, Cafe furnishing and frontage props share collision bounds with rendering",
+    "Only actual provider sessions create actors; no auth, task-state or identity changes"
+  ],
+  "stationSlots": [
+    {
+      "centerOffset": -28,
+      "regularY": 170
+    },
+    {
+      "centerOffset": 28,
+      "regularY": 170
+    },
+    {
+      "centerOffset": -28,
+      "regularY": 258
+    },
+    {
+      "centerOffset": 28,
+      "regularY": 258
+    }
+  ],
+  "seatOffsets": {
+    "southSlots": [2, 3],
+    "south": 40,
+    "north": -40,
+    "approachDistance": 55
+  },
+  "conferenceOverflow": {
+    "columns": 5,
+    "columnPitch": 120,
+    "firstX": 160,
+    "firstYOffset": 500,
+    "rowPitch": 90,
+    "approachOffset": 45,
+    "targetOffset": -60
+  },
+  "featureWalls": [
+    {
+      "kind": "feature-wall",
+      "bounds": [
+        85,
+        1322,
+        680,
+        1328
+      ],
+      "label": "Caf\u00e9",
+      "color": "#bd9c6c"
+    }
+  ],
+  "cafeFurniture": {
+    "tableRadius": 40,
+    "chairHalfExtent": 20,
+    "chairOffsets": [
+      [
+        0,
+        -65
+      ],
+      [
+        0,
+        65
+      ],
+      [
+        -65,
+        0
+      ],
+      [
+        65,
+        0
+      ]
+    ],
+    "tableCenters": [
+      [
+        220,
+        1530
+      ],
+      [
+        500,
+        1530
+      ],
+      [
+        660,
+        1735
+      ]
+    ]
+  },
+  "sharedReception": {
+    "key": "shared:0",
+    "reception": true,
+    "bounds": [
+      1010,
+      1770,
+      1290,
+      1840
+    ],
+    "desk": [
+      1150,
+      1805
+    ],
+    "svgScreenHeight": 105.2,
+    "nativeScreenHeight": 94.2
+  },
+  "sharedHotdesks": [
+    [
+      1005,
+      1530
+    ],
+    [
+      1295,
+      1530
+    ],
+    [
+      1042,
+      1720
+    ],
+    [
+      1258,
+      1720
+    ]
+  ],
+  "rearCabinet": {
+    "rightInset": 115,
+    "width": 200,
+    "top": 5,
+    "bottom": 40,
+    "height": 82
+  },
+  "plants": {
+    "potHalfExtent": 12,
+    "foliageHeight": [
+      135,
+      150
+    ],
+    "departmentCorners": [
+      [
+        30,
+        30
+      ],
+      [
+        -30,
+        30
+      ],
+      [
+        30,
+        -30
+      ],
+      [
+        -30,
+        -30
+      ]
+    ],
+    "conference": [
+      [
+        95,
+        740
+      ],
+      [
+        800,
+        740
+      ],
+      [
+        95,
+        1240
+      ],
+      [
+        800,
+        1240
+      ]
+    ],
+    "cafe": [
+      [
+        85,
+        160
+      ],
+      [
+        85,
+        440
+      ],
+      [
+        820,
+        130
+      ],
+      [
+        820,
+        480
+      ],
+      [
+        300,
+        600
+      ],
+      [
+        740,
+        600
+      ]
+    ],
+    "hall": [
+      [
+        900,
+        760
+      ],
+      [
+        1400,
+        760
+      ],
+      [
+        900,
+        1200
+      ],
+      [
+        1400,
+        1200
+      ]
+    ]
+  }
+}

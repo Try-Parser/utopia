@@ -13,7 +13,12 @@ window.ComputerScreens=(()=>{
   // Map the local iframe onto the four projected corners of the actual 3D screen.
   function placePreview(holder,desk){
     if(!desk.screenQuad){holder.style.transform='';holder.style.transformOrigin='';holder.style.width='';holder.style.height='';holder.style.left=`${(desk.screen.x-17)/(floor().width/100)}%`;holder.style.top=`${(desk.screen.y-9)/(floor().height/100)}%`;return;}
-    const width=$('world').clientWidth/floor().width,height=$('world').clientHeight/floor().height,p=desk.screenQuad.map(q=>({x:q.x*width,y:q.y*height})),[a,b,c,d]=p,dx1=b.x-c.x,dx2=d.x-c.x,dy1=b.y-c.y,dy2=d.y-c.y,sx=a.x-b.x+c.x-d.x,sy=a.y-b.y+c.y-d.y,den=dx1*dy2-dx2*dy1;
+    // Use the same actual SVG transform as the physical screen. Integer client
+    // dimensions lose fractional CSS layout and ignore SVG aspect-ratio fitting;
+    // scene zoom amplifies that error into a visible preview/monitor mismatch.
+    const world=$('world'),matrix=document.querySelector('svg.office').getScreenCTM(),bounds=world.getBoundingClientRect(),style=getComputedStyle(world),scaleX=bounds.width/parseFloat(style.width),scaleY=bounds.height/parseFloat(style.height);
+    if(!matrix||!Number.isFinite(scaleX)||!Number.isFinite(scaleY)||scaleX<=0||scaleY<=0){holder.hidden=true;return;}
+    const p=desk.screenQuad.map(q=>{const screen=new DOMPoint(q.x,q.y).matrixTransform(matrix);return{x:(screen.x-bounds.left)/scaleX,y:(screen.y-bounds.top)/scaleY};}),[a,b,c,d]=p,dx1=b.x-c.x,dx2=d.x-c.x,dy1=b.y-c.y,dy2=d.y-c.y,sx=a.x-b.x+c.x-d.x,sy=a.y-b.y+c.y-d.y,den=dx1*dy2-dx2*dy1;
     if(Math.abs(den)<.00001){holder.hidden=true;return;}
     const g=(sx*dy2-dx2*sy)/den,h=(dx1*sy-sx*dy1)/den;
     holder.style.width='38px';holder.style.height='22px';holder.style.left='0';holder.style.top='0';holder.style.transformOrigin='0 0';holder.style.transform=`matrix3d(${(b.x-a.x+g*b.x)/38},${(b.y-a.y+g*b.y)/38},0,${g/38},${(d.x-a.x+h*d.x)/22},${(d.y-a.y+h*d.y)/22},0,${h/22},0,0,1,0,${a.x},${a.y},0,1)`;

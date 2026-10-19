@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "default": "polished",
+  "storageKey": "agent-world.graphics.v1",
+  "styles": [
+    {"id": "illustrated", "label": "A · Illustrated chibi", "employees": "illustrated", "finish": "painted"},
+    {"id": "polished", "label": "B · Polished 3D", "employees": "volumetric", "finish": "soft"},
+    {"id": "pixel", "label": "C · Pixel simulation", "employees": "illustrated", "finish": "pixel"},
+    {"id": "low-poly", "label": "D · Modern low-poly", "employees": "volumetric", "finish": "faceted"}
+  ],
+  "rules": [
+    "Only these four identifiers are valid; invalid or inaccessible saved preferences default to polished",
+    "Switching changes presentation only: preserve actors, identities, poses, goals, routes, desks, questions, monitor ownership and camera",
+    "A retains the current original directional illustrated employees and textured office",
+    "B uses existing stable human and robot families as volumetric employees with softer furnishings and lighting",
+    "C uses deliberate low-resolution nearest-neighbor scene rendering while native DOM text, speech, controls and private content stay sharp",
+    "D uses actual faceted employee geometry and matte simplified office finishes",
+    "Style-specific resources are finite and reusable across repeated switches; removed actors and context loss clean owned resources",
+    "SVG fallback and Top-down remain usable with an honest 3D-unavailable indication; no physics or provider execution changes",
+    "The concept board is an art-direction reference, not a promise that generated raster scenes are interactive assets"
+  ]
+}

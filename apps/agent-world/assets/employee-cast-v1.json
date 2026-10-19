@@ -1,0 +1,2233 @@
+{
+  "version": 1,
+  "source": "Original generated artwork; built-in image_gen tool",
+  "usage": "Directional illustrated employees inside the interactive 3D office; native figures remain asset-failure fallback",
+  "profiles": [
+    {
+      "id": "mica",
+      "kind": "human",
+      "image": "assets/employee-mica-v1.png",
+      "width": 1024,
+      "height": 1536,
+      "sha256": "6b58f5ac1803fd3679c3f8f162229a15cf87458e627a2716211fe3dd0c3813f2",
+      "prompt": "Original illustrated male office chibi sprite sheet. Warm tan skin, chestnut side-swept hair with pointed locks and forelock, expressive large brown eyes, cobalt blue collared rolled-up shirt, cream undershirt, navy trousers and brown shoes. Hand-drawn 2D dark sepia outline, cel shading, soft painted highlights, 2.5 heads tall; not a 3D toy, pixel art or mascot. Camera fixed elevated30-degree isometric. Four columns: southeast front3/4, southwest front3/4, northwest rear3/4, northeast rear3/4. Six rows: idle, idle blink, walk left step, walk right step, seated typing A, seated typing B. Rear seated head turned in profile to show cheek/eye while body faces workstation. No chair, desk, props, bubble, shadow, text or background. Transparent padding; foot baseline94% of cell height, standing hair top8%, seated20%; same head size throughout.",
+      "frames": [
+        {
+          "pose": "idle",
+          "direction": "front-right",
+          "rect": [
+            92,
+            24,
+            134,
+            235
+          ],
+          "anchor": [
+            67.0,
+            235
+          ],
+          "height": 64
+        },
+        {
+          "pose": "idle",
+          "direction": "front-left",
+          "rect": [
+            334,
+            22,
+            132,
+            237
+          ],
+          "anchor": [
+            66.0,
+            237
+          ],
+          "height": 64
+        },
+        {
+          "pose": "idle",
+          "direction": "back-left",
+          "rect": [
+            564,
+            22,
+            131,
+            237
+          ],
+          "anchor": [
+            65.5,
+            237
+          ],
+          "height": 64
+        },
+        {
+          "pose": "idle",
+          "direction": "back-right",
+          "rect": [
+            800,
+            21,
+            131,
+            238
+          ],
+          "anchor": [
+            65.5,
+            238
+          ],
+          "height": 64
+        },
+        {
+          "pose": "blink",
+          "direction": "front-right",
+          "rect": [
+            91,
+            268,
+            134,
+            237
+          ],
+          "anchor": [
+            67.0,
+            237
+          ],
+          "height": 64
+        },
+        {
+          "pose": "blink",
+          "direction": "front-left",
+          "rect": [
+            333,
+            267,
+            134,
+            238
+          ],
+          "anchor": [
+            67.0,
+            238
+          ],
+          "height": 64
+        },
+        {
+          "pose": "blink",
+          "direction": "back-left",
+          "rect": [
+            565,
+            268,
+            130,
+            237
+          ],
+          "anchor": [
+            65.0,
+            237
+          ],
+          "height": 64
+        },
+        {
+          "pose": "blink",
+          "direction": "back-right",
+          "rect": [
+            800,
+            268,
+            131,
+            237
+          ],
+          "anchor": [
+            65.5,
+            237
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-a",
+          "direction": "front-right",
+          "rect": [
+            89,
+            512,
+            136,
+            239
+          ],
+          "anchor": [
+            68.0,
+            239
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-a",
+          "direction": "front-left",
+          "rect": [
+            326,
+            513,
+            134,
+            238
+          ],
+          "anchor": [
+            67.0,
+            238
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-a",
+          "direction": "back-left",
+          "rect": [
+            563,
+            513,
+            132,
+            239
+          ],
+          "anchor": [
+            66.0,
+            239
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-a",
+          "direction": "back-right",
+          "rect": [
+            807,
+            513,
+            134,
+            238
+          ],
+          "anchor": [
+            67.0,
+            238
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-b",
+          "direction": "front-right",
+          "rect": [
+            90,
+            758,
+            135,
+            237
+          ],
+          "anchor": [
+            67.5,
+            237
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-b",
+          "direction": "front-left",
+          "rect": [
+            327,
+            760,
+            136,
+            235
+          ],
+          "anchor": [
+            68.0,
+            235
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-b",
+          "direction": "back-left",
+          "rect": [
+            563,
+            760,
+            133,
+            239
+          ],
+          "anchor": [
+            66.5,
+            239
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-b",
+          "direction": "back-right",
+          "rect": [
+            808,
+            760,
+            133,
+            239
+          ],
+          "anchor": [
+            66.5,
+            239
+          ],
+          "height": 64
+        },
+        {
+          "pose": "type-a",
+          "direction": "front-right",
+          "rect": [
+            89,
+            1021,
+            139,
+            234
+          ],
+          "anchor": [
+            69.5,
+            234
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-a",
+          "direction": "front-left",
+          "rect": [
+            326,
+            1021,
+            142,
+            235
+          ],
+          "anchor": [
+            71.0,
+            235
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-a",
+          "direction": "back-left",
+          "rect": [
+            563,
+            1032,
+            142,
+            214
+          ],
+          "anchor": [
+            71.0,
+            214
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-a",
+          "direction": "back-right",
+          "rect": [
+            804,
+            1032,
+            143,
+            214
+          ],
+          "anchor": [
+            71.5,
+            214
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-b",
+          "direction": "front-right",
+          "rect": [
+            88,
+            1266,
+            139,
+            237
+          ],
+          "anchor": [
+            69.5,
+            237
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-b",
+          "direction": "front-left",
+          "rect": [
+            327,
+            1266,
+            141,
+            237
+          ],
+          "anchor": [
+            70.5,
+            237
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-b",
+          "direction": "back-left",
+          "rect": [
+            563,
+            1277,
+            142,
+            215
+          ],
+          "anchor": [
+            71.0,
+            215
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-b",
+          "direction": "back-right",
+          "rect": [
+            804,
+            1277,
+            142,
+            215
+          ],
+          "anchor": [
+            71.0,
+            215
+          ],
+          "height": 55
+        }
+      ]
+    },
+    {
+      "id": "lilt",
+      "kind": "human",
+      "image": "assets/employee-lilt-v1.png",
+      "width": 1024,
+      "height": 1536,
+      "sha256": "670184386648ca9b8cc231310edd78606b244fb055b628376ec640fc2ff6f3c3",
+      "prompt": "Use case: stylized-concept. Production game sprite sheet for a live office simulation. Original 2D illustrated office chibi, matching a hand-drawn isometric management-game illustration: expressive large eyes, carefully shaped hair or robot face, dark sepia outlines, soft painted cel shading, 2.5 heads tall. NOT a 3D render, plastic toy, pixel art, or flat icon. Transparent background, no shadows, labels, letters, furniture, props, or scenery. Portrait sheet 1024x1536, exactly FOUR columns by SIX rows, each character separate with generous transparent padding. Camera elevated 30 degrees. Columns left to right: facing southeast front three-quarter; southwest front three-quarter; northwest rear three-quarter; northeast rear three-quarter. Rows top to bottom: standing idle eyes open; identical standing idle blink; walking left step; walking right step; seated typing pose A (no chair or desk); seated typing pose B (no chair or desk). Seated rear views glance over shoulder enough to show cheek/profile but torso still faces its direction. Same outfit, head size, identity, scale through all24 poses. All full bodies including shoes inside their cell, at least20px gap between figures. Head top8% for standing and20% seated; feet baseline94%. Hands extend naturally toward an imaginary keyboard in seated poses. Character: A young female office designer with warm fair skin, large amber-brown eyes, sculpted auburn chin-length bob with side-swept bangs and a small teal hairclip, plum-purple cardigan over ivory collared blouse, charcoal ankle trousers, maroon rounded loafers. Warm thoughtful smile; authentic small employee character, no animal ears.",
+      "frames": [
+        {
+          "pose": "idle",
+          "direction": "front-right",
+          "rect": [
+            89,
+            8,
+            159,
+            251
+          ],
+          "anchor": [
+            79.5,
+            251
+          ],
+          "height": 64
+        },
+        {
+          "pose": "idle",
+          "direction": "front-left",
+          "rect": [
+            321,
+            8,
+            162,
+            251
+          ],
+          "anchor": [
+            81.0,
+            251
+          ],
+          "height": 64
+        },
+        {
+          "pose": "idle",
+          "direction": "back-left",
+          "rect": [
+            562,
+            9,
+            147,
+            249
+          ],
+          "anchor": [
+            73.5,
+            249
+          ],
+          "height": 64
+        },
+        {
+          "pose": "idle",
+          "direction": "back-right",
+          "rect": [
+            777,
+            8,
+            154,
+            250
+          ],
+          "anchor": [
+            77.0,
+            250
+          ],
+          "height": 64
+        },
+        {
+          "pose": "blink",
+          "direction": "front-right",
+          "rect": [
+            89,
+            259,
+            159,
+            252
+          ],
+          "anchor": [
+            79.5,
+            252
+          ],
+          "height": 64
+        },
+        {
+          "pose": "blink",
+          "direction": "front-left",
+          "rect": [
+            322,
+            259,
+            161,
+            253
+          ],
+          "anchor": [
+            80.5,
+            253
+          ],
+          "height": 64
+        },
+        {
+          "pose": "blink",
+          "direction": "back-left",
+          "rect": [
+            562,
+            259,
+            147,
+            250
+          ],
+          "anchor": [
+            73.5,
+            250
+          ],
+          "height": 64
+        },
+        {
+          "pose": "blink",
+          "direction": "back-right",
+          "rect": [
+            777,
+            259,
+            154,
+            251
+          ],
+          "anchor": [
+            77.0,
+            251
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-a",
+          "direction": "front-right",
+          "rect": [
+            83,
+            512,
+            167,
+            255
+          ],
+          "anchor": [
+            83.5,
+            255
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-a",
+          "direction": "front-left",
+          "rect": [
+            322,
+            512,
+            167,
+            255
+          ],
+          "anchor": [
+            83.5,
+            255
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-a",
+          "direction": "back-left",
+          "rect": [
+            557,
+            512,
+            153,
+            254
+          ],
+          "anchor": [
+            76.5,
+            254
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-a",
+          "direction": "back-right",
+          "rect": [
+            784,
+            512,
+            157,
+            254
+          ],
+          "anchor": [
+            78.5,
+            254
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-b",
+          "direction": "front-right",
+          "rect": [
+            83,
+            767,
+            162,
+            251
+          ],
+          "anchor": [
+            81.0,
+            251
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-b",
+          "direction": "front-left",
+          "rect": [
+            321,
+            769,
+            165,
+            255
+          ],
+          "anchor": [
+            82.5,
+            255
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-b",
+          "direction": "back-left",
+          "rect": [
+            566,
+            769,
+            151,
+            256
+          ],
+          "anchor": [
+            75.5,
+            256
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-b",
+          "direction": "back-right",
+          "rect": [
+            788,
+            769,
+            164,
+            256
+          ],
+          "anchor": [
+            82.0,
+            256
+          ],
+          "height": 64
+        },
+        {
+          "pose": "type-a",
+          "direction": "front-right",
+          "rect": [
+            86,
+            1026,
+            170,
+            256
+          ],
+          "anchor": [
+            85.0,
+            256
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-a",
+          "direction": "front-left",
+          "rect": [
+            319,
+            1026,
+            168,
+            256
+          ],
+          "anchor": [
+            84.0,
+            256
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-a",
+          "direction": "back-left",
+          "rect": [
+            554,
+            1028,
+            156,
+            246
+          ],
+          "anchor": [
+            78.0,
+            246
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-a",
+          "direction": "back-right",
+          "rect": [
+            778,
+            1028,
+            167,
+            247
+          ],
+          "anchor": [
+            83.5,
+            247
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-b",
+          "direction": "front-right",
+          "rect": [
+            86,
+            1282,
+            170,
+            253
+          ],
+          "anchor": [
+            85.0,
+            253
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-b",
+          "direction": "front-left",
+          "rect": [
+            319,
+            1282,
+            168,
+            254
+          ],
+          "anchor": [
+            84.0,
+            254
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-b",
+          "direction": "back-left",
+          "rect": [
+            554,
+            1284,
+            156,
+            244
+          ],
+          "anchor": [
+            78.0,
+            244
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-b",
+          "direction": "back-right",
+          "rect": [
+            778,
+            1284,
+            167,
+            245
+          ],
+          "anchor": [
+            83.5,
+            245
+          ],
+          "height": 55
+        }
+      ]
+    },
+    {
+      "id": "brim",
+      "kind": "human",
+      "image": "assets/employee-brim-v1.png",
+      "width": 1024,
+      "height": 1536,
+      "sha256": "29e1e3ec078633f22f16cd7b118413a22d4deb6295f0b0e10bde5f53e515002c",
+      "prompt": "Use case: stylized-concept. Production game sprite sheet for a live office simulation. Original 2D illustrated office chibi, matching a hand-drawn isometric management-game illustration: expressive large eyes, carefully shaped hair or robot face, dark sepia outlines, soft painted cel shading, 2.5 heads tall. NOT a 3D render, plastic toy, pixel art, or flat icon. Transparent background, no shadows, labels, letters, furniture, props, or scenery. Portrait sheet 1024x1536, exactly FOUR columns by SIX rows, each character separate with generous transparent padding. Camera elevated 30 degrees. Columns left to right: facing southeast front three-quarter; southwest front three-quarter; northwest rear three-quarter; northeast rear three-quarter. Rows top to bottom: standing idle eyes open; identical standing idle blink; walking left step; walking right step; seated typing pose A (no chair or desk); seated typing pose B (no chair or desk). Seated rear views glance over shoulder enough to show cheek/profile but torso still faces its direction. Same outfit, head size, identity, scale through all24 poses. All full bodies including shoes inside their cell, at least20px gap between figures. Head top8% for standing and20% seated; feet baseline94%. Hands extend naturally toward an imaginary keyboard in seated poses. Character: A young male office engineer with medium brown skin, large dark brown eyes, tousled short black hair under a backwards muted navy baseball cap, ochre-yellow hoodie under an open dark teal jacket, charcoal tapered trousers and cream/navy sneakers. Friendly focused expression. Human, no animal ears.",
+      "frames": [
+        {
+          "pose": "idle",
+          "direction": "front-right",
+          "rect": [
+            92,
+            7,
+            140,
+            244
+          ],
+          "anchor": [
+            70.0,
+            244
+          ],
+          "height": 64
+        },
+        {
+          "pose": "idle",
+          "direction": "front-left",
+          "rect": [
+            332,
+            8,
+            139,
+            243
+          ],
+          "anchor": [
+            69.5,
+            243
+          ],
+          "height": 64
+        },
+        {
+          "pose": "idle",
+          "direction": "back-left",
+          "rect": [
+            576,
+            7,
+            137,
+            243
+          ],
+          "anchor": [
+            68.5,
+            243
+          ],
+          "height": 64
+        },
+        {
+          "pose": "idle",
+          "direction": "back-right",
+          "rect": [
+            809,
+            7,
+            139,
+            242
+          ],
+          "anchor": [
+            69.5,
+            242
+          ],
+          "height": 64
+        },
+        {
+          "pose": "blink",
+          "direction": "front-right",
+          "rect": [
+            92,
+            263,
+            140,
+            244
+          ],
+          "anchor": [
+            70.0,
+            244
+          ],
+          "height": 64
+        },
+        {
+          "pose": "blink",
+          "direction": "front-left",
+          "rect": [
+            332,
+            263,
+            139,
+            244
+          ],
+          "anchor": [
+            69.5,
+            244
+          ],
+          "height": 64
+        },
+        {
+          "pose": "blink",
+          "direction": "back-left",
+          "rect": [
+            578,
+            263,
+            136,
+            243
+          ],
+          "anchor": [
+            68.0,
+            243
+          ],
+          "height": 64
+        },
+        {
+          "pose": "blink",
+          "direction": "back-right",
+          "rect": [
+            809,
+            263,
+            139,
+            242
+          ],
+          "anchor": [
+            69.5,
+            242
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-a",
+          "direction": "front-right",
+          "rect": [
+            89,
+            518,
+            142,
+            247
+          ],
+          "anchor": [
+            71.0,
+            247
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-a",
+          "direction": "front-left",
+          "rect": [
+            330,
+            519,
+            141,
+            247
+          ],
+          "anchor": [
+            70.5,
+            247
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-a",
+          "direction": "back-left",
+          "rect": [
+            576,
+            517,
+            136,
+            251
+          ],
+          "anchor": [
+            68.0,
+            251
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-a",
+          "direction": "back-right",
+          "rect": [
+            809,
+            520,
+            139,
+            249
+          ],
+          "anchor": [
+            69.5,
+            249
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-b",
+          "direction": "front-right",
+          "rect": [
+            88,
+            776,
+            139,
+            246
+          ],
+          "anchor": [
+            69.5,
+            246
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-b",
+          "direction": "front-left",
+          "rect": [
+            333,
+            778,
+            142,
+            244
+          ],
+          "anchor": [
+            71.0,
+            244
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-b",
+          "direction": "back-left",
+          "rect": [
+            582,
+            776,
+            141,
+            251
+          ],
+          "anchor": [
+            70.5,
+            251
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-b",
+          "direction": "back-right",
+          "rect": [
+            803,
+            777,
+            145,
+            249
+          ],
+          "anchor": [
+            72.5,
+            249
+          ],
+          "height": 64
+        },
+        {
+          "pose": "type-a",
+          "direction": "front-right",
+          "rect": [
+            82,
+            1031,
+            162,
+            244
+          ],
+          "anchor": [
+            81.0,
+            244
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-a",
+          "direction": "front-left",
+          "rect": [
+            317,
+            1031,
+            153,
+            243
+          ],
+          "anchor": [
+            76.5,
+            243
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-a",
+          "direction": "back-left",
+          "rect": [
+            559,
+            1034,
+            157,
+            233
+          ],
+          "anchor": [
+            78.5,
+            233
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-a",
+          "direction": "back-right",
+          "rect": [
+            804,
+            1036,
+            161,
+            232
+          ],
+          "anchor": [
+            80.5,
+            232
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-b",
+          "direction": "front-right",
+          "rect": [
+            83,
+            1284,
+            161,
+            243
+          ],
+          "anchor": [
+            80.5,
+            243
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-b",
+          "direction": "front-left",
+          "rect": [
+            316,
+            1283,
+            157,
+            243
+          ],
+          "anchor": [
+            78.5,
+            243
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-b",
+          "direction": "back-left",
+          "rect": [
+            562,
+            1284,
+            156,
+            238
+          ],
+          "anchor": [
+            78.0,
+            238
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-b",
+          "direction": "back-right",
+          "rect": [
+            803,
+            1283,
+            159,
+            238
+          ],
+          "anchor": [
+            79.5,
+            238
+          ],
+          "height": 55
+        }
+      ]
+    },
+    {
+      "id": "quill",
+      "kind": "robot",
+      "image": "assets/employee-quill-v1.png",
+      "width": 1024,
+      "height": 1536,
+      "sha256": "a798aef19c2cca3082fff52dd0f6b7d24a833783188563f8591e86dafc96e8dd",
+      "prompt": "Use case: stylized-concept. Production game sprite sheet for a live office simulation. Original 2D illustrated office chibi, matching a hand-drawn isometric management-game illustration: expressive large eyes, carefully shaped hair or robot face, dark sepia outlines, soft painted cel shading, 2.5 heads tall. NOT a 3D render, plastic toy, pixel art, or flat icon. Transparent background, no shadows, labels, letters, furniture, props, or scenery. Portrait sheet 1024x1536, exactly FOUR columns by SIX rows, each character separate with generous transparent padding. Camera elevated 30 degrees. Columns left to right: facing southeast front three-quarter; southwest front three-quarter; northwest rear three-quarter; northeast rear three-quarter. Rows top to bottom: standing idle eyes open; identical standing idle blink; walking left step; walking right step; seated typing pose A (no chair or desk); seated typing pose B (no chair or desk). Seated rear views glance over shoulder enough to show cheek/profile but torso still faces its direction. Same outfit, head size, identity, scale through all24 poses. All full bodies including shoes inside their cell, at least20px gap between figures. Head top8% for standing and20% seated; feet baseline94%. Hands extend naturally toward an imaginary keyboard in seated poses. Character: A friendly small office robot with an ivory egg-shaped head, dark navy rounded face-screen and expressive cyan oval eyes, one tiny cyan antenna on the left, teal compact torso with ivory chest panel, dark articulated elbow/knee joints, white rounded hands, short dark legs and ivory rounded shoes. Distinct expressive illustrated robot, 2.5 heads tall, not a human.",
+      "frames": [
+        {
+          "pose": "idle",
+          "direction": "front-right",
+          "rect": [
+            83,
+            27,
+            143,
+            227
+          ],
+          "anchor": [
+            71.5,
+            227
+          ],
+          "height": 64
+        },
+        {
+          "pose": "idle",
+          "direction": "front-left",
+          "rect": [
+            323,
+            14,
+            137,
+            240
+          ],
+          "anchor": [
+            68.5,
+            240
+          ],
+          "height": 64
+        },
+        {
+          "pose": "idle",
+          "direction": "back-left",
+          "rect": [
+            566,
+            23,
+            142,
+            230
+          ],
+          "anchor": [
+            71.0,
+            230
+          ],
+          "height": 64
+        },
+        {
+          "pose": "idle",
+          "direction": "back-right",
+          "rect": [
+            801,
+            16,
+            138,
+            237
+          ],
+          "anchor": [
+            69.0,
+            237
+          ],
+          "height": 64
+        },
+        {
+          "pose": "blink",
+          "direction": "front-right",
+          "rect": [
+            83,
+            277,
+            143,
+            228
+          ],
+          "anchor": [
+            71.5,
+            228
+          ],
+          "height": 64
+        },
+        {
+          "pose": "blink",
+          "direction": "front-left",
+          "rect": [
+            323,
+            263,
+            138,
+            243
+          ],
+          "anchor": [
+            69.0,
+            243
+          ],
+          "height": 64
+        },
+        {
+          "pose": "blink",
+          "direction": "back-left",
+          "rect": [
+            566,
+            274,
+            141,
+            230
+          ],
+          "anchor": [
+            70.5,
+            230
+          ],
+          "height": 64
+        },
+        {
+          "pose": "blink",
+          "direction": "back-right",
+          "rect": [
+            800,
+            267,
+            139,
+            237
+          ],
+          "anchor": [
+            69.5,
+            237
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-a",
+          "direction": "front-right",
+          "rect": [
+            60,
+            531,
+            160,
+            231
+          ],
+          "anchor": [
+            80.0,
+            231
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-a",
+          "direction": "front-left",
+          "rect": [
+            315,
+            519,
+            161,
+            243
+          ],
+          "anchor": [
+            80.5,
+            243
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-a",
+          "direction": "back-left",
+          "rect": [
+            545,
+            531,
+            165,
+            238
+          ],
+          "anchor": [
+            82.5,
+            238
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-a",
+          "direction": "back-right",
+          "rect": [
+            801,
+            530,
+            158,
+            240
+          ],
+          "anchor": [
+            79.0,
+            240
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-b",
+          "direction": "front-right",
+          "rect": [
+            78,
+            788,
+            162,
+            231
+          ],
+          "anchor": [
+            81.0,
+            231
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-b",
+          "direction": "front-left",
+          "rect": [
+            309,
+            779,
+            158,
+            239
+          ],
+          "anchor": [
+            79.0,
+            239
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-b",
+          "direction": "back-left",
+          "rect": [
+            553,
+            789,
+            152,
+            237
+          ],
+          "anchor": [
+            76.0,
+            237
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-b",
+          "direction": "back-right",
+          "rect": [
+            799,
+            786,
+            159,
+            240
+          ],
+          "anchor": [
+            79.5,
+            240
+          ],
+          "height": 64
+        },
+        {
+          "pose": "type-a",
+          "direction": "front-right",
+          "rect": [
+            73,
+            1043,
+            159,
+            216
+          ],
+          "anchor": [
+            79.5,
+            216
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-a",
+          "direction": "front-left",
+          "rect": [
+            308,
+            1035,
+            166,
+            224
+          ],
+          "anchor": [
+            83.0,
+            224
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-a",
+          "direction": "back-left",
+          "rect": [
+            545,
+            1042,
+            146,
+            211
+          ],
+          "anchor": [
+            73.0,
+            211
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-a",
+          "direction": "back-right",
+          "rect": [
+            803,
+            1041,
+            153,
+            212
+          ],
+          "anchor": [
+            76.5,
+            212
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-b",
+          "direction": "front-right",
+          "rect": [
+            73,
+            1288,
+            169,
+            217
+          ],
+          "anchor": [
+            84.5,
+            217
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-b",
+          "direction": "front-left",
+          "rect": [
+            306,
+            1275,
+            162,
+            230
+          ],
+          "anchor": [
+            81.0,
+            230
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-b",
+          "direction": "back-left",
+          "rect": [
+            545,
+            1285,
+            161,
+            212
+          ],
+          "anchor": [
+            80.5,
+            212
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-b",
+          "direction": "back-right",
+          "rect": [
+            800,
+            1284,
+            158,
+            212
+          ],
+          "anchor": [
+            79.0,
+            212
+          ],
+          "height": 55
+        }
+      ]
+    },
+    {
+      "id": "tavi",
+      "kind": "robot",
+      "image": "assets/employee-tavi-v1.png",
+      "width": 1024,
+      "height": 1536,
+      "sha256": "6e3c41acc001e4ad8b7584c8af81ca71404636bb335ed4cfc3a84ad3e82212ad",
+      "prompt": "Use case: stylized-concept. Production game sprite sheet for a live office simulation. Original 2D illustrated office chibi, matching a hand-drawn isometric management-game illustration: expressive large eyes, carefully shaped hair or robot face, dark sepia outlines, soft painted cel shading, 2.5 heads tall. NOT a 3D render, plastic toy, pixel art, or flat icon. Transparent background, no shadows, labels, letters, furniture, props, or scenery. Portrait sheet 1024x1536, exactly FOUR columns by SIX rows, each character separate with generous transparent padding. Camera elevated 30 degrees. Columns left to right: facing southeast front three-quarter; southwest front three-quarter; northwest rear three-quarter; northeast rear three-quarter. Rows top to bottom: standing idle eyes open; identical standing idle blink; walking left step; walking right step; seated typing pose A (no chair or desk); seated typing pose B (no chair or desk). Seated rear views glance over shoulder enough to show cheek/profile but torso still faces its direction. Same outfit, head size, identity, scale through all24 poses. All full bodies including shoes inside their cell, at least20px gap between figures. Head top8% for standing and20% seated; feet baseline94%. Hands extend naturally toward an imaginary keyboard in seated poses. Character: A friendly small office robot with a wide mint-green domed head, charcoal face-screen and expressive gold LED eyes, round cream circular ear pods, cream and pale mint compact torso with a small coral chest light, dark articulated elbows/knees, mint gloved hands and cream boots. Distinct expressive illustrated robot, 2.5 heads tall, not human.",
+      "frames": [
+        {
+          "pose": "idle",
+          "direction": "front-right",
+          "rect": [
+            64,
+            8,
+            175,
+            239
+          ],
+          "anchor": [
+            87.5,
+            239
+          ],
+          "height": 64
+        },
+        {
+          "pose": "idle",
+          "direction": "front-left",
+          "rect": [
+            304,
+            10,
+            174,
+            238
+          ],
+          "anchor": [
+            87.0,
+            238
+          ],
+          "height": 64
+        },
+        {
+          "pose": "idle",
+          "direction": "back-left",
+          "rect": [
+            551,
+            6,
+            179,
+            243
+          ],
+          "anchor": [
+            89.5,
+            243
+          ],
+          "height": 64
+        },
+        {
+          "pose": "idle",
+          "direction": "back-right",
+          "rect": [
+            788,
+            6,
+            169,
+            243
+          ],
+          "anchor": [
+            84.5,
+            243
+          ],
+          "height": 64
+        },
+        {
+          "pose": "blink",
+          "direction": "front-right",
+          "rect": [
+            64,
+            260,
+            175,
+            241
+          ],
+          "anchor": [
+            87.5,
+            241
+          ],
+          "height": 64
+        },
+        {
+          "pose": "blink",
+          "direction": "front-left",
+          "rect": [
+            304,
+            261,
+            174,
+            240
+          ],
+          "anchor": [
+            87.0,
+            240
+          ],
+          "height": 64
+        },
+        {
+          "pose": "blink",
+          "direction": "back-left",
+          "rect": [
+            551,
+            260,
+            179,
+            243
+          ],
+          "anchor": [
+            89.5,
+            243
+          ],
+          "height": 64
+        },
+        {
+          "pose": "blink",
+          "direction": "back-right",
+          "rect": [
+            788,
+            261,
+            168,
+            243
+          ],
+          "anchor": [
+            84.0,
+            243
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-a",
+          "direction": "front-right",
+          "rect": [
+            63,
+            513,
+            170,
+            243
+          ],
+          "anchor": [
+            85.0,
+            243
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-a",
+          "direction": "front-left",
+          "rect": [
+            306,
+            513,
+            169,
+            243
+          ],
+          "anchor": [
+            84.5,
+            243
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-a",
+          "direction": "back-left",
+          "rect": [
+            557,
+            511,
+            175,
+            248
+          ],
+          "anchor": [
+            87.5,
+            248
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-a",
+          "direction": "back-right",
+          "rect": [
+            792,
+            513,
+            165,
+            246
+          ],
+          "anchor": [
+            82.5,
+            246
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-b",
+          "direction": "front-right",
+          "rect": [
+            63,
+            765,
+            172,
+            249
+          ],
+          "anchor": [
+            86.0,
+            249
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-b",
+          "direction": "front-left",
+          "rect": [
+            305,
+            767,
+            176,
+            248
+          ],
+          "anchor": [
+            88.0,
+            248
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-b",
+          "direction": "back-left",
+          "rect": [
+            567,
+            768,
+            174,
+            250
+          ],
+          "anchor": [
+            87.0,
+            250
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-b",
+          "direction": "back-right",
+          "rect": [
+            780,
+            766,
+            174,
+            256
+          ],
+          "anchor": [
+            87.0,
+            256
+          ],
+          "height": 64
+        },
+        {
+          "pose": "type-a",
+          "direction": "front-right",
+          "rect": [
+            53,
+            1024,
+            189,
+            241
+          ],
+          "anchor": [
+            94.5,
+            241
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-a",
+          "direction": "front-left",
+          "rect": [
+            291,
+            1029,
+            189,
+            238
+          ],
+          "anchor": [
+            94.5,
+            238
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-a",
+          "direction": "back-left",
+          "rect": [
+            545,
+            1029,
+            186,
+            227
+          ],
+          "anchor": [
+            93.0,
+            227
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-a",
+          "direction": "back-right",
+          "rect": [
+            794,
+            1028,
+            171,
+            227
+          ],
+          "anchor": [
+            85.5,
+            227
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-b",
+          "direction": "front-right",
+          "rect": [
+            55,
+            1276,
+            187,
+            241
+          ],
+          "anchor": [
+            93.5,
+            241
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-b",
+          "direction": "front-left",
+          "rect": [
+            295,
+            1274,
+            185,
+            243
+          ],
+          "anchor": [
+            92.5,
+            243
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-b",
+          "direction": "back-left",
+          "rect": [
+            545,
+            1272,
+            181,
+            235
+          ],
+          "anchor": [
+            90.5,
+            235
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-b",
+          "direction": "back-right",
+          "rect": [
+            791,
+            1276,
+            176,
+            231
+          ],
+          "anchor": [
+            88.0,
+            231
+          ],
+          "height": 55
+        }
+      ]
+    },
+    {
+      "id": "sable",
+      "kind": "robot",
+      "image": "assets/employee-sable-v1.png",
+      "width": 1024,
+      "height": 1536,
+      "sha256": "f89fb212e9b11e04d85c0b26877976fb4ab7aed37c866f1dcc5310914d20d66b",
+      "prompt": "Use case: stylized-concept. Production game sprite sheet for a live office simulation. Original 2D illustrated office chibi, matching a hand-drawn isometric management-game illustration: expressive large eyes, carefully shaped hair or robot face, dark sepia outlines, soft painted cel shading, 2.5 heads tall. NOT a 3D render, plastic toy, pixel art, or flat icon. Transparent background, no shadows, labels, letters, furniture, props, or scenery. Portrait sheet 1024x1536, exactly FOUR columns by SIX rows, each character separate with generous transparent padding. Camera elevated 30 degrees. Columns left to right: facing southeast front three-quarter; southwest front three-quarter; northwest rear three-quarter; northeast rear three-quarter. Rows top to bottom: standing idle eyes open; identical standing idle blink; walking left step; walking right step; seated typing pose A (no chair or desk); seated typing pose B (no chair or desk). Seated rear views glance over shoulder enough to show cheek/profile but torso still faces its direction. Same outfit, head size, identity, scale through all24 poses. All full bodies including shoes inside their cell, at least20px gap between figures. Head top8% for standing and20% seated; feet baseline94%. Hands extend naturally toward an imaginary keyboard in seated poses. Character: A friendly small office robot with a slightly angular charcoal-blue head, bright teal visor with expressive cyan eyes, one small amber fin on the right, navy compact torso with warm gold collar and cream chest plate, dark articulated elbows/knees, navy/cream hands and short sturdy boots. Distinct expressive illustrated robot, 2.5 heads tall, not human.",
+      "frames": [
+        {
+          "pose": "idle",
+          "direction": "front-right",
+          "rect": [
+            81,
+            19,
+            155,
+            233
+          ],
+          "anchor": [
+            77.5,
+            233
+          ],
+          "height": 64
+        },
+        {
+          "pose": "idle",
+          "direction": "front-left",
+          "rect": [
+            328,
+            26,
+            150,
+            226
+          ],
+          "anchor": [
+            75.0,
+            226
+          ],
+          "height": 64
+        },
+        {
+          "pose": "idle",
+          "direction": "back-left",
+          "rect": [
+            561,
+            17,
+            145,
+            236
+          ],
+          "anchor": [
+            72.5,
+            236
+          ],
+          "height": 64
+        },
+        {
+          "pose": "idle",
+          "direction": "back-right",
+          "rect": [
+            806,
+            17,
+            145,
+            234
+          ],
+          "anchor": [
+            72.5,
+            234
+          ],
+          "height": 64
+        },
+        {
+          "pose": "blink",
+          "direction": "front-right",
+          "rect": [
+            79,
+            265,
+            157,
+            235
+          ],
+          "anchor": [
+            78.5,
+            235
+          ],
+          "height": 64
+        },
+        {
+          "pose": "blink",
+          "direction": "front-left",
+          "rect": [
+            328,
+            274,
+            150,
+            227
+          ],
+          "anchor": [
+            75.0,
+            227
+          ],
+          "height": 64
+        },
+        {
+          "pose": "blink",
+          "direction": "back-left",
+          "rect": [
+            561,
+            266,
+            145,
+            236
+          ],
+          "anchor": [
+            72.5,
+            236
+          ],
+          "height": 64
+        },
+        {
+          "pose": "blink",
+          "direction": "back-right",
+          "rect": [
+            805,
+            265,
+            146,
+            236
+          ],
+          "anchor": [
+            73.0,
+            236
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-a",
+          "direction": "front-right",
+          "rect": [
+            73,
+            517,
+            149,
+            235
+          ],
+          "anchor": [
+            74.5,
+            235
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-a",
+          "direction": "front-left",
+          "rect": [
+            314,
+            523,
+            159,
+            234
+          ],
+          "anchor": [
+            79.5,
+            234
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-a",
+          "direction": "back-left",
+          "rect": [
+            559,
+            528,
+            149,
+            233
+          ],
+          "anchor": [
+            74.5,
+            233
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-a",
+          "direction": "back-right",
+          "rect": [
+            808,
+            527,
+            148,
+            234
+          ],
+          "anchor": [
+            74.0,
+            234
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-b",
+          "direction": "front-right",
+          "rect": [
+            80,
+            766,
+            154,
+            236
+          ],
+          "anchor": [
+            77.0,
+            236
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-b",
+          "direction": "front-left",
+          "rect": [
+            327,
+            772,
+            155,
+            230
+          ],
+          "anchor": [
+            77.5,
+            230
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-b",
+          "direction": "back-left",
+          "rect": [
+            561,
+            776,
+            152,
+            229
+          ],
+          "anchor": [
+            76.0,
+            229
+          ],
+          "height": 64
+        },
+        {
+          "pose": "walk-b",
+          "direction": "back-right",
+          "rect": [
+            804,
+            776,
+            148,
+            229
+          ],
+          "anchor": [
+            74.0,
+            229
+          ],
+          "height": 64
+        },
+        {
+          "pose": "type-a",
+          "direction": "front-right",
+          "rect": [
+            73,
+            1017,
+            164,
+            223
+          ],
+          "anchor": [
+            82.0,
+            223
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-a",
+          "direction": "front-left",
+          "rect": [
+            310,
+            1018,
+            167,
+            226
+          ],
+          "anchor": [
+            83.5,
+            226
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-a",
+          "direction": "back-left",
+          "rect": [
+            547,
+            1020,
+            164,
+            210
+          ],
+          "anchor": [
+            82.0,
+            210
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-a",
+          "direction": "back-right",
+          "rect": [
+            805,
+            1018,
+            162,
+            215
+          ],
+          "anchor": [
+            81.0,
+            215
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-b",
+          "direction": "front-right",
+          "rect": [
+            72,
+            1264,
+            163,
+            232
+          ],
+          "anchor": [
+            81.5,
+            232
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-b",
+          "direction": "front-left",
+          "rect": [
+            310,
+            1269,
+            166,
+            227
+          ],
+          "anchor": [
+            83.0,
+            227
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-b",
+          "direction": "back-left",
+          "rect": [
+            546,
+            1267,
+            164,
+            215
+          ],
+          "anchor": [
+            82.0,
+            215
+          ],
+          "height": 55
+        },
+        {
+          "pose": "type-b",
+          "direction": "back-right",
+          "rect": [
+            804,
+            1265,
+            162,
+            217
+          ],
+          "anchor": [
+            81.0,
+            217
+          ],
+          "height": 55
+        }
+      ]
+    }
+  ]
+}

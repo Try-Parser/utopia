@@ -1,0 +1,56 @@
+{
+  "version": 2,
+  "styles": {
+    "illustrated": {
+      "depthShading": true,
+      "ink": true,
+      "palette": "painted-warm"
+    },
+    "polished": {
+      "depthShading": true,
+      "ink": false,
+      "palette": "soft-warm"
+    },
+    "pixel": {
+      "depthShading": false,
+      "ink": false,
+      "palette": "direct-nearest"
+    },
+    "low-poly": {
+      "depthShading": false,
+      "ink": false,
+      "palette": "direct-faceted"
+    }
+  },
+  "buffer": {
+    "maxPixels": 4194304,
+    "maxSide": 4096
+  },
+  "resources": {
+    "renderTargets": 1,
+    "depthTextures": 1,
+    "compositeMaterials": 1
+  },
+  "fallback": "direct-render-on-unsupported-or-lost-context",
+  "invariants": [
+    "Depth shading and outlines derive from the actual live3D geometry, not a populated image or fabricated content",
+    "Same camera, monitor quads, real actor identity and position across effects/styles",
+    "Native UI/private speech/app iframe remain outside postprocessing",
+    "No per-frame resource allocation, bounded resize, idempotent cleanup",
+    "A/B effect must render in the actual supported browser test; graceful fallback is not visual-fidelity proof"
+  ],
+  "viewport": {
+    "renderTargetUnits": "physical-framebuffer-pixels",
+    "preserveRendererPixelRatio": true,
+    "preserveCamera": true
+  },
+  "antialiasing": {
+    "method": "alpha-fxaa",
+    "appliesTo": [
+      "illustrated",
+      "polished"
+    ],
+    "noExtraTarget": true,
+    "blend": "premultiplied-rgba-before-unpremultiply"
+  }
+}

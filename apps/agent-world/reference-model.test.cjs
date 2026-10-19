@@ -1,0 +1,31 @@
+const{test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+test('reference composition is a versioned visual requirement for the actual office',()=>{
+ const source=fs.readFileSync(path.join(__dirname,'reference-visual.contract.json'),'utf8').replace(/\r\n/g,'\n');
+ assert.equal(crypto.createHash('sha256').update(source).digest('hex'),'672cff423b1008b14c022ac2d1b753878927bc9e4a91f4d648b2ace18d0ce349');
+ const visual=JSON.parse(source),layout=require('./office-layout.contract.json'),office=require('./office-model.js').layout();
+ assert.equal(visual.version,8);assert.equal(layout.version,visual.layoutVersion);
+ const kitSource=fs.readFileSync(path.join(__dirname,'reference-kit.contract.json'),'utf8').replace(/\r\n/g,'\n');assert.equal(crypto.createHash('sha256').update(kitSource).digest('hex'),'69bbb86800dff75b53540fc6838daccc96f6eeb1eb41e71e57d4980a36c0b522');
+ const kit=JSON.parse(kitSource);assert.equal(kit.version,visual.referenceKitVersion);assert.equal(kit.layoutVersion,layout.version);
+ assert.equal(kit.resources.maxMaterialMaps,6);assert.equal(kit.employees.ownedGeometryLimit,15);assert.deepEqual(kit.resources.materialGrid,[3,2]);assert.equal(kit.interior.localLights,8);assert.equal(kit.interior.shadowedLocalLights,0);assert.equal(kit.interior.galleryFamilies,6);
+ assert.deepEqual(kit.employees.families,['mica','lilt','brim','quill','tavi','sable']);assert.deepEqual(kit.employees.kinds,['human','human','human','robot','robot','robot']);
+ for(const station of office.stations.filter(s=>!s.reception)){assert.ok(Math.abs(station.deskBounds[2]-station.deskBounds[0]-kit.workstations.localWidth*office.stationScale)<.001);assert.ok(Math.abs(station.deskBounds[3]-station.deskBounds[1]-kit.workstations.localDepth*office.stationScale)<.001);}
+ const rooms=Object.fromEntries(office.rooms.map(r=>[r.role,r]));
+ const rear=visual.composition.rear.map(role=>rooms[role]);assert.ok(rear.every(r=>r.y===rear[0].y));assert.ok(rear[0].x<rear[1].x&&rear[1].x<rear[2].x);
+ const main=office.corridors.find(c=>c.id==='main'),mid=main.x+main.width/2;
+ assert.ok(office.conference.x+office.conference.width<=main.x&&office.cafe.x+office.cafe.width<=main.x);
+ for(const role of visual.composition.rightWing)assert.ok(rooms[role].x>=main.x+main.width);
+ assert.ok(rooms.reviewer.y<rooms.qa.y&&rooms.qa.y<rooms.security.y);
+ assert.equal((office.reception.deskBounds[0]+office.reception.deskBounds[2])/2,mid);
+ assert.ok(office.reception.deskBounds[1]>office.height*.8);
+ assert.equal(office.enclosures.length,visual.geometry.enclosures);
+ assert.deepEqual(office.baselineComputers,visual.baselineComputers);
+ assert.equal(office.stations.length,17);
+ const development=office.stations.filter(s=>s.role==='builder');
+ assert.ok(Math.abs(development[0].deskBounds[2]-development[1].deskBounds[0])<.001,'adjacent desktop edges form one shared bench');
+ assert.ok(Math.abs(development[0].deskBounds[3]-development[2].deskBounds[1])<.001,'opposing desktop rows meet without an aisle through furniture');
+ assert.ok(development[0].point.y<development[0].deskBounds[1]&&development[2].point.y>development[2].deskBounds[3],'employees sit on the two outside edges');
+ assert.equal(rooms.shared.annex,true);
+ assert.equal(rooms.builder.width,1220);
+ const counter=office.stations.find(s=>s.key==='shared:0');assert.equal(counter.reception,true);assert.deepEqual(counter.deskBounds,visual.geometry.sharedCounter.bounds);
+ assert.deepEqual(visual.referenceCamera,{yaw:290,elevation:35,fov:18});
+});

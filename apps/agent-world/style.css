@@ -269,8 +269,8 @@ main{position:relative;width:100%;height:100dvh;min-height:0;max-width:none;marg
 .rail,.topbar,.page-footer{display:none}
 .workspace-grid{position:absolute;inset:0;display:block;min-height:0;gap:0}
 .world-panel{position:absolute;inset:0;border:0;border-radius:0;box-shadow:none}
-.world-scroll{width:100%;height:100%;min-height:0;background:radial-gradient(ellipse at 50% 38%,#425a64 0%,#2b424e 48%,#1c2f3b 100%)}
-.heading{position:absolute;top:12px;left:12px;right:12px;z-index:12;display:flex;align-items:flex-start;gap:12px;padding:0;pointer-events:none}
+.world-scroll{width:100%;height:100%;min-height:0;background:radial-gradient(ellipse at 50% 38%,#344763 0%,#1e304c 48%,#101e35 100%)}
+.heading{position:absolute;top:12px;left:12px;right:12px;z-index:12;display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;padding:0;pointer-events:none}
 .heading>*{pointer-events:auto}
 .title-lockup{gap:0;padding:9px 13px;border:1px solid #78909a99;border-radius:10px;background:#19323edb;box-shadow:0 6px 22px #071a2790;backdrop-filter:blur(10px)}
 .title-lockup .world-logo,.title-lockup .subtitle{display:none}
@@ -323,7 +323,7 @@ main{position:relative;width:100%;height:100dvh;min-height:0;max-width:none;marg
 @media(max-width:560px){
   .heading{display:block}
   .title-lockup{display:inline-flex}
-  .header-actions{display:flex;width:max-content;max-width:100%;margin:5px 0 0;overflow-x:auto}
+  .header-actions{display:flex;flex-wrap:wrap;width:max-content;max-width:100%;margin:5px 0 0;overflow:visible}
   .header-actions .connection-health{width:12px;max-width:12px;overflow:visible;white-space:nowrap;font-size:0;margin:0 3px}
   .toolbar{bottom:57px;padding:3px}
   .office-view{gap:3px}.office-view select{max-width:103px}
@@ -334,3 +334,62 @@ main{position:relative;width:100%;height:100dvh;min-height:0;max-width:none;marg
   .world-panel .scene-actions{margin:auto;justify-content:center;flex-wrap:nowrap}
   .world-panel .scene-actions button{font-size:9px;padding:4px 6px}
 }
+
+/* Optional local music shares the compact header; its panel overlays the floor. */
+.office-music{position:relative;flex-shrink:0;color:#dce8ec;pointer-events:auto}
+.office-music summary{display:flex;align-items:center;gap:6px;min-height:34px;padding:6px 10px;box-sizing:border-box;border:1px solid #78909a99;border-radius:9px;background:#19323eeb;font-size:11px;cursor:pointer;list-style:none;box-shadow:0 6px 22px #071a2750}
+.office-music summary::-webkit-details-marker{display:none}
+.office-music summary:focus-visible{outline:2px solid #e9c58b;outline-offset:3px}
+#music-state{font-size:9px;color:#b8d4c9}
+.music-panel{position:absolute;top:calc(100% + 8px);left:0;width:240px;padding:14px;box-sizing:border-box;border:1px solid #78909a;border-radius:12px;background:#203b49;box-shadow:0 12px 32px #071a2790;display:grid;gap:10px}
+.music-panel p{margin:0;font-size:11px;line-height:1.5;color:#c2d2d5}
+.music-panel strong{font-size:14px;color:#f0dfbd}
+.music-panel label{display:flex;justify-content:space-between;font-size:11px}
+.music-panel button{min-height:38px}.music-panel input[type=range]{width:100%;margin:0;min-height:32px;accent-color:#e9c58b}
+@media(max-width:560px){.office-music{display:inline-block;margin-left:6px;vertical-align:top}.office-music summary{min-height:31px;font-size:10px}.music-panel{position:fixed;top:90px;left:8px;right:8px;width:auto;max-width:320px}}
+
+/* Native speech paints at screen resolution, outside the floor's zoom layers. */
+.office-character .character-bubble[popover=manual]:popover-open{position:fixed;inset:auto;margin:0;width:156px;min-width:0;max-width:156px;max-height:none;padding:6px 8px;font:11px/1.35 ui-monospace,monospace;transform:none!important;translate:none!important;overflow:visible;pointer-events:none}
+.office-character .character-bubble[popover=manual]:not(:popover-open){display:none!important}
+.office-character .character-bubble[popover=manual]::backdrop{background:transparent;pointer-events:none}
+.office-character .character-bubble[popover=manual] .worker-action{font-size:12px;line-height:1.25}
+.office-character .character-bubble[popover=manual] .worker-task{max-width:none;font-size:11px;line-height:1.35;overflow-wrap:anywhere}
+.office-character .character-bubble[popover=manual] .worker-event-time{font-size:9px}
+.office-character:is(.working,.handing-off):not(.bubble-detailed):not(:hover) .character-bubble[popover=manual]{width:132px;max-width:132px;padding:5px 7px}
+.office-character:is(.working,.handing-off):not(.bubble-detailed):not(:hover) .character-bubble[popover=manual] .worker-task{max-width:none}
+.office-character[data-bubble=transcript]:is(.bubble-detailed,.selected,:hover) .character-bubble[popover=manual]{width:196px;max-width:196px}
+@media(max-width:560px){
+  .office-character .character-bubble[popover=manual]:popover-open{width:140px;max-width:140px;max-height:112px;overflow:hidden}
+  .office-character:not(.bubble-detailed):not(.selected) .character-bubble[popover=manual],.office-character:is(.working,.handing-off):not(.bubble-detailed):not(:hover) .character-bubble[popover=manual]{width:116px;max-width:116px;padding:5px 7px;max-height:80px}
+  .office-character[data-bubble=transcript]:is(.bubble-detailed,.selected,:hover) .character-bubble[popover=manual]{width:176px;max-width:176px}
+}
+
+/* A selected employee keeps its identity and reported work together. */
+.employee-profile{display:grid;grid-template-columns:88px minmax(0,1fr);gap:14px;align-items:center;margin:0 0 16px}
+.employee-portrait,.employee-portrait-fallback{display:block;width:88px;height:104px;border:1px solid #617d89;border-radius:16px;background:linear-gradient(145deg,#3a5866,#172d39)}
+.employee-portrait-fallback{display:grid;place-items:center;color:#e8d4ae;font-size:25px;font-weight:700}
+.employee-identity{min-width:0}#agent-detail .employee-provider{margin:0 0 5px;color:#b5cbd3;font-size:10px;letter-spacing:.06em}#agent-detail .employee-profile h3{font-size:16px;line-height:1.35;color:#f0eadb;margin:0 0 8px;overflow-wrap:anywhere}
+.employee-state{display:inline-block;max-width:100%;padding:3px 8px;border:1px solid #67877e;border-radius:20px;background:#31574c;color:#d4efdf;font-size:11px;line-height:1.4;overflow-wrap:anywhere}
+.employee-current{padding:13px;border:1px solid #657a83;border-radius:12px;background:#2b4552;margin-bottom:16px}.employee-current h4{margin:0 0 8px;font-size:10px;color:#b8ced6;letter-spacing:.05em;text-transform:uppercase}#agent-detail .employee-current .task-title{font-size:14px;line-height:1.5;margin-bottom:8px;color:#f1d6a2!important}#agent-detail .employee-current p{color:#d7e5e9;line-height:1.5}.employee-updated{display:block;color:#b1c5ce;font:10px/1.5 ui-monospace,monospace}
+.employee-facts{display:grid;grid-template-columns:94px minmax(0,1fr);gap:8px 10px;margin:0 0 14px;font-size:11px;line-height:1.5}.employee-facts dt{color:#a6bfc9}.employee-facts dd{margin:0;min-width:0;overflow-wrap:anywhere;color:#e6eff0}.employee-facts [data-profile-field=reference]{font:10px/1.5 ui-monospace,monospace}#agent-detail .employee-empty{color:#afc2cb;font-size:11px}
+
+/* Private questions use a focused inbox, keeping the office visible beneath it. */
+#conference-inbox-count{display:inline-block;min-width:18px;margin-left:4px;padding:1px 4px;border-radius:12px;background:#42685c;color:#eef6e5;font-size:11px}
+#conference-dialog{width:min(900px,calc(100vw - 32px));max-width:900px;max-height:calc(100dvh - 40px);padding:0;background:#1d3442;color:#e8eef0;border:1px solid #7e969b;border-radius:18px;overflow:auto}
+.conference-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:23px 24px;border-bottom:1px solid #46616e;background:#243f4e}.conference-heading h2{margin:2px 0 6px;font-size:23px}.conference-heading p{margin:0;color:#b5ccd4;font-size:12px}.conference-heading .eyebrow{font-size:10px;color:#efd29c;letter-spacing:.12em}
+.conference-grid{display:grid;grid-template-columns:230px minmax(0,1fr);min-height:360px}.conference-grid>nav{padding:14px;border-right:1px solid #46616e;background:#182e3a}.conference-person{width:100%;display:grid;gap:5px;text-align:left;padding:12px;margin-bottom:7px;border:1px solid transparent;background:transparent;border-radius:9px;color:#dce8ec;overflow-wrap:anywhere}.conference-person span{color:#a7c0cb;font-size:11px}.conference-person[aria-pressed=true]{background:#365651;border-color:#84ad99}.conference-person strong{font-size:12px;font-weight:600}
+#conference-detail{padding:22px;min-width:0}#conference-session-name{font-size:17px;line-height:1.4;margin:5px 0 20px;overflow-wrap:anywhere}#conference-question-title{font-size:12px;color:#c3d4d9;margin:0 0 8px}#conference-question-text{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;font:13px/1.65 ui-monospace,monospace;background:#132a36;border:1px solid #486371;border-radius:10px;padding:14px;max-height:260px;overflow:auto;margin:0 0 12px}#conference-choices{display:flex;flex-wrap:wrap;gap:6px}#conference-choices button{max-width:100%;white-space:normal;overflow-wrap:anywhere;font-size:12px;padding:7px 10px}#conference-delivery{font-size:12px;line-height:1.5;color:#bfd3d9;margin:13px 0}#conference-answer-form label{display:block;font-size:12px;margin-bottom:7px}#conference-answer{display:block;box-sizing:border-box;width:100%;resize:vertical;min-height:100px;max-height:280px;background:#122a37;color:#edf2ed;border:1px solid #668795;border-radius:9px;padding:11px;font:inherit;font-size:13px;line-height:1.5}.conference-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.conference-actions button{font-size:12px;min-height:38px}#conference-status{font-size:12px;line-height:1.6;color:#f1d5a0;min-height:20px;margin:12px 0 0}#conference-empty{grid-column:1/-1;margin:0;padding:55px 24px}#conference-dialog:has(#conference-empty:not([hidden])) #conference-list{display:none}
+#agent-detail .employee-question{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.6 ui-monospace,monospace;max-height:190px;overflow:auto;border-left:2px solid #d7ba7e;padding-left:10px}.employee-question-open{margin:7px 0 12px;font-size:12px}
+@media(max-width:800px){#conference-dialog{width:100%;max-width:100%;height:100dvh;max-height:100dvh;margin:0;border:0;border-radius:0}.conference-heading{padding:18px 16px}.conference-heading h2{font-size:21px}.conference-grid{grid-template-columns:minmax(0,1fr)}.conference-grid>nav{border-right:0;border-bottom:1px solid #46616e;padding:10px;display:flex;overflow-x:auto;gap:7px}.conference-person{flex:0 0 170px;width:170px;margin:0}#conference-detail{padding:18px 16px}#conference-question-text{max-height:32dvh}.conference-actions button{min-height:42px}}
+
+#conference-dialog .conference-actions .primary{width:auto;margin-top:0}#conference-question-title:focus-visible,#conference-dialog button:focus-visible,#conference-answer:focus-visible{outline:2px solid #e8c382;outline-offset:3px}
+
+/* Graphics preferences decorate the same live office; native text stays crisp. */
+.office-graphics{display:flex;flex-shrink:0;align-items:center;gap:5px;pointer-events:auto}
+#graphics-style{width:155px;min-height:34px;max-width:100%;padding:6px 9px;border:1px solid #78909a99;border-radius:9px;background:#19323e;color:#e2edf0;font:inherit;font-size:11px;line-height:1.4;box-shadow:0 6px 22px #071a2750}
+#graphics-style:focus-visible{outline:2px solid #e9c58b;outline-offset:3px}#graphics-fallback{padding:4px 6px;background:#19323ee8;border-radius:5px;color:#d7d3bd;font-size:9px}
+body[data-graphics-style=pixel] canvas.office-3d{image-rendering:pixelated}
+body[data-graphics-style=pixel] .world:not(.webgl-office) svg.office{shape-rendering:crispEdges}
+body[data-graphics-style=polished] .world:not(.webgl-office) svg.office{filter:saturate(.85) brightness(1.08)}
+body[data-graphics-style=low-poly] .world:not(.webgl-office) svg.office [data-department] polygon{stroke:#d9e5e3;stroke-width:.7}
+@media(max-width:560px){.office-graphics{display:inline-flex;margin-left:6px;vertical-align:top;max-width:calc(100vw - 16px)}#graphics-style{width:145px;min-height:31px;font-size:10px}#graphics-fallback{font-size:8px;padding:3px}}

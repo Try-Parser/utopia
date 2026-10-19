@@ -30,11 +30,28 @@ FILES = {"/": ("index.html", "text/html; charset=utf-8"),
          "/engine.js": ("engine.js", "text/javascript; charset=utf-8"),
          "/live.js": ("live.js", "text/javascript; charset=utf-8"),
          "/sessions.js": ("sessions.js", "text/javascript; charset=utf-8"),
+         "/conference.js": ("conference.js", "text/javascript; charset=utf-8"),
          "/app.js": ("app.js", "text/javascript; charset=utf-8"),
          "/game-model.js": ("game-model.js", "text/javascript; charset=utf-8"),
          "/office-model.js": ("office-model.js", "text/javascript; charset=utf-8"),
+         "/office-art.js": ("office-art.js", "text/javascript; charset=utf-8"),
+         "/office-reference-interior.js": ("office-reference-interior.js", "text/javascript; charset=utf-8"),
+         "/office-reference-cast.js": ("office-reference-cast.js", "text/javascript; charset=utf-8"),
          "/office.js": ("office.js", "text/javascript; charset=utf-8"),
          "/office-3d.js": ("office-3d.js", "text/javascript; charset=utf-8"),
+         "/assets/office-surfaces-v1.png": ("assets/office-surfaces-v1.png", "image/png"),
+         "/assets/office-surfaces-v2.png": ("assets/office-surfaces-v2.png", "image/png"),
+         "/assets/reference-resources-v1/materials.png": ("assets/reference-resources-v1/materials.png", "image/png"),
+         "/assets/reference-resources-v1/characters.png": ("assets/reference-resources-v1/characters.png", "image/png"),
+         "/assets/reference-resources-v1/furniture.png": ("assets/reference-resources-v1/furniture.png", "image/png"),
+         "/assets/reference-resources-v1/manifest.json": ("assets/reference-resources-v1/manifest.json", "application/json; charset=utf-8"),
+         "/assets/employee-cast-v1.json": ("assets/employee-cast-v1.json", "application/json; charset=utf-8"),
+         "/assets/employee-mica-v1.png": ("assets/employee-mica-v1.png", "image/png"),
+         "/assets/employee-lilt-v1.png": ("assets/employee-lilt-v1.png", "image/png"),
+         "/assets/employee-brim-v1.png": ("assets/employee-brim-v1.png", "image/png"),
+         "/assets/employee-quill-v1.png": ("assets/employee-quill-v1.png", "image/png"),
+         "/assets/employee-tavi-v1.png": ("assets/employee-tavi-v1.png", "image/png"),
+         "/assets/employee-sable-v1.png": ("assets/employee-sable-v1.png", "image/png"),
          "/vendor/three.min.js": ("vendor/three.min.js", "text/javascript; charset=utf-8"),
          "/screens.js": ("screens.js", "text/javascript; charset=utf-8"),
          "/screen-model.js": ("screen-model.js", "text/javascript; charset=utf-8"),
@@ -184,6 +201,18 @@ def make_server(root, port=8787, live_queue=None, session_discovery=None):
                     self.send_json(403, {"error": "Local session token required"})
                     return
                 self.send_json(200, session_discovery.transcript(path.split('/')[3]))
+            elif re.fullmatch(r"/api/sessions/[a-f0-9]{32}/(question|reply)", path):
+                if session_discovery is None:
+                    self.send_json(503, {"error": "Local session discovery unavailable"})
+                    return
+                if not live.secrets.compare_digest(self.headers.get("X-Agent-World-Token", "").encode(), session_discovery.token.encode()):
+                    self.send_json(403, {"error": "Local session token required"})
+                    return
+                try:
+                    operation = session_discovery.question if path.endswith("/question") else session_discovery.reply
+                    self.send_json(200, operation(path.split('/')[3]))
+                except discovery.ConferenceError as error:
+                    self.send_json(error.status, {"error": str(error)})
             elif re.fullmatch(r"/api/live/missions/[a-f0-9]{32}/changes/[0-9]{1,2}", path):
                 if live_queue is None:
                     self.send_json(503, {"error": "Native task reader unavailable"})
@@ -211,7 +240,8 @@ def make_server(root, port=8787, live_queue=None, session_discovery=None):
                 self.send_json(403, {"error": "Local origin required"})
                 return
             path = urlsplit(self.path).path
-            target = session_discovery if path == "/api/sessions/heartbeat" else live_queue
+            conference = re.fullmatch(r"/api/sessions/([a-f0-9]{32})/(answer|reply/ack)", path)
+            target = session_discovery if path == "/api/sessions/heartbeat" or conference else live_queue
             if target is None:
                 self.send_json(503, {"error": "Requested local integration is disabled"})
                 return
@@ -235,6 +265,11 @@ def make_server(root, port=8787, live_queue=None, session_discovery=None):
                 if path == "/api/sessions/heartbeat":
                     self.send_json(200, {"id": session_discovery.heartbeat(data)})
                     return
+                elif conference:
+                    entry_id, operation = conference.groups()
+                    result = session_discovery.answer(entry_id, data) if operation == "answer" else session_discovery.acknowledge(entry_id, data)
+                    self.send_json(202 if operation == "answer" else 200, result)
+                    return
                 elif path == "/api/live/missions":
                     job = live_queue.submit(data)
                 elif re.fullmatch(r"/api/live/missions/[a-f0-9]{32}/cancel", path) and data == {}:
@@ -244,6 +279,8 @@ def make_server(root, port=8787, live_queue=None, session_discovery=None):
                     return
                 self.send_json(200, {"id": job["id"], "status": job["status"]})
             except live.LiveError as error:
+                self.send_json(error.status, {"error": str(error)})
+            except discovery.ConferenceError as error:
                 self.send_json(error.status, {"error": str(error)})
             except (OSError, ValueError, RecursionError):
                 self.send_json(400, {"error": "Invalid mission request"})

@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const officeGolden = require('./office-layout.contract.json');
 const { spawn } = require('node:child_process');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 
@@ -16,6 +17,9 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     await new Promise((resolve, reject) => { const timeout=setTimeout(()=>reject(new Error('Server startup timeout')),10000); server.once('error',reject); server.once('exit',code=>reject(new Error(`Server exited ${code}`))); server.stdout.once('data',()=>{clearTimeout(timeout);resolve();}); });
     browser = await chromium.launch({headless:true,args:['--enable-unsafe-swiftshader']});
     const context = await browser.newContext({viewport:{width:1440,height:1050}}); const page = await context.newPage();
+    // Exercise the persisted canonical0-degree camera as well as the new
+    // reference default (covered by focused music/camera journeys).
+    await page.addInitScript(()=>{if(localStorage.getItem('agent-world.office-angle.v1')===null)localStorage.setItem('agent-world.office-angle.v1','0');});
     const errors=[],reportedSessions=new Map();let reportQueue=Promise.resolve();
     const sendReport=async data=>{const origin='http://127.0.0.1:8787',session=await(await page.request.get(`${origin}/api/sessions`)).json();const response=await page.request.post(`${origin}/api/sessions/heartbeat`,{headers:{Origin:origin,'Content-Type':'application/json','X-Agent-World-Token':session.token},data});if(!response.ok())throw new Error('Role report rejected');return(await response.json()).id;};
     const queueReport=operation=>{const pending=reportQueue.then(operation);reportQueue=pending.catch(()=>{});return pending;};
@@ -41,9 +45,12 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     assert.equal(await page.locator('#office-sidebar-close').evaluate(e=>e===document.activeElement),true,'Activity close control receives focus');
     await page.locator('#office-sidebar-close').click();
     assert.equal(await page.getByLabel('Office view',{exact:true}).inputValue(),'isometric');assert.equal(await page.locator('#office-view').count(),0);assert.equal(await page.getByText('Demo simulation',{exact:true}).count(),0);assert.equal(await page.locator('.mode-switch').count(),0);
-    const phoneContext=await browser.newContext({viewport:{width:390,height:844}});
-    try{for(const manual of [false,true]){const phone=await phoneContext.newPage();await phone.route('**/api/events',async route=>{await new Promise(resolve=>setTimeout(resolve,1200));await route.continue().catch(()=>{});});await phone.goto('http://127.0.0.1:8787');await phone.waitForFunction(()=>window.OfficeWorldView.getState().length===0&&document.getElementById('world').classList.contains('zoomed'));
+    const phoneContext=await browser.newContext({viewport:{width:390,height:844}});let releasePhoneActivity=()=>{};
+    try{for(const manual of [false,true]){const phone=await phoneContext.newPage(),activityGate=new Promise(resolve=>{releasePhoneActivity=resolve;});await phone.route('**/api/events',async route=>{await activityGate;await route.continue().catch(()=>{});});await phone.goto('http://127.0.0.1:8787');await phone.waitForFunction(()=>window.OfficeWorldView.getState().length===0&&document.getElementById('world').classList.contains('zoomed'));
       if(manual)await phone.getByRole('button',{name:'Whole office',exact:true}).click();
+      // Deliver the actual stream after observing the initial state and choice;
+      // a wall-clock delay can expire while navigation or WebGL is still busy.
+      releasePhoneActivity();
       await phone.waitForSelector('.office-character');
       if(manual){assert.equal(await phone.locator('#world').evaluate(e=>e.classList.contains('zoomed')),false,'late arrival respects chosen overview');}
       else{await phone.waitForFunction(()=>{const actor=document.querySelector('.office-character'),bounds=actor?.getBoundingClientRect(),viewport=document.getElementById('world').parentElement.getBoundingClientRect();return bounds&&bounds.left+bounds.width/2>=viewport.left&&bounds.left+bounds.width/2<=viewport.right&&bounds.top+bounds.height/2>=viewport.top&&bounds.top+bounds.height/2<=viewport.bottom;});
@@ -51,19 +58,19 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
         await phone.setViewportSize({width:320,height:568});await phone.waitForFunction(()=>document.getElementById('world').getBoundingClientRect().height>=innerHeight*.68);assert.equal(await phone.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'responsive camera adds no phone page overflow');
         await phone.setViewportSize({width:390,height:844});await phone.screenshot({path:path.join(process.env.EVIDENCE_DIR||'/tmp','delayed-mobile-arrival.png'),fullPage:true});}
       await phone.close();}
-    }finally{await phoneContext.close();}
+    }finally{releasePhoneActivity();await phoneContext.close();}
     assert.equal(await page.locator('#game-player').count(),0);assert.equal(await page.locator('.office-character').count(),1);
     assert.equal(await page.locator('.office-character.working').count(),0);
     for(const provider of ['Codex','Gemini CLI','Ollama'])assert.match(await page.locator('#local-missions').textContent(),new RegExp(provider));
-    assert.equal(await page.locator('.desk-screen').count(),35);
+    assert.equal(await page.locator('.desk-screen').count(),Object.values(officeGolden.baselineComputers).reduce((sum,count)=>sum+count,0));
     await page.getByRole('button',{name:'Open Builder computer 1 code and activity',exact:true}).click();
     assert.match(await page.locator('#computer-source').textContent(),/No task screen/);
     await page.keyboard.press('Escape');assert.equal(await page.locator('#computer-dialog').evaluate(e=>e.open),false);
     assert.equal(await page.getByRole('button',{name:'Open Builder computer 1 code and activity',exact:true}).evaluate(e=>e===document.activeElement),true);
-    const unconnected=await page.evaluate(()=>window.OfficeWorldView.getState()[0]);assert.equal(unconnected.ambient,false);assert.equal(unconnected.role,null);assert.equal(unconnected.station,'shared:4');assert.equal(unconnected.working,false);
+    const unconnected=await page.evaluate(()=>window.OfficeWorldView.getState()[0]);assert.equal(unconnected.ambient,false);assert.equal(unconnected.role,null);assert.equal(unconnected.station,'shared:0');assert.equal(unconnected.working,false);
     await page.waitForSelector(`[data-office="${unconnected.id}"].at-desk:not(.office-walking)`,{timeout:20000});
     assert.equal(await page.locator('[data-department="shared"]').count(),1);assert.equal(await page.locator('[data-shared-label]').textContent(),'SHARED WORKSPACE · ROLE PENDING');
-    await page.getByRole('button',{name:'Open Shared workspace computer 5 code and activity',exact:true}).click();assert.match(await page.locator('#computer-source').textContent(),/Local session detected/);assert.match(await page.locator('#computer-activity').textContent(),/No task or tool event is visible/);await page.keyboard.press('Escape');
+    await page.getByRole('button',{name:'Open Shared workspace computer 1 code and activity',exact:true}).click();assert.match(await page.locator('#computer-source').textContent(),/Local session detected/);assert.match(await page.locator('#computer-activity').textContent(),/No task or tool event is visible/);await page.keyboard.press('Escape');
     await page.locator(`[data-office="${unconnected.id}"]`).click();assert.match(await page.locator('#agent-detail').textContent(),/No current task or tool event is visible/);assert.match(await page.locator(`[data-office="${unconnected.id}"] .worker-action`).textContent(),/Session open/);assert.match(await page.locator(`[data-office="${unconnected.id}"] .character-name`).textContent(),/Shared computer/);assert.equal(await page.locator(`[data-office="${unconnected.id}"] .character-bubble`).isVisible(),false);assert.match(await page.locator('#task-flow-list').textContent(),/open session has no task or tool event yet/);await page.keyboard.press('Escape');
     await page.screenshot({path:path.join(process.env.EVIDENCE_DIR||'/tmp','unconnected-session-desktop.png'),fullPage:true});
     await page.setViewportSize({width:390,height:844});await page.locator(`[data-office="${unconnected.id}"]`).scrollIntoViewIfNeeded();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);await page.screenshot({path:path.join(process.env.EVIDENCE_DIR||'/tmp','unconnected-session-mobile.png'),fullPage:true});await page.setViewportSize({width:1440,height:1050});
@@ -97,11 +104,11 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     await report({provider:'Office Fixture',sessionId:'idle-workflow',state:'ended',workspace:'/work/demo',pid:null,role:'planner',taskId:'idle-task'});
     const scene=await page.locator('#world').boundingBox();assert.ok((await page.locator('.world-panel').boundingBox()).y<270,'office panel appears without a large dashboard header');
     assert.ok(scene.width>850,'office overview stays legible on desktop');assert.ok(scene.y+scene.height<=1051,'3D viewport fills the desktop without page overflow');
-    const circle=await page.evaluate(()=>window.OfficeWorldView.getWorkstations().filter(s=>s.role==='builder'));assert.equal(circle.length,5);for(const seat of circle)assert.ok(Math.abs(Math.hypot(seat.desk.x-seat.center.x,seat.desk.y-seat.center.y)-100)<1e-6,'circular desk pod');
+    const row=await page.evaluate(()=>window.OfficeWorldView.getWorkstations().filter(s=>s.role==='builder')),builderRoom=officeGolden.rooms.find(room=>room.role==='builder');assert.equal(row.length,officeGolden.baselineComputers.builder);assert.deepEqual(row.map(s=>({key:s.key,...s.desk})),officeGolden.stationSlots.slice(0,row.length).map((slot,index)=>({key:`builder:${index}`,x:builderRoom.x+builderRoom.width/2+slot.centerOffset*officeGolden.stationScale,y:builderRoom.y+slot.regularY})),'reference development desks occupy their compact shared bench contract positions');assert.equal(new Set(row.map(s=>`${s.desk.x}:${s.desk.y}`)).size,row.length,'parallel computers occupy unique bench positions');
     const alignment=await page.evaluate(()=>{const floor=document.getElementById('world').getBoundingClientRect(),g=window.OfficeWorldView.getSceneLayout();return g.stations.every(s=>{const b=document.querySelector(`[data-computer="${s.role}"][data-station="${s.index}"]`).getBoundingClientRect();return Math.abs(b.x+b.width/2-floor.x-s.screen.x/g.width*floor.width)<1&&Math.abs(b.y+b.height/2-floor.y-s.screen.y/g.height*floor.height)<1;});});assert.equal(alignment,true,'all monitors align with their physical desks on the wider floor');
     const initialSeats=await page.evaluate(()=>window.OfficeWorldView.getWorkstations());
-    for(const role of ['planner','designer','builder','reviewer','qa','security'])assert.equal(initialSeats.filter(s=>s.role===role).length,5);
-    await page.getByRole('button',{name:'Open Security computer 5 code and activity',exact:true}).click();await page.keyboard.press('Escape');
+    for(const role of ['planner','designer','builder','reviewer','qa','security'])assert.equal(initialSeats.filter(s=>s.role===role).length,officeGolden.baselineComputers[role]);
+    await page.getByRole('button',{name:'Open Security computer 1 code and activity',exact:true}).click();await page.keyboard.press('Escape');
     assert.match(await page.locator('#game-prompt').textContent(),/Automatic office/);
     assert.notEqual(await page.locator('#office-roster .portrait').first().evaluate(e=>getComputedStyle(e).backgroundColor),'rgba(0, 0, 0, 0)');
 
@@ -311,9 +318,9 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     for(const [n,role]of [[1,'builder'],[2,'builder'],[3,'qa'],[4,'qa'],[5,'qa']]){const record={...officeReport,sessionId:`expanded-worker-${n}`,role,taskId:`expanded-task-${n}`};expandedIds.push(await report(record));}
     await page.waitForFunction(ids=>ids.every(id=>window.OfficeWorldView.getState().some(a=>a.id===`session-${id}`&&a.station&&a.working)),expandedIds);
     await page.waitForSelector(`[data-office="session-${expandedIds[1]}"].at-desk:not(.office-walking)`);
-    const expandedSeats=await page.evaluate(()=>window.OfficeWorldView.getWorkstations());assert.equal(expandedSeats.filter(s=>s.role==='builder').length,5);assert.equal(expandedSeats.filter(s=>s.role==='qa').length,5);
-    assert.equal(await page.locator('.desk-screen').count(),35);assert.equal(await page.locator('[data-workstation="builder:2"]').count(),1);assert.match(await page.locator('[data-workstation="builder:2"]').textContent(),/COMPUTER 3/);assert.equal(await page.locator('[data-workstation="builder:2"] .station-number').textContent(),'#3');
-    await page.getByRole('button',{name:'Open Builder computer 3 code and activity',exact:true}).click();assert.match(await page.locator('#computer-source').textContent(),/Adapter-reported/);assert.equal(await page.locator('#computer-station option').count(),5);
+    const expandedSeats=await page.evaluate(()=>window.OfficeWorldView.getWorkstations());assert.ok(expandedSeats.filter(s=>s.role==='builder').length>=3);assert.ok(expandedSeats.filter(s=>s.role==='qa').length>=3,'parallel QA sessions add working computers');
+    assert.equal(await page.locator('.desk-screen').count(),expandedSeats.length);assert.equal(await page.locator('[data-workstation="builder:2"]').count(),1);assert.match(await page.locator('[data-workstation="builder:2"]').textContent(),/COMPUTER 3/);assert.equal(await page.locator('[data-workstation="builder:2"] .station-number').textContent(),'#3');
+    await page.getByRole('button',{name:'Open Builder computer 3 code and activity',exact:true}).click();assert.match(await page.locator('#computer-source').textContent(),/Adapter-reported/);assert.equal(await page.locator('#computer-station option').count(),expandedSeats.filter(s=>s.role==='builder').length);
     await page.getByRole('button',{name:'App preview',exact:true}).click();await page.getByLabel('Local app address').fill('http://127.0.0.1:8788/?expanded=3');await page.getByRole('button',{name:'Connect preview',exact:true}).click();await page.frameLocator('#preview-display iframe').locator('#preview-title').waitFor();await page.keyboard.press('Escape');
     const assertPreviewContained=async()=>assert.equal(await page.evaluate(()=>{const holder=document.querySelector('[data-preview-station="builder:2"]'),physical=document.querySelector('[data-workstation="builder:2"] .monitor-interior'),desk=window.OfficeWorldView.getSceneLayout().stations.find(s=>s.key==='builder:2');if(!holder||!physical)return false;if(desk.frontFacing===false)return holder.hidden;const a=holder.getBoundingClientRect(),b=physical.getBoundingClientRect();return !holder.hidden&&a.width>0&&a.left>=b.left-.5&&a.right<=b.right+.5&&a.top>=b.top-.5&&a.bottom<=b.bottom+.5;}),true,'live miniature follows its physical monitor plane and hides behind its back face');
     const beforeView=await page.evaluate(()=>window.OfficeWorldView.getWorkstations().filter(s=>s.occupant).map(s=>[s.key,s.occupant.id]));
@@ -343,7 +350,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     for(const [n,role]of [[1,'builder'],[2,'builder'],[3,'qa'],[4,'qa'],[5,'qa']])await report({...officeReport,sessionId:`expanded-worker-${n}`,state:'ended',role,taskId:`expanded-task-${n}`});
     await page.waitForFunction(()=>!document.querySelector('[data-preview-station="builder:2"] iframe'),null,{timeout:15000});
     await report(officeReport);await page.emulateMedia({reducedMotion:'no-preference'});
-    console.log('PASS: five circular desks per department, exact-session third screen, independent preview, equal numbered desks and mobile selection');
+    console.log('PASS: reference desk rows expand for parallel agents; exact-session third screen, independent preview, numbered desks and mobile selection');
     const avatar=await page.locator(`[data-office="session-${officeId}"]`).elementHandle();
     await report({...officeReport,state:'waiting',handoffTo:'reviewer',eventId:'fixture-handoff'});
     await page.waitForFunction(()=>document.querySelector('.work-packet'));
@@ -449,9 +456,9 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     for(const record of meetingReports)meetingIds.push(await report(record));
     await meetingPage.goto('http://127.0.0.1:8787');
     await meetingPage.waitForFunction(ids=>ids.every(id=>{const a=window.OfficeWorldView.getState().find(a=>a.id===`session-${id}`);return a?.conferenceSeat&&document.querySelector(`[data-office="session-${id}"]`).classList.contains('at-conference-seat');}),meetingIds);
-    const meetingWorkers=await meetingPage.evaluate(ids=>window.OfficeWorldView.getState().filter(a=>ids.includes(a.id.slice(8))),meetingIds);assert.equal(new Set(meetingWorkers.map(a=>a.conferenceSeat)).size,3);assert.ok(meetingWorkers.every(a=>a.station&&a.z===9),'meeting workers sit at elevated conference seats and retain home monitors');
+    const meetingWorkers=await meetingPage.evaluate(ids=>window.OfficeWorldView.getState().filter(a=>ids.includes(a.id.slice(8))),meetingIds);assert.equal(new Set(meetingWorkers.map(a=>a.conferenceSeat)).size,3);const seatedElevation=9*officeGolden.staffScale;assert.ok(meetingWorkers.every(a=>a.station&&Math.abs(a.z-seatedElevation)<1e-9),'meeting workers sit at scaled conference seats and retain home monitors');
     await meetingPage.locator(`[data-office="session-${meetingIds[2]}"]`).dispatchEvent('click');await meetingPage.waitForFunction(id=>document.querySelector(`[data-office="session-${id}"]`)?.classList.contains('selected'),meetingIds[2]);assert.match(await meetingPage.locator('#agent-detail').textContent(),/Going to: Conference room/);
-    assert.match(await meetingPage.locator('#world-coordinates').textContent(),/X \d+ · Y \d+ · Z 9/);assert.equal(await meetingPage.locator('[data-conference-rug]').count(),2);
+    const selectedMeetingWorker=meetingWorkers.find(a=>a.id===`session-${meetingIds[2]}`);assert.ok((await meetingPage.locator('#world-coordinates').textContent()).endsWith(` · X ${Math.round(selectedMeetingWorker.x)} · Y ${Math.round(selectedMeetingWorker.y)} · Z ${seatedElevation}`),'coordinates show the selected seated worker at its exact scaled elevation');assert.equal(await meetingPage.locator('[data-conference-rug]').count(),2);
     await meetingPage.getByRole('button',{name:'Conference room',exact:true}).click();assert.match(await meetingPage.locator('#announcement').textContent(),/Conference room centered/);
     await meetingPage.screenshot({path:path.join(evidence,'conference-planning-desktop.png'),fullPage:true});await meetingPage.setViewportSize({width:390,height:844});assert.equal(await meetingPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await meetingPage.screenshot({path:path.join(evidence,'conference-planning-mobile.png'),fullPage:true});
     const home=meetingWorkers.find(a=>a.id===`session-${meetingIds[2]}`).station;await report({...meetingReports[2],action:'coding',taskLabel:'Implement office task'});

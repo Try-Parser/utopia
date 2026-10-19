@@ -1,6 +1,104 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');
 const O=require('./office-model.js'),M=require('./game-model.js');
+const projectedScreenHeight=(station,geometry)=>station.reception?require('./office-layout.contract.json').sharedReception.svgScreenHeight:45*(geometry.stationScale||1);
 const base={id:'a'.repeat(32),provider:'Codex',label:'local',status:'running',evidence:'OS only'};
+
+test('scaled movement and handoff budgets complete actual routes across expanded office bands',()=>{
+  const actors=Array.from({length:16},(_,i)=>({id:`builder-${i}`,role:'builder',working:true}));
+  const g=O.layout(actors),start=g.lobby(0),goal=g.stations.find(s=>s.role==='planner').point;
+  M.configure(g);
+  try{
+    const route=M.path(start,goal);assert.ok(route.length>0);
+    assert.equal(O.motionSpeed(g)/O.motionSpeed(null),g.staffScale,'walk stride scales with employee size');
+    assert.ok(O.motionSpeed(g,'packet')>O.motionSpeed(g));assert.ok(O.motionSpeed(g,'idle')<O.motionSpeed(g));
+    const lifetime=O.packetLifetime([start,...route],g);assert.ok(lifetime>12,'long routes outlive the old fixed timeout');
+    let packet={position:start,route},elapsed=0;
+    while(packet.route.length&&elapsed<lifetime){packet=M.advanceRoute(packet.position,packet.route,O.motionSpeed(g,'packet')/60);elapsed+=1/60;}
+    assert.equal(packet.route.length,0,'handoff arrives before its animation budget expires');assert.ok(Math.hypot(packet.position.x-goal.x,packet.position.y-goal.y)<1);
+    assert.equal(O.packetLifetime([],g),12,'an empty route stays bounded');
+  }finally{M.configure(null);}
+});
+test('reference office preserves versioned golden room vectors and targets',()=>{
+  const fs=require('node:fs'),crypto=require('node:crypto'),bytes=fs.readFileSync(require('node:path').join(__dirname,'office-layout.contract.json'));
+  assert.equal(crypto.createHash('sha256').update(bytes.toString('utf8').replace(/^\uFEFF/,'').replace(/\r\n/g,'\n')).digest('hex'),'186e101b4bbf44d75f309443be56318bc42c095a4577c4b58c5772a02bb78599');
+  const golden=JSON.parse(bytes),g=O.layout(),pick=(actual,expected)=>Object.fromEntries(Object.keys(expected).map(key=>[key,actual[key]]));
+  assert.deepEqual({width:g.width,height:g.height},golden.world);
+  assert.deepEqual(g.baselineComputers,golden.baselineComputers);
+  for(const key of ['stationScale','staffScale','ceilingHeight','podPitch'])assert.equal(g[key],golden[key]);
+  assert.equal(g.stations.length,17);
+  for(const [role,count]of Object.entries(golden.baselineComputers))assert.equal(g.stations.filter(s=>s.role===role).length,count);
+  assert.deepEqual(g.rooms.map((room,i)=>pick(room,golden.rooms[i])),golden.rooms);
+  for(const key of ['devops','conference','cafe','breakout','entrance'])assert.deepEqual(pick(g[key],golden[key]),golden[key]);
+  assert.equal(g.stations.some(s=>s.role==='devops'),false,'an unassigned visual room never acquires invented provider work');
+  assert.equal(g.furniture[2],g.conference.tableBounds);
+  for(const seat of g.conferenceSeats)assert.deepEqual(seat.target,g.conference.target);
+  assert.deepEqual(g.props.filter(p=>p.kind==='feature-wall'),golden.featureWalls);
+  const cafe=golden.cafeFurniture,tables=g.props.filter(p=>p.kind==='cafe-table'),chairs=g.props.filter(p=>p.kind==='cafe-chair');assert.equal(tables.length,3);assert.equal(chairs.length,12);
+  for(const [i,[x,y]]of cafe.tableCenters.entries()){assert.deepEqual(tables[i].bounds,[x-cafe.tableRadius,y-cafe.tableRadius,x+cafe.tableRadius,y+cafe.tableRadius]);for(const [j,[dx,dy]]of cafe.chairOffsets.entries()){const chair=chairs[i*4+j];assert.deepEqual(chair.bounds,[x+dx-cafe.chairHalfExtent,y+dy-cafe.chairHalfExtent,x+dx+cafe.chairHalfExtent,y+dy+cafe.chairHalfExtent]);assert.equal(chair.rotation,Math.atan2(-dx,-dy));}}
+  for(const prop of [...tables,...chairs])assert.ok(prop.bounds[0]>=g.cafe.x&&prop.bounds[1]>=g.cafe.y&&prop.bounds[2]<=g.cafe.x+g.cafe.width&&prop.bounds[3]<=g.cafe.y+g.cafe.height,'cafe furniture stays within its room');
+  const expanded=O.layout([...O.roles,'shared'].flatMap(role=>Array.from({length:5},(_,i)=>({id:`${role}-${i}`,role:role==='shared'?null:role,working:true}))));
+  for(const room of expanded.rooms)for(const station of expanded.stations.filter(s=>s.role===room.role)){if(room.role==='shared'){const vector=station.index===0?golden.sharedReception.desk:golden.sharedHotdesks[station.index-1],shift=station.index===0?expanded.height-golden.world.height:expanded.topExtra+expanded.middleExtra;assert.deepEqual(station.desk,{x:vector[0],y:vector[1]+shift});}else{const vector=golden.stationSlots[station.index%golden.regularPodCapacity];assert.equal(station.desk.x,room.x+room.width/2+vector.centerOffset*golden.stationScale);assert.equal(station.desk.y,room.y+vector.regularY+Math.floor(station.index/golden.regularPodCapacity)*golden.podPitch);}}
+  const waiting=O.layout(Array.from({length:19},(_,i)=>({id:`waiting-${i}`,awaitingHuman:true})));
+  for(const seat of waiting.conferenceSeats.slice(8)){const n=seat.index-8,vector=golden.conferenceOverflow;assert.equal(seat.point.x,vector.firstX+n%vector.columns*vector.columnPitch);assert.equal(seat.point.y,waiting.conference.y+vector.firstYOffset+Math.floor(n/vector.columns)*vector.rowPitch);assert.equal(seat.approach.y-seat.point.y,vector.approachOffset);assert.equal(seat.target.y-seat.point.y,vector.targetOffset);}
+});
+test('reference furniture and every destination share reachable authoritative geometry',()=>{
+  const g=O.layout();M.configure(g);
+  try{
+    for(const prop of g.props){const [x,y,r,b]=prop.bounds;assert.equal(M.free((x+r)/2,(y+b)/2),false,`${prop.kind} has a matching collider`);}
+    const targets=[...g.stations.flatMap(s=>[s.point,s.approach]),...g.conferenceSeats.flatMap(s=>[s.point,s.approach]),O.departureTarget(g,'exit'),O.departureTarget(g,'breakout'),g.cafe.point];
+    for(const target of targets){assert.ok(M.free(target.x,target.y),`${JSON.stringify(target)} is clear`);assert.ok(M.path(g.lobby(0),target).length,`${JSON.stringify(target)} reachable`);}
+    for(let i=0;i<32;i++){const start=g.lobby(i);assert.ok(M.free(start.x,start.y));assert.ok(M.path(start,g.entrance.point).length,`arrival ${i} reaches open front door`);}
+  }finally{M.configure(null);}
+});
+test('reference proportions enlarge desk collisions, chairs and monitor projection together',()=>{
+  const g=O.layout(),scene=O.sceneLayout(g);M.configure(g);
+  try{
+    for(const station of g.stations){
+      assert.deepEqual(station.deskBounds,station.reception?g.reception.deskBounds:[station.desk.x-28*g.stationScale,station.desk.y-20*g.stationScale,station.desk.x+28*g.stationScale,station.desk.y+20*g.stationScale]);
+      assert.equal(M.free(station.desk.x+50,station.desk.y),false,'scaled table blocks movement outside the former small footprint');
+      assert.equal(station.point.y-station.desk.y,station.seatOffset*g.stationScale);assert.ok(Math.abs(station.approach.y-station.desk.y-Math.sign(station.seatOffset)*55*g.stationScale)<1e-9);assert.equal(station.seatOffset,station.role!=='shared'&&station.index%4>=2?40:-40);
+      assert.deepEqual(scene.stations.find(s=>s.key===station.key).screen,scene.project(station.desk.x,station.desk.y,projectedScreenHeight(station,g)));
+    }
+    assert.ok(O.assignWorkstations([],[]).every(station=>station.occupant===null),'reference furniture never fabricates employees');
+  }finally{M.configure(null);}
+});
+test('staggered full pods keep scaled seated footprints inside rooms without overlapping tables or chairs',()=>{
+  const actors=[...O.roles,'shared'].flatMap(role=>Array.from({length:11},(_,index)=>({id:`fit-${role}-${index}`,role:role==='shared'?null:role,working:true})));
+  actors.push(...Array.from({length:29},(_,index)=>({id:`fit-question-${index}`,role:'builder',awaitingHuman:true})));
+  const g=O.layout(actors),radius=16*g.staffScale,inside=(bounds,room)=>bounds[0]>=room.x&&bounds[1]>=room.y&&bounds[2]<=room.x+room.width&&bounds[3]<=room.y+room.height;
+  const intersects=(a,b)=>a[0]<b[2]-1e-9&&a[2]>b[0]+1e-9&&a[1]<b[3]-1e-9&&a[3]>b[1]+1e-9;
+  for(const room of g.rooms){const stations=g.stations.filter(s=>s.role===room.role);
+    for(const station of stations){const seated=[station.point.x-radius,station.point.y-radius,station.point.x+radius,station.point.y+radius];
+      assert.ok(inside(station.deskBounds,room),`${station.key} physical desk remains in its department`);
+      assert.ok(inside(seated,room),`${station.key} seated chair and employee remain in their department`);
+      for(const other of stations){assert.equal(intersects(seated,other.deskBounds),false,`${station.key} seated footprint clears ${other.key} table`);if(other.index>station.index){assert.equal(intersects(station.deskBounds,other.deskBounds),false,`${station.key} table clears ${other.key}`);assert.equal(intersects(seated,[other.point.x-radius,other.point.y-radius,other.point.x+radius,other.point.y+radius]),false,`${station.key} seated footprint clears ${other.key} employee`);}}
+    }
+  }
+  const seated=g.conferenceSeats.map(seat=>[seat.point.x-radius,seat.point.y-radius,seat.point.x+radius,seat.point.y+radius]);
+  for(const [index,bounds]of seated.entries()){assert.ok(inside(bounds,g.conference),`conference:${index} footprint stays in conference`);assert.equal(intersects(bounds,g.conference.tableBounds),false,`conference:${index} chair clears table`);for(const other of seated.slice(index+1))assert.equal(intersects(bounds,other),false,'conference chairs remain distinct');}
+});
+test('centered primary stations do not seal narrow-room doorways behind side desks',()=>{
+  const actors=Array.from({length:6},(_,index)=>({id:`narrow-${index}`,role:'reviewer',working:true})),g=O.layout(actors);M.configure(g);
+  try{const door=g.doorways.find(d=>d.roomId==='reviewer').inside;
+    for(const station of g.stations.filter(s=>s.role==='reviewer')){
+      const route=M.path(door,station.point);assert.ok(route.length,`${station.key} can be reached from its actual department doorway`);
+      let worker={position:door,route};for(let frame=0;worker.route.length&&frame<6000;frame++)worker=M.advanceRoute(worker.position,worker.route,O.motionSpeed(g)/60);
+      assert.equal(worker.route.length,0,`${station.key} route actually consumes its waypoints`);assert.ok(Math.hypot(worker.position.x-station.point.x,worker.position.y-station.point.y)<1);
+      assert.ok(M.path(station.point,station.approach).length,`${station.key} help approach remains clear beside a later pod`);
+    }
+  }finally{M.configure(null);}
+});
+test('expanded reference bands retain computers, identities and routes without imposing a worker cap',()=>{
+  const actors=O.roles.flatMap(role=>Array.from({length:11},(_,index)=>({id:`${role}-${index}`,role,working:true,state:'adapter-working'})));
+  actors.push(...Array.from({length:16},(_,index)=>({id:`shared-${index}`,role:null,working:true,state:'adapter-working'})));
+  const seats=O.assignWorkstations(actors,[]),g=O.layout(actors,seats),retained=O.layout([],seats,g.conferenceSeats);
+  assert.equal(g.topExtra,1000);assert.equal(g.middleExtra,3000);assert.equal(g.rightExtra,3000);assert.equal(g.sharedExtra,1500);assert.equal(g.height,7500);
+  assert.equal(new Set(seats.filter(s=>s.occupant).map(s=>s.occupant.id)).size,actors.length);
+  assert.deepEqual(retained.stations,seats.map(({occupant,...seat})=>seat));
+  M.configure(g);
+  try{for(const station of g.stations){assert.ok(M.free(station.point.x,station.point.y),station.key);assert.ok(M.free(station.approach.x,station.approach.y),`${station.key} approach clear`);assert.ok(M.path(station.point,station.approach).length,`${station.key} help approach reachable`);assert.ok(M.path(g.lobby(0),station.point).length,`${station.key} reachable after all bands expand`);}}
+  finally{M.configure(null);}
+});
 test('explicit help visits the exact colleague and handoffs preserve sender role and computer',()=>{
   const helper={id:'session-h',sourceId:'h',provider:'Codex',role:'builder',working:true,action:'helping',targetRef:'b',taskLabel:'Fix checkout'},a={id:'session-a',sourceId:'a',provider:'Other AI',role:'reviewer',working:true},b={...a,id:'session-b',sourceId:'b'};
   const actors=[helper,a,b],seats=O.assignWorkstations(actors,[]),g=O.layout(actors,seats);M.configure(g);
@@ -63,7 +161,7 @@ test('a roleless worker moves to shared space without occupying a specialist des
   const shared={...prior,role:null,working:false,state:'running'};
   const planners=Array.from({length:25},(_,index)=>({id:`session-planner-${index}`,role:'planner',working:true,state:'adapter-working'}));
   const actors=[shared,...planners],seats=O.assignWorkstations(actors,[],priorSeats);
-  assert.equal(seats.find(s=>s.occupant?.id===shared.id).key,'shared:4');
+  assert.equal(seats.find(s=>s.occupant?.id===shared.id).key,'shared:0');
   assert.equal(seats.filter(s=>s.role==='planner').length,25);
   assert.equal(planners.filter(actor=>seats.some(s=>s.occupant?.id===actor.id&&s.role==='planner')).length,25);
 });
@@ -172,10 +270,11 @@ test('a reported activity event supplies a bubble when transcript text is unavai
   assert.equal(O.activityBubble({...actor,recentEvents:[]},now),null,'an open session without an event stays silent');
   assert.equal(O.activityBubble({...actor,working:true},now).speaker,'Latest reported activity');
 });
-test('five computers circle a shared clear workspace in every live department',()=>{
-  const g=O.layout();M.configure(g);
-  try{assert.equal(g.stations.length,35);for(const role of O.roles){const seats=g.stations.filter(s=>s.role===role);assert.equal(seats.length,5);assert.ok(M.free(seats[0].center.x,seats[0].center.y));const room=g.rooms.find(r=>r.role===role);assert.ok(M.free(room.x+160,room.y+30),'door entrance clear');assert.ok(M.free(room.x+115,room.y+30),'space beside first desk through door');
-    for(const seat of seats){assert.ok(Math.abs(Math.hypot(seat.desk.x-seat.center.x,seat.desk.y-seat.center.y)-100)<1e-6);assert.ok(M.free(seat.point.x,seat.point.y));assert.ok(M.path(g.lobby(0),seat.point).length,`${seat.key} seat reachable`);assert.equal(M.free(seat.desk.x,seat.desk.y),false);}}
+test('five workers use connected four-place benches and retain clear approaches in every live department',()=>{
+  const workers=[...O.roles,'shared'].flatMap(role=>Array.from({length:5},(_,i)=>({id:`${role}-${i}`,role:role==='shared'?null:role,working:true,state:'adapter-working'}))),g=O.layout(workers);M.configure(g);
+  try{assert.equal(g.stations.length,35);for(const role of [...O.roles,'shared']){const seats=g.stations.filter(s=>s.role===role);assert.equal(seats.length,5);const room=g.rooms.find(r=>r.role===role);const entry=role==='shared'?g.lobby(0):g.doorways.find(d=>d.roomId===role).inside;assert.ok(M.free(entry.x,entry.y),'authoritative department doorway stays clear');for(const seat of seats)assert.ok(M.path(entry,seat.point).length,`${seat.key} reachable from its own doorway`);
+    if(role==='shared'){assert.equal(seats[0].desk.x,room.x+room.width/2);assert.equal(seats[0].reception,true);assert.ok(seats.slice(1).every(s=>!s.reception));assert.deepEqual(seats.slice(1).map(s=>[s.desk.x,s.desk.y]),require('./office-layout.contract.json').sharedHotdesks.map(([x,y])=>[x,y+g.topExtra+g.middleExtra]));}else{assert.equal(seats[0].desk.x,room.x+room.width/2-28*g.stationScale);assert.equal(seats[0].desk.y,seats[1].desk.y);assert.equal(seats[2].desk.y,seats[3].desk.y);assert.equal(seats[2].desk.y-seats[0].desk.y,40*g.stationScale);assert.equal(seats[4].desk.y-seats[0].desk.y,g.podPitch);}
+    for(const seat of seats){assert.ok(M.free(seat.point.x,seat.point.y));assert.ok(M.free(seat.approach.x,seat.approach.y));assert.ok(M.path(g.lobby(0),seat.point).length,`${seat.key} seat reachable`);assert.equal(M.free(seat.desk.x,seat.desk.y),false);}}
   }finally{M.configure(null);}
 });
 test('every cubicle has a reachable named help and handoff entrance',()=>{
@@ -186,11 +285,11 @@ test('every cubicle has a reachable named help and handoff entrance',()=>{
 });
 test('expanded departments and reception connect all new desks with matching collision geometry',()=>{
   const actors=Array.from({length:8},(_,i)=>({id:`session-${i}`,role:i<5?'builder':'qa',working:true}));
-  const seats=O.assignWorkstations(actors,[]),g=O.layout(actors,seats);assert.equal(g.stations.filter(s=>s.role==='builder').length,5);assert.equal(g.height,990);
+  const seats=O.assignWorkstations(actors,[]),g=O.layout(actors,seats);assert.equal(g.stations.filter(s=>s.role==='builder').length,5);assert.equal(g.height,require('./office-layout.contract.json').world.height+require('./office-layout.contract.json').podPitch);
   M.configure(g);
   try{for(const s of g.stations){assert.equal(M.free(s.point.x,s.point.y),true);assert.ok(M.path(g.lobby(0),s.point).length,`${s.key} reachable`);assert.equal(M.free(s.desk.x,s.desk.y),false);}
     const unknown={role:null,working:true,station:null};assert.deepEqual(O.destination(unknown,0,g),g.lobby(0));assert.ok(M.free(O.destination(unknown,0,g).x,O.destination(unknown,0,g).y));
-    assert.ok(M.path(g.lobby(0),{x:1335,y:470}).length);
+    assert.ok(M.path(g.lobby(0),g.conferenceSeats[0].point).length);
   }finally{M.configure(null);}
   const retained=O.assignWorkstations([],[],seats);assert.equal(retained.filter(s=>s.role==='builder').length,5);
   const all=Array.from({length:210},(_,i)=>({id:String(i),role:'builder'})),large=O.layout(all),full=O.assignWorkstations(all,[]);assert.equal(large.stations.filter(s=>s.role==='builder').length,210);assert.equal(new Set(full.filter(s=>s.occupant).map(s=>s.occupant.id)).size,210);
@@ -240,7 +339,7 @@ test('game presentation projects world positions without changing movement or st
   const origin=v.project(0,0),far=v.project(g.width,g.height),raised=v.project(220,140,45);
   near(origin.x,g.height*slope+40);near(origin.y,80);near(far.x,g.width*slope+40);near(far.y,(g.width+g.height)*.5+80);
   near(raised.x,(220-140+g.height)*slope+40);near(raised.y,(220+140)*.5+80-45);
-  for(const [i,s]of v.stations.entries()){assert.equal(s.key,g.stations[i].key);assert.deepEqual(s.point,g.stations[i].point);assert.deepEqual(s.desk,g.stations[i].desk);assert.deepEqual(s.screen,v.project(s.desk.x,s.desk.y,45));assert.ok(s.screen.x>0&&s.screen.x<v.width&&s.screen.y>0&&s.screen.y<v.height);}
+  for(const [i,s]of v.stations.entries()){assert.equal(s.key,g.stations[i].key);assert.deepEqual(s.point,g.stations[i].point);assert.deepEqual(s.desk,g.stations[i].desk);assert.deepEqual(s.screen,v.project(s.desk.x,s.desk.y,projectedScreenHeight(s,g)));assert.ok(s.screen.x>0&&s.screen.x<v.width&&s.screen.y>0&&s.screen.y<v.height);}
 });
 
 test('planning uses stable unique conference seats and retains home computers across phase changes',()=>{
@@ -249,7 +348,7 @@ test('planning uses stable unique conference seats and retains home computers ac
   try{
     const scene=O.sceneActors(actors,stations,M.free,g);assert.equal(g.conferenceSeats.length,10);assert.equal(new Set(scene.map(a=>a.conferenceSeat.key)).size,10);
     for(const a of scene){assert.ok(a.station);assert.deepEqual(O.destination(a,0,g),a.conferenceSeat.point);assert.ok(M.free(a.conferenceSeat.point.x,a.conferenceSeat.point.y));assert.ok(M.path(g.lobby(0),a.conferenceSeat.point).length);assert.match(O.presentation(a).destination,/Conference room/);}
-    assert.equal(M.free(1340,290),false,'conference table still blocks movement');
+    assert.equal(M.free(g.conference.target.x,g.conference.target.y),false,'conference table still blocks movement');
     const reordered=O.sceneActors([...actors].reverse(),stations,M.free,g,scene);for(const a of reordered)assert.equal(a.conferenceSeat.key,scene.find(old=>old.id===a.id).conferenceSeat.key);
     const changed=actors.map(a=>a.id==='session-plan2'?{...a,action:'coding'}:a),nextStations=O.assignWorkstations(changed,[],stations),nextGeometry=O.layout(changed,nextStations,g.conferenceSeats),next=O.sceneActors(changed,nextStations,M.free,nextGeometry,scene),builder=next.find(a=>a.id==='session-plan2');
     assert.equal(builder.conferenceSeat,null);assert.equal(builder.station.key,scene[2].station.key);assert.deepEqual(O.destination(builder,0,nextGeometry),builder.station.point);assert.equal(nextGeometry.conferenceSeats.length,10,'capacity retained');
@@ -281,7 +380,7 @@ test('orbit projection keeps every physical computer on its own monitor through 
      assert.ok(Math.abs(Math.abs((x.x-p.x)*(y.y-p.y)-(x.y-p.y)*(y.x-p.x))-Math.sqrt(3)/2)<1e-9,'rotating the floor preserves projected area');
      assert.ok(Math.abs(z.y-p.y+1)<1e-9,'Z raises a point by one projected unit');assert.equal(z.x,p.x);
    }
-   for(const station of scene.stations){const physical=g.stations.find(s=>s.key===station.key);assert.deepEqual(station.point,physical.point);assert.deepEqual(station.screen,scene.project(physical.desk.x,physical.desk.y,view==='top-down'?0:45));assert.ok(station.screen.x>0&&station.screen.x<scene.width&&station.screen.y>0&&station.screen.y<scene.height);}
+   for(const station of scene.stations){const physical=g.stations.find(s=>s.key===station.key);assert.deepEqual(station.point,physical.point);assert.deepEqual(station.screen,scene.project(physical.desk.x,physical.desk.y,view==='top-down'?0:projectedScreenHeight(physical,g)));assert.ok(station.screen.x>0&&station.screen.x<scene.width&&station.screen.y>0&&station.screen.y<scene.height);}
    assert.notDeepEqual(scene.project(100,200),scene.project(200,100));
  }
  assert.notDeepEqual(O.sceneLayout(g,'isometric',180).project(100,200),home.project(100,200));
@@ -295,7 +394,7 @@ test('camera elevation changes the floor and Z together without bending room edg
    const floor=scene.project(...point),raised=scene.project(...point,45),outline=[[25,25],[g.width-25,25],[g.width-25,g.height-25],[25,g.height-25]].map(p=>scene.project(...p));
    assert.equal(raised.x,floor.x);assert.ok(raised.y<floor.y);
    for(let i=0;i<2;i++){const a=outline[i],b=outline[(i+1)%4],c=outline[i+2],d=outline[(i+3)%4];assert.ok(Math.abs((b.x-a.x)+(d.x-c.x))<1e-9);assert.ok(Math.abs((b.y-a.y)+(d.y-c.y))<1e-9);}
-   for(const station of scene.stations)assert.deepEqual(station.screen,scene.project(station.desk.x,station.desk.y,45));
+   for(const station of scene.stations)assert.deepEqual(station.screen,scene.project(station.desk.x,station.desk.y,projectedScreenHeight(station,g)));
  }
  assert.ok(high.project(220,140).y!==low.project(220,140).y,'floor pitch changes the projected room position');
  assert.ok(low.project(...point).y-low.project(...point,45).y>high.project(...point).y-high.project(...point,45).y,'walls get shorter as camera looks down');
@@ -307,4 +406,57 @@ test('expanded conference seats and approaches stay clear of collision-backed br
     for(const bounds of [g.breakout.sofa,g.breakout.table]){const [x,y,r,b]=bounds;assert.equal(M.free((x+r)/2,(y+b)/2),false,'rendered lounge equipment blocks walking');assert.ok(y>g.conferenceSeats.at(-1).approach.y);assert.ok(b<g.height-35);}
     const target=O.departureTarget(g,'breakout');assert.ok(M.free(target.x,target.y));assert.ok(M.path(g.conferenceSeats.at(-1).point,target).length,'last meeting chair can reach breakout');
   }}finally{M.configure(null);}
+});
+test('parallel meeting overflow keeps every chair reachable and retained capacity below the work bands',()=>{
+  const actors=Array.from({length:50},(_,index)=>({id:`question-${index}`,role:'builder',working:false,awaitingHuman:true,state:'adapter-waiting'}));
+  const g=O.layout(actors),retained=O.layout([],g.stations,g.conferenceSeats);M.configure(g);
+  try{
+    assert.equal(g.conferenceSeats.length,50);assert.equal(g.conferenceExtra,720);assert.equal(g.middleExtra,720);
+    assert.equal(retained.middleExtra,g.middleExtra);assert.deepEqual(retained.conferenceSeats,g.conferenceSeats);
+    for(const seat of g.conferenceSeats){assert.ok(M.path(g.entrance.point,seat.approach).length,`${seat.key} approach reachable`);assert.ok(M.path(seat.approach,seat.point).length,`${seat.key} can sit`);assert.ok(seat.point.y<g.breakout.y);}
+  }finally{M.configure(null);}
+});
+
+
+test('reference composition centers reception in the hall and keeps small support and Cafe lounge as annexes',()=>{
+  const fs=require('node:fs'),visual=JSON.parse(fs.readFileSync(require('node:path').join(__dirname,'reference-visual.contract.json'),'utf8')),golden=require('./office-layout.contract.json'),g=O.layout();
+  assert.equal(visual.layoutVersion,golden.version);assert.equal(golden.version,8);assert.equal(golden.sharedReception.svgScreenHeight,105.2);assert.equal(golden.sharedReception.nativeScreenHeight,94.2);
+  assert.deepEqual(g.rooms.filter(r=>r.y===60&&r.role!=='shared').map(r=>r.role),visual.composition.rear);
+  const conference=g.conference,cafe=g.cafe;assert.equal(conference.x,cafe.x);assert.ok(conference.y+conference.height<cafe.y);
+  const wing=['reviewer','qa','security'].map(role=>g.rooms.find(r=>r.role===role));assert.ok(wing.every(r=>r.x===1450));for(let i=1;i<wing.length;i++)assert.ok(wing[i].y>wing[i-1].y+wing[i-1].height);
+  assert.equal(g.devops.annex,true);assert.equal(g.breakout.annex,true);assert.equal(g.enclosures.some(r=>r.roomId==='devops'),false);assert.equal(g.enclosures.some(r=>r.roomId==='cafe'),false);
+  const shared=g.rooms.find(r=>r.role==='shared'),development=g.rooms.find(r=>r.role==='builder');assert.equal(shared.annex,true);assert.equal(g.enclosures.some(r=>r.roomId==='shared'),false);assert.ok(g.devops.x>=development.x&&g.devops.y>=development.y&&g.devops.x+g.devops.width<=development.x+development.width&&g.devops.y+g.devops.height<=development.y+development.height);
+  assert.ok(g.breakout.x>=cafe.x&&g.breakout.y>=cafe.y&&g.breakout.x+g.breakout.width<=cafe.x+cafe.width&&g.breakout.y+g.breakout.height<=cafe.y+cafe.height);
+  const hall=g.corridors.find(c=>c.id==='main');assert.equal(hall.width,600);assert.equal(g.entrance.point.x,hall.x+hall.width/2);assert.equal(g.reception.point.x,g.entrance.point.x);assert.equal((g.reception.deskBounds[0]+g.reception.deskBounds[2])/2,g.entrance.point.x);
+  assert.deepEqual(g.props.find(p=>p.kind==='reception-desk').bounds,g.reception.deskBounds);
+  M.configure(g);try{assert.equal(M.free(g.reception.point.x,g.reception.point.y),true);assert.ok(M.path(g.lobby(0),g.reception.point).length);assert.equal(M.free(g.entrance.point.x,(g.reception.deskBounds[1]+g.reception.deskBounds[3])/2),false);for(const x of [950,1350])assert.ok(M.path({x,y:g.height-260},{x,y:g.height-100}).length,'real aisles pass both sides of reception');}finally{M.configure(null);}
+});
+
+
+test('v7 rear cabinets and all38 authored plants preserve whole seated bodies and exact physical bounds',()=>{
+  const golden=require('./office-layout.contract.json'),intersects=(a,b)=>a[0]<b[2]-1e-9&&a[2]>b[0]+1e-9&&a[1]<b[3]-1e-9&&a[3]>b[1]+1e-9;
+  for(const count of [0,5,11]){
+    const actors=count?[...O.roles,'shared'].flatMap(role=>Array.from({length:count},(_,i)=>({id:`furniture-${role}-${i}`,role:role==='shared'?null:role,working:true}))):[],g=O.layout(actors),radius=16*g.staffScale,plants=g.props.filter(p=>p.kind==='plant'),cabinets=g.decorations.filter(p=>p.kind==='bookcase');
+    assert.equal(plants.length,38);assert.equal(cabinets.length,6);
+    const expected=[];for(const room of g.rooms.filter(r=>!r.annex)){for(const [dx,dy]of golden.plants.departmentCorners){const x=room.x+(dx<0?room.width+dx:dx),y=room.y+(dy<0?room.height+dy:dy);expected.push([x-12,y-12,x+12,y+12]);}const cabinet=cabinets.find(p=>p.bounds[0]===room.x+room.width-315&&p.bounds[1]===room.y+5);assert.ok(cabinet);assert.deepEqual(cabinet.bounds,[room.x+room.width-315,room.y+5,room.x+room.width-115,room.y+40]);assert.equal(cabinet.bounds[2]-cabinet.bounds[0],200);assert.equal(cabinet.height,82);}
+    for(const [x,y]of golden.plants.conference){const yy=y+g.topExtra+(y>1000?g.conferenceExtra:0);expected.push([x-12,yy-12,x+12,yy+12]);}
+    for(const [x,y]of golden.plants.cafe){const yy=g.cafe.y+y;expected.push([x-12,yy-12,x+12,yy+12]);}
+    for(const [x,y]of golden.plants.hall){const yy=y+g.topExtra;expected.push([x-12,yy-12,x+12,yy+12]);}
+    assert.deepEqual(plants.map(p=>p.bounds),expected);assert.ok(plants.every(p=>p.foliageHeight>=135&&p.foliageHeight<=150));
+    const blockers=[...g.props,...g.decorations].filter(p=>p.blocking!==false);M.configure(g);try{for(const station of g.stations){const body=[station.point.x-radius,station.point.y-radius,station.point.x+radius,station.point.y+radius];for(const blocker of blockers)assert.equal(intersects(body,blocker.bounds),false,`${station.key} body clears ${blocker.kind}`);assert.ok(M.free(station.point.x,station.point.y));assert.ok(M.free(station.approach.x,station.approach.y));}}finally{M.configure(null);}
+  }
+});
+
+test('public Shared counter and hotdesk pods remain distinct, retained and reachable at capacity boundaries',()=>{
+  const intersects=(a,b)=>a[0]<b[2]-1e-9&&a[2]>b[0]+1e-9&&a[1]<b[3]-1e-9&&a[3]>b[1]+1e-9;
+  for(const count of [1,5,6,10,11,32]){
+    const actors=Array.from({length:count},(_,i)=>({id:`public-${i}`,role:null,working:true,state:'adapter-working'})),assigned=O.assignWorkstations(actors,[]),g=O.layout(actors,assigned),retained=O.layout([],assigned,g.conferenceSeats),shared=g.stations.filter(s=>s.role==='shared'),counter=shared[0],radius=16*g.staffScale;
+    assert.equal(g.topExtra,0,'Shared cannot grow the rear departments');assert.equal(g.sharedExtra,Math.floor((count-1)/5)*500);assert.equal(g.height,2000+g.sharedExtra);assert.equal(g.enclosures.length,7);assert.equal(g.doorways.some(d=>d.roomId==='shared'),false);
+    assert.deepEqual(retained.stations,g.stations);assert.equal(shared.length,count);assert.equal(shared.filter(s=>s.reception).length,1);assert.equal(counter.key,'shared:0');assert.deepEqual(counter.deskBounds,g.reception.deskBounds);assert.deepEqual(counter.desk,{x:1150,y:g.height-195});assert.deepEqual(counter.point,{x:1150,y:g.height-283});assert.deepEqual(counter.approach,{x:1150,y:g.height-316});
+    for(const room of g.rooms.filter(r=>!r.annex)){const base=O.layout().rooms.find(r=>r.role===room.role);assert.deepEqual(room,base,'Shared expansion leaves actual specialist rooms intact');}
+    M.configure(g);try{for(const station of shared){if(station.index){const n=station.index%5,pod=Math.floor(station.index/5);assert.equal(station.reception,undefined);assert.deepEqual(station.desk,{x:[1150,1005,1295,1042,1258][n],y:[1530,1530,1530,1720,1720][n]+pod*500});assert.deepEqual(station.deskBounds,[station.desk.x-61.6,station.desk.y-44,station.desk.x+61.6,station.desk.y+44]);}
+      const body=[station.point.x-radius,station.point.y-radius,station.point.x+radius,station.point.y+radius];for(const other of shared){assert.equal(intersects(body,other.deskBounds),false,`${station.key} seated body clears ${other.key}`);if(other.index>station.index)assert.equal(intersects(station.deskBounds,other.deskBounds),false,'Shared physical desks never overlap');}assert.ok(M.free(station.point.x,station.point.y));assert.ok(M.free(station.approach.x,station.approach.y));}
+      for(const station of [counter,shared.at(-1)]){assert.ok(M.path(g.lobby(0),station.point).length,`${station.key} reachable across new public capacity`);assert.ok(M.path(station.point,station.approach).length,`${station.key} helper approach reachable`);}
+    }finally{M.configure(null);}
+  }
 });

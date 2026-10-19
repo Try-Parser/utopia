@@ -17,12 +17,12 @@
       [x-26,383,x+26,425],[x-13,438,x+13,470]);
   }
   for(const x of [80,360,632]) walls.push([x,130,x+39,205],[x,390,x+39,454]);
-  const baseWalls=walls.slice();let bounds={left:80,top:73,right:1210,bottom:505};
+  const baseWalls=walls.slice();let enclosures=[],bounds={left:80,top:73,right:1210,bottom:505};
   function configure(geometry) {
-    walls.splice(0,walls.length);bounds=geometry?{left:35,top:35,right:geometry.width-35,bottom:geometry.height-35}:{left:80,top:73,right:1210,bottom:505};
+    walls.splice(0,walls.length);enclosures=geometry?.enclosures||[];bounds=geometry?{left:35,top:35,right:geometry.width-35,bottom:geometry.height-35}:{left:80,top:73,right:1210,bottom:505};
     if(!geometry){walls.push(...baseWalls);return;}
-    walls.push(...geometry.furniture.slice(0,3),...geometry.walls,...(geometry.decorations||[]).map(d=>d.bounds));
-    for(const {desk:{x,y}} of geometry.stations)walls.push([x-28,y-20,x+28,y+20]);
+    walls.push(...geometry.furniture.slice(0,3),...geometry.walls,...(geometry.decorations||[]).map(d=>d.bounds),...(geometry.props||[]).filter(p=>p.blocking!==false).map(p=>p.bounds));
+    for(const {desk:{x,y},deskBounds} of geometry.stations)walls.push(deskBounds||[x-30,y-20,x+30,y+20]);
     // Chairs mark intentional sitting positions; desk and shared furniture block walking.
   }
 
@@ -49,6 +49,10 @@
   // A* on the bounded 10px floor grid; tall departments need directed search.
   function path(start, target) {
     if (!free(start.x,start.y) || !free(target.x,target.y)) return [];
+    // A department is a destination, never a shortcut to a different room.
+    const inside=(p,r)=>p.x>r.x&&p.x<r.x+r.width&&p.y>r.y&&p.y<r.y+r.height;
+    const excluded=enclosures.filter(room=>!inside(start,room)&&!inside(target,room));
+    const routeFree=(x,y)=>free(x,y)&&!excluded.some(room=>inside({x,y},room));
     const key = p => `${p.x},${p.y}`;
     // A clear point beside a desk may round into it. Attach each endpoint to
     // the nearest free grid node only when the entire connecting segment is clear.
@@ -58,7 +62,7 @@
         for(let y=Math.floor(p.y/10)*10-10;y<=Math.ceil(p.y/10)*10+10;y+=10) {
           const distance=Math.hypot(x-p.x,y-p.y),steps=Math.max(1,Math.ceil(distance/2));
           let clear=true;
-          for(let i=0;i<=steps;i++) if(!free(p.x+(x-p.x)*i/steps,p.y+(y-p.y)*i/steps)) {clear=false;break;}
+          for(let i=0;i<=steps;i++) if(!routeFree(p.x+(x-p.x)*i/steps,p.y+(y-p.y)*i/steps)) {clear=false;break;}
           if(clear) candidates.push({x,y,distance});
         }
       }
@@ -81,7 +85,7 @@
       }
       for(const [dx,dy] of [[10,0],[-10,0],[0,10],[0,-10]]) {
         const q={x:p.x+dx,y:p.y+dy}, k=key(q),cost=p.g+10;
-        if(free(q.x,q.y) && cost<(costs.get(k)??Infinity)) {costs.set(k,cost);visited.set(k,p);push(q,cost);}
+        if(routeFree(q.x,q.y) && cost<(costs.get(k)??Infinity)) {costs.set(k,cost);visited.set(k,p);push(q,cost);}
       }
     }
     return [];

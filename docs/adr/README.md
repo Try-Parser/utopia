@@ -23,7 +23,16 @@ These records explain the AI department's important choices. Records 0001–0006
 
 | [0015](0015-isometric-office-presentation.md) | Shared world-to-scene projection for a believable office game | Accepted for local implementation | 2026-10-13 |
 | [0016](0016-webgl-office.md) | Local WebGL office with perspective camera and authoritative live agents | Accepted for local implementation | 2026-10-16 |
+| [0017](0017-illustrated-office-employees.md) | Directional illustrated employees inside the authoritative 3D office | Accepted for local implementation | 2026-10-16 |
+| [0018](0018-department-hallways.md) | Separate department rooms with hallway-only circulation | Accepted for local implementation | 2026-10-19 |
+| [0019](0019-conference-inbox.md) | Private human-input questions and explicit adapter reply acknowledgements | Accepted for local implementation | 2026-10-19 |
+| [0020](0020-switchable-office-graphics.md) | Graphics presets share one authoritative live office | Accepted for local implementation | 2026-10-19 |
+| [0021](0021-reference-office-composition.md) | Reference composition controls the actual office geometry and visual acceptance | Accepted for local implementation | 2026-10-19 |
+| [0022](0022-reference-depth-rendering.md) | Painted surfaces and bounded depth shading for the real3D office | Accepted for local implementation | 2026-10-19 |
+| [0023](0023-reference-model-kits.md) | Reference-directed furniture, native chibi models and local room lighting | Accepted for local implementation | 2026-10-19 |
 
 Read the [ADR workflow](../../skills/autonomous-development/references/architecture-decisions.md). For a new material choice, copy the [template](../../skills/autonomous-development/assets/adr-template.md), allocate the next unused number, draft alternatives and consequences, and follow the project's decision authority before changing status to Accepted. Minor fixes under an existing decision do not need another record.
 
 ADRs describe rationale and intended design. Applicable project instructions and versioned contracts still govern execution; investigate disagreements rather than silently overriding them. Records are not proof of live AI quality or authorization to deploy. Preserve accepted rationale and use reciprocal links when a newer accepted record supersedes one.
+| [0024](0024-faithful-reference-reconstruction.md) | Faithful reference reconstruction | Accepted direction |
+| [0025](0025-resource-driven-office-art.md) | Resource-driven office art | Accepted direction |

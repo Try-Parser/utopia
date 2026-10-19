@@ -1,0 +1,222 @@
+{
+  "version": 8,
+  "reference": "exec-bc79bd86-ae63-4001-a628-39e72e19644c.png",
+  "layoutVersion": 8,
+  "referenceKitVersion": 3,
+  "composition": {
+    "rear": [
+      "planner",
+      "designer",
+      "builder"
+    ],
+    "leftWing": [
+      "conference",
+      "cafe"
+    ],
+    "rightWing": [
+      "reviewer",
+      "qa",
+      "security"
+    ],
+    "hall": "central",
+    "reception": "front-center",
+    "support": "public-reception-annex",
+    "frontage": "glazed-with-open-entrance"
+  },
+  "materials": {
+    "rooms": "warm-oak",
+    "hall": "cream-stone-tiles",
+    "walls": "cream-plaster-with-wood-trim",
+    "signs": "navy-wall-plaques",
+    "details": [
+      "plants",
+      "wall-boards",
+      "sconces",
+      "books",
+      "desk-accessories",
+      "cafe-equipment"
+    ],
+    "polished": "quiet pale oak, cream stone and ivory; smooth native chibi and connected four-place benches"
+  },
+  "styles": {
+    "illustrated": "reference-painted-textures-real-depth-shading-and-ink-illustrated-chibi",
+    "polished": "reference-painted-oak-ivory-real-depth-shading-rounded-volumetric-chibi",
+    "pixel": "nearest-pixel-scene-and-chibi-with-native-readable-activity",
+    "low-poly": "warm-oak-cream-architecture-faceted-chibi-and-plants"
+  },
+  "referenceCamera": {
+    "yaw": 290,
+    "elevation": 35,
+    "fov": 18
+  },
+  "baselineComputers": {
+    "planner": 3,
+    "designer": 2,
+    "builder": 4,
+    "reviewer": 2,
+    "qa": 2,
+    "security": 3,
+    "shared": 1
+  },
+  "geometry": {
+    "rearDevelopmentBounds": [
+      1080,
+      60,
+      2300,
+      560
+    ],
+    "enclosures": 7,
+    "regularDeskRows": [
+      170,
+      170,
+      258,
+      258
+    ],
+    "sharedAnnexBounds": [
+      850,
+      1400,
+      1450,
+      1940
+    ],
+    "sharedCounter": {
+      "key": "shared:0",
+      "reception": true,
+      "bounds": [
+        1010,
+        1770,
+        1290,
+        1840
+      ],
+      "desk": [
+        1150,
+        1805
+      ],
+      "svgScreenHeight": 105.2,
+      "nativeScreenHeight": 94.2
+    },
+    "sharedHotdesks": [
+      [
+        1005,
+        1530
+      ],
+      [
+        1295,
+        1530
+      ],
+      [
+        1042,
+        1720
+      ],
+      [
+        1258,
+        1720
+      ]
+    ],
+    "sharedPodPitch": 500,
+    "rearCabinet": {
+      "rightInset": 115,
+      "width": 200,
+      "top": 5,
+      "bottom": 40,
+      "height": 82
+    },
+    "plants": {
+      "potHalfExtent": 12,
+      "foliageHeight": [
+        135,
+        150
+      ],
+      "departmentCorners": [
+        [
+          30,
+          30
+        ],
+        [
+          -30,
+          30
+        ],
+        [
+          30,
+          -30
+        ],
+        [
+          -30,
+          -30
+        ]
+      ],
+      "conference": [
+        [
+          95,
+          740
+        ],
+        [
+          800,
+          740
+        ],
+        [
+          95,
+          1240
+        ],
+        [
+          800,
+          1240
+        ]
+      ],
+      "cafe": [
+        [
+          85,
+          160
+        ],
+        [
+          85,
+          440
+        ],
+        [
+          820,
+          130
+        ],
+        [
+          820,
+          480
+        ],
+        [
+          300,
+          600
+        ],
+        [
+          740,
+          600
+        ]
+      ],
+      "hall": [
+        [
+          900,
+          760
+        ],
+        [
+          1400,
+          760
+        ],
+        [
+          900,
+          1200
+        ],
+        [
+          1400,
+          1200
+        ]
+      ]
+    }
+  },
+  "invariants": [
+    "Reference composition applies to the actual navigable 3D world and SVG fallback, not a static populated backdrop",
+    "Reception counter and all added blocking furniture have authoritative collision bounds",
+    "All four graphic modes preserve actual actors, roles, routes, questions, desk ownership and camera during switching",
+    "Only actual sessions create employees; never fill rooms with fictional workers or conversations",
+    "A visual review compares reference-view desktop and close-up screenshots with the supplied board before delivery",
+    "Pixel art direction keeps native bubbles, controls and private session text readable"
+  ],
+  "renderArtContract": 2,
+  "surfaceAtlas": "assets/office-surfaces-v2.png",
+  "resourcePack": "assets/reference-resources-v1/manifest.json"
+}

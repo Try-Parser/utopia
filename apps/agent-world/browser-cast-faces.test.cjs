@@ -1,0 +1,28 @@
+/* Actual native expression visibility; hiding the expression isolates its GPU contribution. */
+const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),crypto=require('node:crypto'),{spawn}=require('node:child_process'),{chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+const output=process.env.EVIDENCE_DIR||'/tmp/office-cast-faces';fs.mkdirSync(output,{recursive:true});
+const source=fs.readFileSync(path.join(__dirname,'office-3d.js'),'utf8'),start=source.indexOf('function roundedGeometry'),end=source.indexOf('const materials',start);assert.ok(start>=0&&end>start);
+const geometryFactory=source.slice(start,end),castSha256=crypto.createHash('sha256').update(fs.readFileSync(path.join(__dirname,'office-reference-cast.js'))).digest('hex');
+(async()=>{const fixtures=fs.mkdtempSync(path.join(os.tmpdir(),'cast-faces-')),server=spawn('python3',['tests/fixtures/agent_world_server.py',fixtures],{stdio:'pipe'}),errors=[],warnings=[];let browser;
+try{await new Promise((resolve,reject)=>{server.stdout.once('data',resolve);server.once('error',reject);});browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:512,height:512}});
+page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{const text=m.text();if(m.type()==='warning'&&/GPU stall due to ReadPixels/.test(text))warnings.push(text);else if(['error','warning'].includes(m.type())&&/WebGL|THREE|shader|framebuffer|FBO|GL_INVALID/i.test(text))errors.push(text);});
+await page.route('http://127.0.0.1:8787/',r=>r.fulfill({contentType:'text/html',body:'<!doctype html><title>Actual native cast face GPU fixture</title><script src="/vendor/three.min.js"></script><script src="/office-reference-cast.js"></script>'}));
+await page.goto('http://127.0.0.1:8787/');await page.waitForFunction(()=>window.OfficeThree&&window.OfficeReferenceCast?.create);
+const result=await page.evaluate(geometryFactory=>{
+ const T=OfficeThree,geometries=new Function('T',geometryFactory+';return geometries;')(T),materials=new Map(),material=color=>{if(!materials.has(color))materials.set(color,new T.MeshStandardMaterial({color,roughness:.78,metalness:.06}));return materials.get(color);};
+ const mesh=(kind,color,x,y,z,sx,sy,sz,parent)=>{const m=new T.Mesh(geometries[kind],material(color));m.position.set(x,y,z);m.scale.set(sx,sy,sz);parent.add(m);return m;};
+ const kit=OfficeReferenceCast.create({T,mesh,geometries}),renderer=new T.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true});renderer.setSize(512,512);renderer.setClearColor(0x182538,1);renderer.outputColorSpace=T.SRGBColorSpace;document.body.append(renderer.domElement);
+ const scene=new T.Scene(),camera=new T.OrthographicCamera(-22,22,22,-22,.1,200);camera.position.set(0,48.5,100);camera.lookAt(0,48.5,0);scene.add(new T.HemisphereLight(0xffffff,0x708090,2));const sun=new T.DirectionalLight(0xffffff,2);sun.position.set(-20,70,80);scene.add(sun);
+ const gl=renderer.getContext(),pixels=()=>{const p=new Uint8Array(512*512*4);gl.readPixels(0,0,512,512,gl.RGBA,gl.UNSIGNED_BYTE,p);return p;},cases=[];
+ try{for(let profile=0;profile<6;profile++){
+  const body=new T.Group();scene.add(body);const head=profile<3?kit.humanHead(body,profile,0,'#dfb08d',0):kit.robotHead(body,profile,0,0),faces=[];head.traverse(m=>{if(m.isMesh&&m.material.map)faces.push(m);});
+  if(faces.length!==1)throw Error('Expected one actual expression mesh for profile '+profile+', got '+faces.length);
+  const face=faces[0];renderer.render(scene,camera);const visible=pixels(),shown=renderer.domElement.toDataURL('image/png');face.visible=false;renderer.render(scene,camera);const hidden=pixels(),without=renderer.domElement.toDataURL('image/png');
+  let changedPixels=0,mouthChangedPixels=0,maxDelta=0;for(let i=0;i<visible.length;i+=4){const delta=Math.max(Math.abs(visible[i]-hidden[i]),Math.abs(visible[i+1]-hidden[i+1]),Math.abs(visible[i+2]-hidden[i+2]));maxDelta=Math.max(maxDelta,delta);if(delta>12){changedPixels++;const pixel=i/4,x=pixel%512,y=Math.floor(pixel/512);if(profile<3&&x>=232&&x<=280&&y>=178&&y<=211)mouthChangedPixels++;}}
+  cases.push({profile,name:['mica','lilt','brim','quill','tavi','sable'][profile],changedPixels,mouthChangedPixels,maxDelta,facePosition:face.position.toArray(),glError:gl.getError(),shown,without});scene.remove(body);
+ }return{cases,diagnostics:kit.diagnostics()};}finally{kit.dispose();for(const g of Object.values(geometries))g.dispose();for(const m of materials.values())m.dispose();renderer.dispose();renderer.domElement.remove();}
+},geometryFactory);
+for(const c of result.cases){for(const key of ['shown','without']){fs.writeFileSync(path.join(output,c.name+'-'+key+'.png'),Buffer.from(c[key].split(',')[1],'base64'));delete c[key];}console.log('CAST_FACE_PIXELS',JSON.stringify(c));}
+fs.writeFileSync(path.join(output,'cast-faces-result.json'),JSON.stringify({castSha256,...result,errors,warnings},null,2));
+const failures=result.cases.filter(c=>c.changedPixels<=50||c.glError!==0||(c.profile<3&&c.mouthChangedPixels<=8));assert.deepEqual(errors,[],'no actual shader/GL errors');assert.deepEqual(failures,[],'every native expression and each human smile contribute meaningful actual GPU pixels');console.log('PASS: all six authored native expressions and three human smiles visibly contribute actual front-render pixels');
+}finally{if(browser)await browser.close();server.kill();await new Promise(resolve=>{if(server.exitCode!==null)return resolve();server.once('exit',resolve);setTimeout(()=>{server.kill('SIGKILL');resolve();},5000).unref();});fs.rmSync(fixtures,{recursive:true,force:true});}})().catch(error=>{console.error(error);process.exitCode=1;});

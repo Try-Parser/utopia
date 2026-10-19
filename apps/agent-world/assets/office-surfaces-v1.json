@@ -1,0 +1,17 @@
+{
+  "file": "office-surfaces-v1.png",
+  "source": "Original generated artwork; built-in image_gen tool",
+  "sha256": "ec9076b2cd8391b330d185aa96a7c74c1665b3d0309dc4ca402ec558f9a743e6",
+  "layout": [
+    [
+      "warm wood",
+      "woven carpet"
+    ],
+    [
+      "striped cream wall",
+      "daylight window"
+    ]
+  ],
+  "usage": "Surface swatches on interactive native 3D meshes; procedural fallback if unavailable",
+  "prompt": "Use case: stylized-concept. Asset type: a production texture atlas for the surfaces of a cozy illustrated isometric IT office game, not a screenshot or mockup. Create one square high resolution image divided into exactly four equal square quadrants with no gaps, margins, labels or external borders. Each quadrant is a flat, straight-on, orthographic material swatch, with no perspective or objects spilling between quadrants. TOP LEFT: warm honey maple hardwood floor planks, staggered joints, fine painted grain, soft amber edge wear, cozy Japanese management-game illustration finish. TOP RIGHT: cool muted blue-gray office carpet tiles, fine woven threads, subtle seams and handpainted highlights, no checkerboard contrast. BOTTOM LEFT: warm ivory cream wallpaper with tasteful thin sage-gray vertical pinstripes, light painted paper grain; completely flat evenly lit. BOTTOM RIGHT: a large blue daylight office window seen straight on, four panes with slim ivory mullions, gentle glass reflections, soft garden greenery and blue sky visible outside, painterly cel shaded videogame illustration, no text. Entire artwork polished richly detailed hand-painted 2D game material, warm daylight, crisp clean edges, restrained texture. No people, furniture, UI, words, captions, icons, watermark, dark vignette or camera photograph."
+}

@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "questionEndpoint": "/api/sessions/{sessionId}/question",
+  "answerEndpoint": "/api/sessions/{sessionId}/answer",
+  "replyEndpoint": "/api/sessions/{sessionId}/reply",
+  "ackEndpoint": "/api/sessions/{sessionId}/reply/ack",
+  "limits": {"questionText": 8000, "answerText": 4000, "choices": 12, "choiceText": 200, "adapterQuestionId": 80, "retentionSeconds": 300, "freshSeconds": 30},
+  "adapterQuestion": {"id": "question-1", "text": "Which environment should I use?", "choices": ["Development", "Staging"]},
+  "adapterFields": {"awaitingHuman": true, "acceptsReplies": true},
+  "questionExample": {"available": true, "questionId": "11111111111111111111111111111111", "text": "Which environment should I use?", "choices": ["Development", "Staging"], "delivery": "adapter", "answer": null},
+  "answerExample": {"questionId": "11111111111111111111111111111111", "text": "Development"},
+  "replyExample": {"available": true, "id": "22222222222222222222222222222222", "questionId": "11111111111111111111111111111111", "text": "Development"},
+  "ackExample": {"questionId": "11111111111111111111111111111111", "id": "22222222222222222222222222222222"},
+  "rules": [
+    "All question/reply reads and all writes require the discovery token and existing local-origin boundaries",
+    "Heartbeat question and acceptsReplies fields require awaitingHuman true and state waiting; acceptsReplies defaults false",
+    "Public inventory and SSE expose no question or answer body; private reply memory is bounded and never persisted",
+    "Observed local transcript questions remain copy delivery; process presence never creates a question or reply channel",
+    "Answer submission returns queued; explicit matching adapter acknowledgement returns acknowledged; neither clears waiting",
+    "Only subsequent provider activity/heartbeat resolves the waiting employee; new/expired questions reject stale replies",
+    "One answer per current question; identical submissions are idempotent and conflicting answers return 409",
+    "The app never injects keystrokes, edits provider logs, invokes Claude, or spawns a replacement session to claim delivery"
+  ]
+}

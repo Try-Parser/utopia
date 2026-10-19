@@ -4,6 +4,7 @@ Status: Accepted for local implementation
 Decision date: 2026-10-16
 Owner: Local implementation coordinator
 Supersedes: 0015 for the default office presentation
+Extended by: [0017](0017-illustrated-office-employees.md) for illustrated employee surfaces
 
 ## Context
 

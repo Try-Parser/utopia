@@ -1,0 +1,82 @@
+{
+  "version": 3,
+  "reference": "exec-bc79bd86-ae63-4001-a628-39e72e19644c.png",
+  "layoutVersion": 8,
+  "workstations": {
+    "appliesTo": "non-reception desks",
+    "localWidth": 56,
+    "localDepth": 40,
+    "desktopHeight": 28,
+    "monitorAnchor": [
+      0,
+      39,
+      0
+    ],
+    "scaleFrom": "stationScale",
+    "preservePhysicalSeatAndApproach": true,
+    "regularPodCapacity": 4,
+    "arrangement": "touching two-by-two bench, opposing outer seats"
+  },
+  "employees": {
+    "families": [
+      "mica",
+      "lilt",
+      "brim",
+      "quill",
+      "tavi",
+      "sable"
+    ],
+    "kinds": [
+      "human",
+      "human",
+      "human",
+      "robot",
+      "robot",
+      "robot"
+    ],
+    "standingHeight": 64,
+    "headCenter": 48.5,
+    "seatedBodyOffset": [
+      0,
+      -9,
+      6
+    ],
+    "preserveJointAnchorsAndIdentity": true,
+    "ownedGeometryLimit": 15
+  },
+  "interior": {
+    "localLights": 8,
+    "shadowedLocalLights": 0,
+    "galleryFamilies": 6,
+    "frontPlanters": "two blocked frontage strips with entrance kept clear",
+    "noAdditionalActorsOrActivity": true,
+    "ownedGalleryGeometryLimit": 3
+  },
+  "lifecycle": {
+    "resources": "host pooled geometry/materials; finite role-keyed canvas art",
+    "rebuild": "drop old scene references; reuse pooled resources",
+    "disposal": "dispose only kit-owned canvas maps/materials on terminal context/page lifecycle",
+    "fallback": "existing functional renderer if a kit is unavailable"
+  },
+  "acceptance": "Inspect actual in-app renders against the board; successful functional tests do not establish art equivalence",
+  "resources": {
+    "manifest": "assets/reference-resources-v1/manifest.json",
+    "characters": "assets/reference-resources-v1/characters.png",
+    "furniture": "assets/reference-resources-v1/furniture.png",
+    "materials": "assets/reference-resources-v1/materials.png",
+    "materialGrid": [
+      3,
+      2
+    ],
+    "materialKinds": [
+      "plank",
+      "wall",
+      "hall-tile",
+      "fabric",
+      "polymer",
+      "leaf"
+    ],
+    "maxMaterialMaps": 6,
+    "use": "native modeling guides plus actual mesh albedo; no flattened office backdrop"
+  }
+}

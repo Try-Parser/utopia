@@ -1,0 +1,18 @@
+{
+  "file": "office-surfaces-v2.png",
+  "source": "Original reference-directed artwork; built-in image_gen tool",
+  "sha256": "f4742a7b126d957cab01025c8f2046a59a0cd0cdb9bf87313217c83e7c1f1e18",
+  "reference": "exec-bc79bd86-ae63-4001-a628-39e72e19644c.png",
+  "layout": [
+    [
+      "painted golden oak planks",
+      "cream sandstone tiles"
+    ],
+    [
+      "ivory striped plaster",
+      "leafy daylight window"
+    ]
+  ],
+  "usage": "Surface maps on actual interactive3D meshes, never a world backdrop",
+  "prompt": "Use case: game-asset. The attached four-panel office concept board is STYLE REFERENCE ONLY, especially panels A and B. Create ONE production material texture atlas for mapping onto real interactive 3D office meshes, NOT another office scene, NOT a UI mockup. Exactly a 2 by 2 grid of four equally sized square flat orthographic material swatches, edge-to-edge, no borders/margins/gaps/labels. TOP LEFT: rich honey golden oak floor planks, many narrow staggered boards, beautiful stylized hand-painted grain, warm amber seams, subtle cream edge highlights, cozy management-game art exactly like the reference. TOP RIGHT: warm cream sandstone square hallway tiles, subtle softly painted beige grout, ivory edge glints, restrained variation, no objects. BOTTOM LEFT: the reference warm ivory office plaster wallpaper with delicate vertical cream stripes and faint tactile painted brush grain, clean cozy pale wall material, very subtle hue variation; no framing or fixtures. BOTTOM RIGHT: straight-on bright office window texture with slim ivory frame and four glass panes, blue daylight, richly illustrated leafy green garden visible outside, soft cream glass glints, like the reference; no scenery outside this quadrant. Bold deliberate painted shapes, crisp fine drawn details, rich warm/cool contrast, refined Japanese chibi office-management videogame finish. Albedo textures with soft painted richness; no cast shadows, no directional lighting gradient, no scene perspective, no 3D room composition. Entire output is only four flat surface textures. No people, furniture, plants as objects, computers, text, logos, watermarks or captions."
+}

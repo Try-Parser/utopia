@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "mode": "built-in image_gen",
+  "reference": "exec-bc79bd86-ae63-4001-a628-39e72e19644c.png",
+  "intendedUse": "Native 3D modeling guides and six-swatch material albedo; images are not rigged models.",
+  "assets": [
+    {
+      "id": "characters",
+      "prompt": "Use case: stylized-concept. Asset type: production character turnaround resource sheet for rebuilding an interactive 3D office game. Input image: the attached four-panel board is the identity and style reference; use ONLY panel B POLISHED 3D, including its human and robot portrait boxes. Primary request: derive the SAME two character designs from panel B as a clean modeling sheet, not new designs. Landscape sheet with exactly 2 rows by 4 columns on TRUE TRANSPARENT alpha background. TOP ROW: the same full-body chibi human office employee in four views in order front, front three-quarter, exact left profile, exact back. Dark navy swept hair with smooth broad shaped locks, warm peach complexion, large expressive dark eyes, dark navy rectangular glasses, navy office blazer and trousers, white shirt, orange tie/lanyard, small dark shoes. BOTTOM ROW: the same full-body rounded white robot employee, four corresponding views, glossy ivory shell, dark navy inset rounded face screen, two luminous blue oval eyes and tiny friendly mouth, small blue side ear pods, two slim antennas, rounded white torso and short white limbs with restrained cobalt blue joints/chest accent, exactly the reference design. Faithful to panel B's premium smooth soft 3D toy-like chibi proportions, about 2.5 heads tall, large heads and short bodies. Each subject stands in neutral relaxed A-pose with hands slightly clear of torso, identical scale and proportions across its four views; aligned feet and head height per row, all limbs visible, generous clear separation between cells. Use flattering neutral soft studio illumination to show geometry and materials, no cast floor shadow. Every view must depict the SAME individual/outfit/shell, not variants. No office, no furniture, no full scene, no portrait inset, no text, no labels, no borders, no gridlines, no typography, no watermark, no checkerboard painted into the image. This is a transparent reusable character art/modeling resource, not a promise of rigged models. High-resolution crisp silhouettes and clear eyes.",
+      "file": "characters.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "sha256": "73572e91173088102037e20edc5a952ce1c0071dee9adf66370175e54efd7193",
+      "alphaExtrema": [
+        0,
+        254
+      ],
+      "role": "modeling-reference-sheet"
+    },
+    {
+      "id": "furniture",
+      "prompt": "Use case: stylized-concept. Asset type: modular office furniture production resource sheet for modeling a real interactive 3D office. Input image is the exact four-panel office reference; derive furniture ONLY from panel B POLISHED 3D. Create ONE landscape transparent-alpha sprite/modeling resource sheet with exactly 3 columns and 3 rows, nine isolated objects with ample empty transparent gutters and no overlap. Same soft premium 3D rendering, rounded chamfered shapes, pale warm oak/ivory/navy/leaf green palette and coherent orthographic isometric camera in every cell. Row 1 left: the reference's compact paired two-person pale oak computer workbench, ivory drawer supports, two blue-screen dark monitors, two small keyboards and restrained desk accessories, NO chairs or people. Row 1 middle: one navy upholstered ergonomic swivel bucket chair, curved back and short five-wheel base. Row 1 right: the reference's warm oak rounded rectangular conference table, with a small plant and 3 sheets of paper, NO chairs or people. Row 2 left: ivory and pale oak rounded front reception counter, dark inset navy front panel, tiny monitor, no lettering. Row 2 middle: the reference cafe back cabinet with coffee machine, shelves, cups and oak/ivory cupboards, no people. Row 2 right: tall navy-framed oak office bookcase with neatly varied books, small ivory drawer cupboard beside it as one furnishing unit. Row 3 left: tall potted broadleaf indoor plant with multiple slender stems and smooth pointed oval green leaves in an ivory cylindrical pot, not topiary or spheres. Row 3 middle: one modular glass office partition with slim ivory frame and a closed oak door, a transparent glass pane visibly edged with a restrained pale blue tint. Row 3 right: small round pale oak cafe table with three compact matching chairs, as one clearly separated furnishing group. Every object must be the same design language and proportions seen in panel B. Product-like neutral soft illumination, retain natural subtle object self shading, no ground plane or large exterior drop shadows. No room, floor, diagram, UI, text, labels, people, full scene, duplicate objects, border or watermark. TRUE transparent background, no painted checkerboard.",
+      "file": "furniture.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "sha256": "1410869d9ed64e1358867090d53f59a3b9629f1c940a408b91aab487dd6c3423",
+      "alphaExtrema": [
+        0,
+        254
+      ],
+      "role": "modeling-reference-sheet"
+    },
+    {
+      "id": "materials",
+      "prompt": "Use case: stylized-concept. Asset type: production flat albedo texture atlas for the reference panel B polished 3D office. Input image is the four-panel office style board; faithfully derive the surface colors and fine material character ONLY from panel B POLISHED 3D. Create ONE landscape image in a strict 3 columns by 2 rows grid of six equally sized square swatches, perfectly edge-to-edge with no gaps, no margins, no borders and no labels. Each square is a flat straight-on orthographic surface albedo, not a lit 3D material sphere or staged photograph. TOP LEFT: pale warm natural oak long narrow staggered planks with fine restrained grain and subtle tan seams, the softly desaturated honey-beige wood in panel B, not bright orange. TOP MIDDLE: clean warm ivory plaster with extremely subtle vertical cream stripes, matching office partitions. TOP RIGHT: warm cream sandstone large square hallway tiles with very fine beige grout and restrained stone texture. BOTTOM LEFT: tightly woven deep navy upholstery fabric for ergonomic office chairs, very subtle cloth weave. BOTTOM MIDDLE: smooth ivory white painted cabinet/robot polymer, tiny restrained off-white material variation, no gradients. BOTTOM RIGHT: natural broadleaf plant leaf surface, rich clean medium green with subtle branching veins, continuous leaf material texture only, no cutout leaves. These are usable texture source swatches for mapping onto real 3D meshes. Neutral even albedo colors, no directional light, no reflections, no perspective, no cast/baked shadows, no objects, no people, no room, no UI, no text, no logos, no watermark. High-resolution crisp detail, continuous coherent material within every square.",
+      "file": "materials.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "8cb37cac3b8d3a0f5889786258e3818960aff1c2296ba76a074f00903d346d5c",
+      "role": "albedo-atlas"
+    }
+  ]
+}

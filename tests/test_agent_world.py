@@ -1,6 +1,7 @@
 """Observable local checkpoint and HTTP boundary regressions."""
 import importlib.util
 import json
+import hashlib
 from pathlib import Path
 import tempfile
 import threading
@@ -88,14 +89,45 @@ class AgentWorldTests(unittest.TestCase):
                 self.assertIn("frame-ancestors 'none'", response.headers["Content-Security-Policy"])
             with urlopen(base + "/api/runs") as response:
                 self.assertEqual(len(json.load(response)["runs"]), 1)
-            for asset in ("/office-3d.js", "/vendor/three.min.js"):
+            for asset in ("/office-3d.js", "/office-art.js", "/office-reference-interior.js", "/office-reference-cast.js", "/vendor/three.min.js"):
                 with urlopen(base + asset) as response:
                     self.assertEqual(response.status, 200)
                     self.assertIn("text/javascript", response.headers["Content-Type"])
+                    self.assertGreater(len(response.read()), 0)
+            for surface in ("/assets/office-surfaces-v1.png", "/assets/office-surfaces-v2.png", "/assets/reference-resources-v1/materials.png", "/assets/reference-resources-v1/characters.png", "/assets/reference-resources-v1/furniture.png"):
+                with urlopen(base + surface) as response:
+                    self.assertEqual(response.status, 200)
+                    self.assertEqual(response.headers["Content-Type"], "image/png")
+                    self.assertTrue(response.read().startswith(b"\x89PNG\r\n\x1a\n"))
+            with urlopen(base + "/assets/employee-cast-v1.json") as response:
+                self.assertEqual(response.status, 200)
+                self.assertIn("application/json", response.headers["Content-Type"])
+                cast = json.load(response)
+            self.assertEqual({p["id"] for p in cast["profiles"]}, {"mica", "lilt", "brim", "quill", "tavi", "sable"})
+            for profile in cast["profiles"]:
+                with urlopen(base + "/" + profile["image"]) as response:
+                    self.assertEqual(response.headers["Content-Type"], "image/png")
+                    data = response.read()
+                    self.assertEqual(hashlib.sha256(data).hexdigest(), profile["sha256"])
+                    self.assertEqual(data[:8], b"\x89PNG\r\n\x1a\n")
+                    self.assertEqual(int.from_bytes(data[16:20], "big"), profile["width"])
+                    self.assertEqual(int.from_bytes(data[20:24], "big"), profile["height"])
+                    self.assertEqual(data[25], 6, "character PNG preserves RGBA transparency")
+                expected = {(pose, direction) for pose in ("idle", "blink", "walk-a", "walk-b", "type-a", "type-b")
+                            for direction in ("front-right", "front-left", "back-left", "back-right")}
+                self.assertEqual(len(profile["frames"]), 24)
+                self.assertEqual({(f["pose"], f["direction"]) for f in profile["frames"]}, expected)
+                for frame in profile["frames"]:
+                    x, y, width, height = frame["rect"]
+                    self.assertTrue(0 <= x < x + width <= profile["width"])
+                    self.assertTrue(0 <= y < y + height <= profile["height"])
+                    self.assertEqual(frame["anchor"], [width / 2, height])
             for target, headers, status in [("/api/runs", {"Host": "evil.example"}, 403),
                                              ("/api/runs", {"Origin": "https://evil.example"}, 403),
                                              ("/../scripts/agent_world.py", {}, 404),
-                                             ("/vendor/package-lock.json", {}, 404)]:
+                                             ("/vendor/package-lock.json", {}, 404),
+                                             ("/assets/../office-model.js", {}, 404),
+                                             ("/assets/source.png", {}, 404)]:
                 with self.assertRaises(HTTPError) as failure:
                     urlopen(Request(base + target, headers=headers))
                 self.assertEqual(failure.exception.code, status)

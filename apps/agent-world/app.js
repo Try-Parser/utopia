@@ -7,18 +7,26 @@ const $ = id => document.getElementById(id);
 const VIEW_STORAGE='agent-world.office-view.v1';
 const ANGLE_STORAGE='agent-world.office-angle.v1';
 const ELEVATION_STORAGE='agent-world.office-elevation.v1';
+const GRAPHICS_STORAGE='agent-world.graphics.v1',GRAPHICS_STYLES=['illustrated','polished','pixel','low-poly'];
+const REFERENCE_CAMERA={yaw:290,elevation:35};
+let officeGraphics='polished';
+try{const saved=localStorage.getItem(GRAPHICS_STORAGE);if(GRAPHICS_STYLES.includes(saved))officeGraphics=saved;}catch(_){/* Preferences remain usable in memory when storage is blocked. */}
 const state={missions:[],events:[],paused:false};
 let storageAvailable=true;
 let officeView='isometric';
-let officeAngle=0;
-let officeElevation=Math.asin(1/Math.sqrt(3))*180/Math.PI;
-try{const saved=localStorage.getItem(VIEW_STORAGE),angle=Number(localStorage.getItem(ANGLE_STORAGE)),storedElevation=localStorage.getItem(ELEVATION_STORAGE),elevation=Number(storedElevation);if(['isometric','top-down'].includes(saved))officeView=saved;if(Number.isFinite(angle)&&angle>=0&&angle<360)officeAngle=angle;if(storedElevation!==null&&Number.isFinite(elevation)&&elevation>=15&&elevation<=70)officeElevation=elevation;}catch(_){storageAvailable=false;}
+let officeAngle=REFERENCE_CAMERA.yaw;
+let officeElevation=REFERENCE_CAMERA.elevation;
+try{const saved=localStorage.getItem(VIEW_STORAGE),storedAngle=localStorage.getItem(ANGLE_STORAGE),angle=Number(storedAngle),storedElevation=localStorage.getItem(ELEVATION_STORAGE),elevation=Number(storedElevation);if(['isometric','top-down'].includes(saved))officeView=saved;if(storedAngle!==null&&Number.isFinite(angle)&&angle>=0&&angle<360)officeAngle=angle;if(storedElevation!==null&&Number.isFinite(elevation)&&elevation>=15&&elevation<=70)officeElevation=elevation;}catch(_){storageAvailable=false;}
+// An explicit reference link opens the rebuilt native scene without replacing saved preferences.
+if(new URLSearchParams(window.location.search).get('office')==='reference'){
+  officeView='isometric';officeGraphics='polished';officeAngle=REFERENCE_CAMERA.yaw;officeElevation=REFERENCE_CAMERA.elevation;
+}
 let officeCameraPending=false,officeCameraManual=false,cameraRevision=0,cameraScale=1,cameraX=0,cameraY=0;
 let mode = 'office', selected = 'planner', observed = [], observedMessage = 'Connecting to the local checkpoint reader…', pollGeneration = 0;
 function node(tag, className, text) { const n = document.createElement(tag); if (className) n.className = className; if (text !== undefined) n.textContent = text; return n; }
 const codexHelp=node('p','connection-help');codexHelp.id='codex-activity-help';codexHelp.hidden=true;$('office-sidebar').querySelector('.sidebar-body').prepend(codexHelp);
 function announce(text) { $('announcement').textContent = text; }
-function renderCrew(){document.body.dataset.mode='office';$('office-characters').hidden=false;$('office-roster').hidden=false;$('office-hud').hidden=false;$('crew-title').textContent='Observed coworkers';}
+function renderCrew(){document.body.dataset.mode='office';$('office-characters').hidden=false;$('office-roster').hidden=false;$('office-hud').hidden=false;$('crew-title').textContent='Employee profile';$('team-close').textContent='Close profile';}
 function renderMissions() {
   const target = $('missions');
   $('local-section').hidden=mode!=='office'; $('checkpoint-section').hidden=mode!=='office';
@@ -47,7 +55,13 @@ function renderActivity() {
 }
 function render() {
   renderCrew(); renderMissions(); renderActivity();
+  window.OfficeWorldView.setGraphicsStyle(officeGraphics);
   window.OfficeWorldView.sync(mode,S.get(),L.get(),state);
+  document.body.dataset.graphicsStyle=officeGraphics;
+  $('graphics-style').value=officeGraphics;
+  const graphicsFallback=!window.Office3D?.available||window.Office3D.diagnostics().contextLost||officeView==='top-down';
+  $('graphics-fallback').hidden=!graphicsFallback||!['polished','low-poly'].includes(officeGraphics);
+  window.ConferenceInbox.sync();
   if(mode==='office'&&officeCameraPending&&!officeCameraManual&&$('world').classList.contains('zoomed')&&window.OfficeWorldView.getState().length)focusOfficeCamera();
   window.ComputerScreens.sync(mode,L.get(),S.get(),state);
   $('new-mission').disabled=!L.get().enabled;
@@ -95,7 +109,21 @@ function startOffice(){
   window.OfficeWorldView.setElevation(officeElevation);
   L.activate(true,render);S.activate(true,render);pollObserved();render();setOfficeZoom(officePhone.matches,true);
 }
+$('graphics-style').addEventListener('change',event=>{
+  officeGraphics=GRAPHICS_STYLES.includes(event.target.value)?event.target.value:'illustrated';
+  render();
+  const label=$('graphics-style').selectedOptions[0].textContent;
+  $('graphics-state').textContent=`Graphics changed to ${label}.`;
+  try{localStorage.setItem(GRAPHICS_STORAGE,officeGraphics);}catch(_){storageAvailable=false;}
+});
 $('camera-view').addEventListener('change',event=>{
+  if(event.target.value==='reference'){
+    officeView='isometric';officeAngle=REFERENCE_CAMERA.yaw;officeElevation=REFERENCE_CAMERA.elevation;
+    window.OfficeWorldView.setView(officeView);window.OfficeWorldView.setAngle(officeAngle);window.OfficeWorldView.setElevation(officeElevation);
+    render();setOfficeZoom(false);
+    try{localStorage.setItem(VIEW_STORAGE,officeView);localStorage.setItem(ANGLE_STORAGE,String(officeAngle));localStorage.setItem(ELEVATION_STORAGE,String(officeElevation));}catch(_){storageAvailable=false;render();}
+    announce('Reference office view.');return;
+  }
   officeView=event.target.value;window.OfficeWorldView.setView(officeView);render();cameraRevision++;officeCameraManual=true;officeCameraPending=false;
   if($('world').classList.contains('zoomed'))focusOfficeCamera();
   try{localStorage.setItem(VIEW_STORAGE,officeView);}catch(_){storageAvailable=false;render();}
@@ -155,7 +183,7 @@ $('team-close').addEventListener('click',closeInspector);
 $('world').addEventListener('click',event=>{const actor=event.target.closest('.character');if(actor&&mode==='office')showInspector(actor);});
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('team-panel').hidden&&!document.querySelector('dialog[open]')){event.preventDefault();closeInspector();}});
 function focusOfficeCamera() {
-  const v=window.OfficeWorldView.getSceneLayout(),g=window.OfficeWorldView.getLayout(),crew=window.OfficeWorldView.getState(),actor=crew.find(a=>a.working)||crew[0],point=actor||{x:570,y:445+g.topExtra},revision=cameraRevision;
+  const v=window.OfficeWorldView.getSceneLayout(),g=window.OfficeWorldView.getLayout(),crew=window.OfficeWorldView.getState(),actor=crew.find(a=>a.working)||crew[0],point=actor||g.breakout?.point||g.lobby(0),revision=cameraRevision;
   if(actor)officeCameraPending=false;
   requestAnimationFrame(()=>{if(revision!==cameraRevision||mode!=='office'||cameraScale===1||!v.project)return;centerOfficePoint(v.project(point.x,point.y),v);});
 }
@@ -227,3 +255,92 @@ $('mission-title').addEventListener('input', () => $('mission-title').setCustomV
 $('mission-form').addEventListener('submit',async event=>{event.preventDefault();$('launch-mission').disabled=true;$('mission-error').textContent='';try{await L.submit($('mission-title').value,$('mission-brief').value,$('mission-role').value,$('mission-access').value);render();$('mission-dialog').close();event.target.reset();$('work-tray').open=true;setFeedOpen(true);announce('Native task queued.');}catch(error){$('mission-error').textContent=error.message;}finally{$('launch-mission').disabled=false;}});
 startOffice();
 setInterval(()=>{if(!document.hidden)pollObserved();},5000);
+
+/* An original local score; sound starts only from the music controls. */
+(()=>{
+  const menu=$('office-music'),button=$('music-toggle'),slider=$('music-volume');
+  const Audio=window.AudioContext||window.webkitAudioContext,volumeKey='agent-world.music-volume.v1';
+  const bpm=96,sixteenth=60/bpm/4;
+  const chords=[[60,64,67,71],[59,62,67,69],[57,60,64,67],[57,60,64,65],[57,60,62,65],[55,59,62,67],[55,59,64,67],[57,60,64,65]];
+  const bass=[48,43,45,41,50,43,40,41];
+  const melody=[[76,0,79,81,79,0,76,74],[71,0,74,76,74,0,71,67],[72,0,76,79,76,0,74,72],[69,0,72,76,74,0,72,69],[74,0,77,79,77,0,74,72],[71,0,74,79,77,0,74,71],[76,0,79,83,81,0,79,76],[72,0,76,79,76,74,72,0]];
+  let context=null,master=null,tone=null,noise=null,timer=null,step=0,nextAt=0,scheduled=0;
+  let wanted=false,starting=false,generation=0,volume=25,message='';
+  const sources=new Set();
+  try{const raw=localStorage.getItem(volumeKey),saved=Number(raw);if(raw!==null&&raw.trim()!==''&&Number.isFinite(saved)&&saved>=0&&saved<=100)volume=Math.round(saved);}catch(_){}
+  const playing=()=>!!timer&&context?.state==='running'&&!document.hidden;
+  function renderMusic(){
+    const active=playing();slider.value=String(volume);$('music-volume-label').value=`${volume}%`;
+    $('music-state').textContent=!Audio?'Unavailable':starting?'Starting':active?volume?'On':'Muted':wanted?'Paused':'Off';
+    button.textContent=starting||active?'Pause music':wanted?'Resume music':'Play music';
+    button.setAttribute('aria-pressed',String(starting||active));button.disabled=!Audio;slider.disabled=!Audio;
+    $('music-status').textContent=!Audio?'Background music is unavailable in this browser.':message||(!wanted?'Press Play to start.':starting?'Starting your music…':active?volume?'Sunny workday is playing.':'Music is muted.':'Music is paused.');
+  }
+  function halt(){
+    if(timer!==null)clearInterval(timer);timer=null;
+    if(context&&master){const now=context.currentTime;master.gain.cancelScheduledValues(now);master.gain.setTargetAtTime(0,now,.008);for(const source of sources){try{source.stop(now+.03);}catch(_){}}}
+    sources.clear();
+  }
+  function graph(){
+    if(context&&context.state!=='closed')return;
+    context=new Audio();const created=context;master=context.createGain();master.gain.value=0;master.connect(context.destination);
+    tone=context.createBiquadFilter();tone.type='lowpass';tone.frequency.value=2300;tone.Q.value=.35;tone.connect(master);
+    noise=context.createBuffer(1,context.sampleRate,context.sampleRate);const samples=noise.getChannelData(0);let seed=0xdecafbad;
+    for(let i=0;i<samples.length;i++){seed=(Math.imul(seed,1664525)+1013904223)>>>0;samples[i]=seed/2147483648-1;}
+    context.onstatechange=()=>{if(context!==created)return;if(context.state!=='running')halt();renderMusic();};
+  }
+  function finish(source,nodes){sources.add(source);source.onended=()=>{sources.delete(source);for(const node of [source,...nodes])node.disconnect();};}
+  const frequency=midi=>440*2**((midi-69)/12);
+  function note(midi,at,length,level,wave='sine'){
+    const source=context.createOscillator(),gain=context.createGain();source.type=wave;source.frequency.value=frequency(midi);
+    gain.gain.setValueAtTime(.0001,at);gain.gain.linearRampToValueAtTime(level,at+.018);gain.gain.exponentialRampToValueAtTime(.0001,at+length);
+    source.connect(gain);gain.connect(tone);finish(source,[gain]);source.start(at);source.stop(at+length+.02);
+  }
+  function tap(at,hat){
+    const source=context.createBufferSource(),filter=context.createBiquadFilter(),gain=context.createGain();source.buffer=noise;
+    filter.type=hat?'highpass':'bandpass';filter.frequency.value=hat?5400:1600;filter.Q.value=.7;
+    const length=hat?.045:.085;gain.gain.setValueAtTime(.0001,at);gain.gain.linearRampToValueAtTime(hat?.018:.035,at+.004);gain.gain.exponentialRampToValueAtTime(.0001,at+length);
+    source.connect(filter);filter.connect(gain);gain.connect(master);finish(source,[filter,gain]);source.start(at,(step*131%700)/1000);source.stop(at+length+.01);
+  }
+  function kick(at){
+    const source=context.createOscillator(),gain=context.createGain();source.frequency.setValueAtTime(112,at);source.frequency.exponentialRampToValueAtTime(47,at+.14);
+    gain.gain.setValueAtTime(.0001,at);gain.gain.linearRampToValueAtTime(.1,at+.006);gain.gain.exponentialRampToValueAtTime(.0001,at+.2);
+    source.connect(gain);gain.connect(master);finish(source,[gain]);source.start(at);source.stop(at+.22);
+  }
+  function schedule(){
+    if(!wanted||document.hidden||context?.state!=='running')return;
+    const now=context.currentTime;if(nextAt<now-.15)nextAt=now+.04;
+    for(let count=0;nextAt<now+.15&&count<8;count++){
+      const beat=step%16,bar=Math.floor(step/16)%8,phrase=Math.floor(step/128)%4;
+      if(beat===0||beat===8)for(const pitch of chords[bar])note(pitch,nextAt,.95,.034);
+      if([0,6,8,14].includes(beat))note(bass[bar],nextAt,.34,.1);
+      if(beat%2===0){const pitch=melody[bar][beat/2];if(pitch&&!(phrase===3&&bar%2))note(pitch,nextAt,.38,phrase===2?.065:.09,'triangle');}
+      if(beat===0||beat===8)kick(nextAt);if(beat===4||beat===12)tap(nextAt,false);if(beat%4===2)tap(nextAt,true);
+      step=(step+1)%512;scheduled++;nextAt+=sixteenth;
+    }
+  }
+  async function play(){
+    if(!Audio)return;wanted=true;starting=true;message='';const request=++generation;renderMusic();
+    if(document.hidden){starting=false;renderMusic();return;}
+    try{
+      graph();await context.resume();if(request!==generation||!wanted||document.hidden)return;
+      if(context.state!=='running')throw new Error('Audio is paused');
+      halt();master.gain.cancelScheduledValues(context.currentTime);master.gain.setValueAtTime(0,context.currentTime);master.gain.setTargetAtTime(volume/100*.6,context.currentTime,.025);
+      step=0;nextAt=context.currentTime+.05;schedule();timer=setInterval(schedule,75);starting=false;renderMusic();
+    }catch(_){if(request!==generation)return;wanted=false;starting=false;halt();message='Music could not start. Press Play to try again.';renderMusic();}
+  }
+  function pause(keepChoice=false){
+    if(!keepChoice)wanted=false;starting=false;message='';const request=++generation,pausedContext=context;halt();renderMusic();
+    if(pausedContext)setTimeout(()=>{if(request===generation&&context===pausedContext&&pausedContext.state!=='closed')pausedContext.suspend().catch(()=>{});},40);
+  }
+  button.addEventListener('click',()=>{if(starting||playing())pause();else play();});
+  slider.addEventListener('input',()=>{volume=Math.max(0,Math.min(100,Number(slider.value)||0));if(master&&playing())master.gain.setTargetAtTime(volume/100*.6,context.currentTime,.025);try{localStorage.setItem(volumeKey,String(volume));}catch(_){}renderMusic();});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)pause(true);else if(wanted)play();});
+  window.addEventListener('pagehide',event=>{pause(event.persisted);if(!event.persisted&&context){const old=context;context=null;master=null;tone=null;noise=null;old.close().catch(()=>{});}});
+  window.addEventListener('pageshow',event=>{if(event.persisted&&wanted&&!document.hidden)play();});
+  document.addEventListener('pointerdown',event=>{if(menu.open&&!menu.contains(event.target))menu.open=false;});
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&menu.open&&menu.contains(event.target)){event.preventDefault();event.stopPropagation();menu.open=false;menu.querySelector('summary').focus();}},true);
+  menu.addEventListener('focusout',event=>{if(menu.contains(event.relatedTarget))return;setTimeout(()=>{if(menu.open&&!menu.contains(document.activeElement))menu.open=false;},0);});
+  window.OfficeMusic={diagnostics:()=>({available:!!Audio,playing:playing(),wanted,volume,contextState:context?.state||'not-created',schedulerActive:timer!==null,voices:sources.size,scheduledSteps:scheduled})};
+  renderMusic();
+})();
