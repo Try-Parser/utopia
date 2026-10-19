@@ -1,10 +1,10 @@
 const{test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 test('reference composition is a versioned visual requirement for the actual office',()=>{
  const source=fs.readFileSync(path.join(__dirname,'reference-visual.contract.json'),'utf8').replace(/\r\n/g,'\n');
- assert.equal(crypto.createHash('sha256').update(source).digest('hex'),'672cff423b1008b14c022ac2d1b753878927bc9e4a91f4d648b2ace18d0ce349');
+ assert.equal(crypto.createHash('sha256').update(source).digest('hex'),'65c88d99041db0a81d4f41e11952f95ba857bce8f0fe1c24beef25a48a6d30b9');
  const visual=JSON.parse(source),layout=require('./office-layout.contract.json'),office=require('./office-model.js').layout();
- assert.equal(visual.version,8);assert.equal(layout.version,visual.layoutVersion);
- const kitSource=fs.readFileSync(path.join(__dirname,'reference-kit.contract.json'),'utf8').replace(/\r\n/g,'\n');assert.equal(crypto.createHash('sha256').update(kitSource).digest('hex'),'69bbb86800dff75b53540fc6838daccc96f6eeb1eb41e71e57d4980a36c0b522');
+ assert.equal(visual.version,9);assert.equal(layout.version,visual.layoutVersion);
+ const kitSource=fs.readFileSync(path.join(__dirname,'reference-kit.contract.json'),'utf8').replace(/\r\n/g,'\n');assert.equal(crypto.createHash('sha256').update(kitSource).digest('hex'),'f0163780d6edc0ab678707c0fff22bc1939abc0b23a25115dfa8f1c35afec72d');
  const kit=JSON.parse(kitSource);assert.equal(kit.version,visual.referenceKitVersion);assert.equal(kit.layoutVersion,layout.version);
  assert.equal(kit.resources.maxMaterialMaps,6);assert.equal(kit.employees.ownedGeometryLimit,15);assert.deepEqual(kit.resources.materialGrid,[3,2]);assert.equal(kit.interior.localLights,8);assert.equal(kit.interior.shadowedLocalLights,0);assert.equal(kit.interior.galleryFamilies,6);
  assert.deepEqual(kit.employees.families,['mica','lilt','brim','quill','tavi','sable']);assert.deepEqual(kit.employees.kinds,['human','human','human','robot','robot','robot']);
@@ -25,7 +25,7 @@ test('reference composition is a versioned visual requirement for the actual off
  assert.ok(Math.abs(development[0].deskBounds[3]-development[2].deskBounds[1])<.001,'opposing desktop rows meet without an aisle through furniture');
  assert.ok(development[0].point.y<development[0].deskBounds[1]&&development[2].point.y>development[2].deskBounds[3],'employees sit on the two outside edges');
  assert.equal(rooms.shared.annex,true);
- assert.equal(rooms.builder.width,1220);
+ assert.equal(rooms.builder.width,780);
  const counter=office.stations.find(s=>s.key==='shared:0');assert.equal(counter.reception,true);assert.deepEqual(counter.deskBounds,visual.geometry.sharedCounter.bounds);
  assert.deepEqual(visual.referenceCamera,{yaw:290,elevation:35,fov:18});
 });

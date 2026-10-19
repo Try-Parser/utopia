@@ -72,7 +72,7 @@ window.Office3D=(()=>{
     if(!variants.has(graphicsStyle)){
       const value=original.clone(),surface=original.userData.graphicsSurface;
       if(surface&&!['plank','hall-tile','window'].includes(surface.kind)){value.map=null;value.color.set(surface.color);}
-      if(graphicsStyle==='polished'){value.color.lerp(original.color.clone().set('#fff3df'),.12);if(surface&&Object.hasOwn(resourceTiles,surface.kind)){value.map=polishedTexture(surface.kind);value.color.set('#ffffff');}value.roughness=original.transparent?.24:surface?.kind==='polymer'?.3:.68;value.metalness=original.transparent?.08:.015;}
+      if(graphicsStyle==='polished'){value.color.lerp(original.color.clone().set('#fff3df'),.12);if(surface&&Object.hasOwn(resourceTiles,surface.kind)){value.map=polishedTexture(surface.kind);value.color.set('#ffffff');if(surface.kind==='leaf')value.color.set(surface.color).lerp(original.color.clone().set('#ffffff'),.6);}value.roughness=original.transparent?.24:surface?.kind==='polymer'?.3:.68;value.metalness=original.transparent?.08:.015;}
       else{value.roughness=1;value.metalness=0;value.flatShading=true;}
       variants.set(graphicsStyle,value);
     }
@@ -117,7 +117,7 @@ window.Office3D=(()=>{
     const next=graphicsStyles.includes(id)?id:'illustrated';if(next===graphicsStyle)return graphicsStyle;graphicsStyle=next;
     if(contextLost||graphicsDisposed)return graphicsStyle;
     applyGraphicsTree(architecture);for(const worker of workers.values())applyWorkerGraphics(worker);for(const asset of castAssets.values())sampleTexture(asset.texture);referenceInterior?.setStyle(next);
-    const soft=graphicsStyle==='polished',matte=graphicsStyle==='low-poly';hemisphere.intensity=soft?1.2:matte?1.05:.95;sun.intensity=soft?2:matte?2.4:2.45;fill.intensity=soft?.95:matte?.65:.75;renderer.toneMappingExposure=soft?1.02:1;
+    const soft=graphicsStyle==='polished',matte=graphicsStyle==='low-poly';hemisphere.intensity=soft?.72:matte?.9:.85;sun.intensity=soft?2.8:matte?2.4:2.45;fill.intensity=soft?.48:matte?.65:.65;renderer.toneMappingExposure=soft?1.06:1;
     canvas.style.imageRendering=graphicsStyle==='pixel'?'pixelated':'';lastSize='';renderer.shadowMap.needsUpdate=true;dirty=true;return graphicsStyle;
   }
   function disposeGraphicsMaterial(original){const variants=graphicsMaterials.get(original);if(variants){for(const value of variants.values())value.dispose();graphicsMaterials.delete(original);}}
@@ -310,7 +310,7 @@ window.Office3D=(()=>{
     const cap=box('#f7e7c9',cx,cz,width+4,depth+4,4,height-4),rail=box('#b99b6a',cx,cz,width+1,depth+1,2,29);
     box('#e4d2af',cx,cz,width+1,depth+1,18,6);
     box('#8a6c47',cx,cz,width+2,depth+2,1,7);
-    for(const detail of [m,cap,rail]){detail.userData.dynamic=true;detail.castShadow=false;}
+    for(const detail of [m,cap,rail]){detail.userData.dynamic=true;detail.castShadow=true;}
     return {mesh:m,cap,rail,vertical};
   }
   function sizeWall(wall,height){wall.mesh.scale.y=height;wall.mesh.position.y=height/2;wall.cap.position.y=height-1.5;wall.rail.visible=height>30;}
@@ -353,16 +353,34 @@ window.Office3D=(()=>{
     const [x,z,r,b]=bounds,width=r-x,depth=b-z,group=new T.Group(),front=depth>width,span=front?depth:width,thickness=front?width:depth,role=layout.rooms.find(room=>x>=room.x&&r<=room.x+room.width&&z>=room.y&&b<=room.y+room.height)?.role,edition=Math.max(0,window.OfficeWorld.roles.indexOf(role))%3;group.position.set((x+r)/2,0,(z+b)/2);if(front)group.rotation.y=Math.PI/2;architecture.add(group);
     const shade=contactShadow(group,width+25,depth+24,2.15);shade.rotation.z=front?Math.PI/2:0;
     softBox('#28394e',0,-thickness/2+1.5,span,3,height,0,group);for(const sx of [-span/2+2,span/2-2,-span*.165,span*.17])softBox('#28394e',sx,0,4,thickness,height,0,group);
-    for(const h of [2,height*.49,height-3])softBox('#d4b782',0,0,span,thickness,3,h,group).material=surface('plank','#dfc599');
+    const levels=height>105?3:2,shelfPitch=(height-8)/levels;
+    for(let shelf=0;shelf<=levels;shelf++)softBox('#d4b782',0,0,span,thickness,3,2+shelf*shelfPitch,group).material=surface('plank','#dfc599');
     const doorX=span*.335,doorWidth=span*.32;softBox(['#eee5d0','#e5e8d9','#f2e6d6'][edition],doorX,thickness/2-1,doorWidth-4,2,height-10,5,group);box('#967b51',doorX-doorWidth*.27,thickness/2+.5,3,1,11,height*.48,group);
     if(edition===1){box('#d3c6aa',doorX,thickness/2+.4,doorWidth-8,.5,1,height*.5,group);box('#967b51',doorX-doorWidth*.27,thickness/2+.6,3,1,7,height*.22,group);}
     const palette=[['#5b8994','#c9a569','#a4776c','#7e8d76'],['#9c849f','#8faea1','#c6ab75','#6c899a'],['#708d9e','#b7a467','#859b7a','#ad8172']][edition];
-    for(const bay of [-.33,0])for(let shelf=0;shelf<2;shelf++)for(let j=0;j<6;j++){const bx=span*bay-span*.135+7+j*(span*.27-14)/5,bookHeight=19+(j*3+shelf*5+edition)%9,base=shelf?height*.49+3:5;box(palette[(j+shelf)%palette.length],bx,thickness/2-7,5.5,11,bookHeight,base,group);box('#efe3bd',bx,thickness/2-.9,3.8,.4,1.2,base+bookHeight-4,group);}
+    const books=Math.max(3,Math.floor(span*.27/8));
+    for(const bay of [-.33,0])for(let shelf=0;shelf<levels;shelf++)for(let j=0;j<books;j++){const bx=span*bay-span*.135+6+j*(span*.27-12)/Math.max(1,books-1),bookHeight=19+(j*3+shelf*5+edition)%9,base=5+shelf*shelfPitch;box(palette[(j+shelf)%palette.length],bx,thickness/2-7,5.5,11,bookHeight,base,group);box('#efe3bd',bx,thickness/2-.9,3.8,.4,1.2,base+bookHeight-4,group);}
   }
   function sofa(bounds,rotation=0){const [x,z,r,b]=bounds,width=r-x,depth=b-z,group=new T.Group();group.position.set((x+r)/2,0,(z+b)/2);group.rotation.y=rotation;group.scale.y=layout.staffScale||1;architecture.add(group);for(const sx of [-width/2+10,width/2-10])for(const sz of [-depth/2+9,depth/2-9])box('#82715c',sx,sz,5,5,8,0,group);softBox('#b5a58c',0,0,width,depth,11,8,group);softBox('#e4d8b9',0,depth/2-4,width,8,35,8,group);const cushion=(width-24)/3;for(let i=0;i<3;i++){const sx=-width/2+12+cushion*(i+.5);softBox('#e9dec1',sx,-3,cushion-2,depth-15,6,19,group).material=surface('fabric','#eee2bd');softBox('#e2d5b6',sx,depth/2-10,cushion-2,6,21,22,group).material=surface('fabric','#e8d9b4');}for(const sx of [-width/2+5,width/2-5])softBox('#e4d8b9',sx,0,10,depth,25,8,group);for(const [sx,color,tilt]of [[-width/2+25,'#90a798',.13],[width/2-25,'#c59b76',-.16]]){const pillow=softBox(color,sx,depth/2-17,22,10,18,26,group);pillow.material=surface('fabric',color);pillow.rotation.z=tilt;}}
   function verticalGroup(){const group=new T.Group();group.scale.y=layout.staffScale||1;architecture.add(group);return group;}
   function coffeeTable(bounds){const [x,z,r,b]=bounds,cx=(x+r)/2,cz=(z+b)/2,group=verticalGroup();for(const sx of [x+8,r-8])for(const sz of [z+8,b-8])box('#897355',sx,sz,4,4,15,0,group);softBox('#ac8d63',cx,cz,r-x,b-z,3,15,group);box('#efe2bd',cx-12,cz,20,14,1,18,group);box('#76938b',cx-12,cz,20,14,.6,19,group);cup(r-14,b-12,18,'#f2e4cb',group);}
-  function cafeCounter(bounds){const [x,z,r,b]=bounds,width=r-x,depth=b-z,cx=(x+r)/2,cz=(z+b)/2,group=verticalGroup(),shade=contactShadow(group,width+30,depth+25);shade.position.x=cx;shade.position.z=cz;box('#a68761',cx,cz,width,depth,32,0,group);softBox('#edddbc',cx,cz,width,depth,3,32,group);const panels=Math.max(2,Math.floor(width/36));for(let i=0;i<panels;i++){const px=x+(i+.5)*width/panels;box('#bd9a68',px,z+.7,width/panels-3,1,25,3,group);box('#786f5d',px,z+.1,8,.8,1,24,group);}const mx=x+Math.min(32,width*.25),mz=z+Math.min(14,depth*.5);softBox('#42626a',mx,mz,26,14,20,35,group);box('#c5c9b9',mx,mz+7.3,20,1,11,41,group);box('#304c57',mx,mz+8,11,.5,6,45,group);box('#819892',mx,mz+12,23,6,1,35,group);cup(mx,mz+11,36,'#f2e4cb',group);for(let i=0;i<Math.min(4,Math.floor((width-50)/18));i++)cup(x+55+i*18,cz,35,['#dfcda5','#bfcfbd'][i%2],group);}
+  function cafeCounter(bounds){
+    const [x,z,r,b]=bounds,width=r-x,depth=b-z,cx=(x+r)/2,cz=(z+b)/2,group=verticalGroup(),shade=contactShadow(group,width+30,depth+25);shade.position.x=cx;shade.position.z=cz;
+    softBox('#a88758',cx,cz,width,depth,32,0,group).material=surface('plank','#bf9866');
+    softBox('#f4ebd5',cx,cz,width,depth,3,32,group).material=surface('polymer','#f4ebd5');
+    const panels=Math.max(2,Math.floor(width/44));
+    for(let i=0;i<panels;i++){const px=x+(i+.5)*width/panels;softBox('#c39962',px,b-.8,width/panels-3,1.4,25,3,group).material=surface('plank','#c39962');box('#5e594b',px,b+.1,8,.8,1,24,group);}
+    const mx=x+Math.min(36,width*.25),mz=z+Math.min(17,depth*.45);
+    // Espresso machine, twin group heads and bean hoppers face the cafe.
+    softBox('#243a51',mx,mz,34,21,21,35,group);softBox('#d6d9cf',mx,mz+11,31,1.8,13,39,group).material=surface('polymer','#d6d9cf');
+    softBox('#21384b',mx,mz+12.1,21,.6,5,48,group);box('#7a8a8b',mx,mz+14,30,9,1.4,35,group);
+    for(const dx of [-8,8]){mesh('cylinder','#acb7b3',mx+dx,42,mz+12,2.6,3,2.6,group);cup(mx+dx,mz+14,36,'#eee5cd',group,.8);}
+    for(const dx of [-8,8]){mesh('cylinder','#66513c',mx+dx,59,mz,4.2,7,4.2,group);mesh('cylinder','#263b4b',mx+dx,63,mz,4.6,1,4.6,group);}
+    const jarX=Math.min(r-14,mx+45);
+    mesh('cylinder','#aa9470',jarX,41,cz,5,12,5,group);mesh('cylinder','#536e78',jarX,47.3,cz,5.4,1.1,5.4,group);box('#f4e9cf',jarX,b-.2,6,.5,4,39,group);
+    for(let i=0;i<Math.min(4,Math.floor((width-110)/18));i++){const px=mx+67+i*18;cup(px,cz,35,['#e2c58e','#89a5a0','#eee4d1'][i%3],group);}
+    const trayX=r-29;softBox('#dbc8a0',trayX,cz,35,24,.7,35,group);for(const dx of [-8,7])for(const dz of [-5,5])mesh('sphere','#cb9252',trayX+dx,37.5,cz+dz,5.5,2.1,3.2,group);
+  }
   function receptionDesk(bounds){
     const [x,z,r,b]=bounds,width=r-x,depth=b-z,cx=(x+r)/2,cz=(z+b)/2,group=verticalGroup(),top=70/(layout.staffScale||1),shade=contactShadow(group,width+34,depth+28);shade.position.x=cx;shade.position.z=cz;
     softBox('#947044',cx,cz,width,depth,top-4,1,group);softBox('#f0e3c8',cx,cz+1,width-5,depth-3,top-8,5,group).material=surface('polymer','#f0e3c8');softBox('#fff0d2',cx,cz,width,depth,3,top-3,group).material=surface('plank','#e8c99a');inkEdge(cx,cz,width-2,depth-2,top+.1,group);
@@ -496,7 +514,7 @@ window.Office3D=(()=>{
     // Foliage is authored by model props; no untracked corner pots are added here.
     sofa(g.breakout.sofa);coffeeTable(g.breakout.table);
     if(g.entrance){const mat=mesh('plane','#ffffff',g.entrance.x+g.entrance.width/2,2.1,g.height-80,110,25,1);mat.rotation.x=-Math.PI/2;mat.material=plaqueMaterial('Welcome');}
-    for(const wall of [...walls,...roomWalls]){wall.mesh.userData.dynamic=true;wall.mesh.castShadow=false;}
+    for(const wall of [...walls,...roomWalls]){wall.mesh.userData.dynamic=true;wall.mesh.castShadow=true;}
     for(const board of boards){board.userData.dynamic=true;board.traverse(m=>{m.castShadow=false;});}
     for(const wall of walls)for(const window of wall.windows)window.traverse(m=>{m.castShadow=false;});
     batchFurniture();applyGraphicsTree(architecture);const radius=Math.max(g.width,g.height)*.7;Object.assign(sun.shadow.camera,{left:-radius,right:radius,top:radius,bottom:-radius,near:1,far:Math.max(5000,radius*4)});sun.target.position.set(g.width/2,0,g.height/2);sun.position.set(g.width/2-450,1600,g.height/2+300);sun.shadow.camera.updateProjectionMatrix();renderer.shadowMap.needsUpdate=true;dirty=true;
@@ -524,7 +542,7 @@ window.Office3D=(()=>{
     for(const glazing of glazings)glazing.group.scale.y=(glazing.facade?.75:cut(glazing.vertical?dx:dz))*(g.ceilingHeight||85)/85;
     for(const board of boards){const factor=cut(sideDepth(board.userData.side)??(board.userData.vertical?dx:dz));if(board.userData.doorFrame){board.scale.y=factor;board.visible=true;continue;}board.visible=factor>.7&&(!board.userData.requiredHeight||factor*g.ceilingHeight>=board.userData.requiredHeight);if(board.userData.followCap)board.position.y=board.userData.authoredY-(g.ceilingHeight||85)*(1-factor);}
     for(const wall of walls){const factor=cut(({north:dz,south:-dz,west:dx,east:-dx})[wall.side]),height=(g.ceilingHeight||85)*factor;sizeWall(wall,height);for(const window of wall.windows)window.visible=height>(g.ceilingHeight||85)*.76;}
-    scene.updateMatrixWorld(true);dirty=true;
+    scene.updateMatrixWorld(true);renderer.shadowMap.needsUpdate=true;dirty=true;
     return {...base,backend:'webgl',project,stations:g.stations.map(s=>{const quad=monitorQuad(s),m=monitors.get(s.key),position=m.screen.getWorldPosition(new T.Vector3()),screen=project(position.x,position.z,position.y),normal=new T.Vector3(0,0,1).transformDirection(m.screen.matrixWorld),toward=camera.position.clone().sub(position);return {...s,screen,screenQuad:quad,frontFacing:normal.dot(toward)>0};})};
   }
   function humanHead(body,profile,edition,skin,trait){

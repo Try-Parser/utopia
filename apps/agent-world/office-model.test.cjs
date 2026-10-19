@@ -20,7 +20,7 @@ test('scaled movement and handoff budgets complete actual routes across expanded
 });
 test('reference office preserves versioned golden room vectors and targets',()=>{
   const fs=require('node:fs'),crypto=require('node:crypto'),bytes=fs.readFileSync(require('node:path').join(__dirname,'office-layout.contract.json'));
-  assert.equal(crypto.createHash('sha256').update(bytes.toString('utf8').replace(/^\uFEFF/,'').replace(/\r\n/g,'\n')).digest('hex'),'186e101b4bbf44d75f309443be56318bc42c095a4577c4b58c5772a02bb78599');
+  assert.equal(crypto.createHash('sha256').update(bytes.toString('utf8').replace(/^\uFEFF/,'').replace(/\r\n/g,'\n')).digest('hex'),'bcc33f7a9581f426099dc85a7a06166183a3f7edc6bd57eb6404188b8475f340');
   const golden=JSON.parse(bytes),g=O.layout(),pick=(actual,expected)=>Object.fromEntries(Object.keys(expected).map(key=>[key,actual[key]]));
   assert.deepEqual({width:g.width,height:g.height},golden.world);
   assert.deepEqual(g.baselineComputers,golden.baselineComputers);
@@ -56,7 +56,7 @@ test('reference proportions enlarge desk collisions, chairs and monitor projecti
     for(const station of g.stations){
       assert.deepEqual(station.deskBounds,station.reception?g.reception.deskBounds:[station.desk.x-28*g.stationScale,station.desk.y-20*g.stationScale,station.desk.x+28*g.stationScale,station.desk.y+20*g.stationScale]);
       assert.equal(M.free(station.desk.x+50,station.desk.y),false,'scaled table blocks movement outside the former small footprint');
-      assert.equal(station.point.y-station.desk.y,station.seatOffset*g.stationScale);assert.ok(Math.abs(station.approach.y-station.desk.y-Math.sign(station.seatOffset)*55*g.stationScale)<1e-9);assert.equal(station.seatOffset,station.role!=='shared'&&station.index%4>=2?40:-40);
+      assert.equal(station.point.y-station.desk.y,station.seatOffset*g.stationScale);assert.ok(Math.abs(station.approach.y-station.desk.y-Math.sign(station.seatOffset)*46*g.stationScale)<1e-9);assert.equal(station.seatOffset,station.role!=='shared'&&station.index%4>=2?36:-36);
       assert.deepEqual(scene.stations.find(s=>s.key===station.key).screen,scene.project(station.desk.x,station.desk.y,projectedScreenHeight(station,g)));
     }
     assert.ok(O.assignWorkstations([],[]).every(station=>station.occupant===null),'reference furniture never fabricates employees');
@@ -92,7 +92,7 @@ test('expanded reference bands retain computers, identities and routes without i
   const actors=O.roles.flatMap(role=>Array.from({length:11},(_,index)=>({id:`${role}-${index}`,role,working:true,state:'adapter-working'})));
   actors.push(...Array.from({length:16},(_,index)=>({id:`shared-${index}`,role:null,working:true,state:'adapter-working'})));
   const seats=O.assignWorkstations(actors,[]),g=O.layout(actors,seats),retained=O.layout([],seats,g.conferenceSeats);
-  assert.equal(g.topExtra,1000);assert.equal(g.middleExtra,3000);assert.equal(g.rightExtra,3000);assert.equal(g.sharedExtra,1500);assert.equal(g.height,7500);
+  assert.equal(g.topExtra,1000);assert.equal(g.middleExtra,3000);assert.equal(g.rightExtra,3000);assert.equal(g.sharedExtra,1500);assert.equal(g.height,7400);
   assert.equal(new Set(seats.filter(s=>s.occupant).map(s=>s.occupant.id)).size,actors.length);
   assert.deepEqual(retained.stations,seats.map(({occupant,...seat})=>seat));
   M.configure(g);
@@ -420,25 +420,25 @@ test('parallel meeting overflow keeps every chair reachable and retained capacit
 
 test('reference composition centers reception in the hall and keeps small support and Cafe lounge as annexes',()=>{
   const fs=require('node:fs'),visual=JSON.parse(fs.readFileSync(require('node:path').join(__dirname,'reference-visual.contract.json'),'utf8')),golden=require('./office-layout.contract.json'),g=O.layout();
-  assert.equal(visual.layoutVersion,golden.version);assert.equal(golden.version,8);assert.equal(golden.sharedReception.svgScreenHeight,105.2);assert.equal(golden.sharedReception.nativeScreenHeight,94.2);
+  assert.equal(visual.layoutVersion,golden.version);assert.equal(golden.version,9);assert.equal(golden.sharedReception.svgScreenHeight,110);assert.equal(golden.sharedReception.nativeScreenHeight,97.5);
   assert.deepEqual(g.rooms.filter(r=>r.y===60&&r.role!=='shared').map(r=>r.role),visual.composition.rear);
   const conference=g.conference,cafe=g.cafe;assert.equal(conference.x,cafe.x);assert.ok(conference.y+conference.height<cafe.y);
-  const wing=['reviewer','qa','security'].map(role=>g.rooms.find(r=>r.role===role));assert.ok(wing.every(r=>r.x===1450));for(let i=1;i<wing.length;i++)assert.ok(wing[i].y>wing[i-1].y+wing[i-1].height);
+  const wing=['reviewer','qa','security'].map(role=>g.rooms.find(r=>r.role===role));assert.ok(wing.every(r=>r.x===1150));for(let i=1;i<wing.length;i++)assert.ok(wing[i].y>wing[i-1].y+wing[i-1].height);
   assert.equal(g.devops.annex,true);assert.equal(g.breakout.annex,true);assert.equal(g.enclosures.some(r=>r.roomId==='devops'),false);assert.equal(g.enclosures.some(r=>r.roomId==='cafe'),false);
   const shared=g.rooms.find(r=>r.role==='shared'),development=g.rooms.find(r=>r.role==='builder');assert.equal(shared.annex,true);assert.equal(g.enclosures.some(r=>r.roomId==='shared'),false);assert.ok(g.devops.x>=development.x&&g.devops.y>=development.y&&g.devops.x+g.devops.width<=development.x+development.width&&g.devops.y+g.devops.height<=development.y+development.height);
   assert.ok(g.breakout.x>=cafe.x&&g.breakout.y>=cafe.y&&g.breakout.x+g.breakout.width<=cafe.x+cafe.width&&g.breakout.y+g.breakout.height<=cafe.y+cafe.height);
-  const hall=g.corridors.find(c=>c.id==='main');assert.equal(hall.width,600);assert.equal(g.entrance.point.x,hall.x+hall.width/2);assert.equal(g.reception.point.x,g.entrance.point.x);assert.equal((g.reception.deskBounds[0]+g.reception.deskBounds[2])/2,g.entrance.point.x);
+  const hall=g.corridors.find(c=>c.id==='main');assert.equal(hall.width,440);assert.equal(g.entrance.point.x,hall.x+hall.width/2);assert.equal(g.reception.point.x,g.entrance.point.x);assert.equal((g.reception.deskBounds[0]+g.reception.deskBounds[2])/2,g.entrance.point.x);
   assert.deepEqual(g.props.find(p=>p.kind==='reception-desk').bounds,g.reception.deskBounds);
-  M.configure(g);try{assert.equal(M.free(g.reception.point.x,g.reception.point.y),true);assert.ok(M.path(g.lobby(0),g.reception.point).length);assert.equal(M.free(g.entrance.point.x,(g.reception.deskBounds[1]+g.reception.deskBounds[3])/2),false);for(const x of [950,1350])assert.ok(M.path({x,y:g.height-260},{x,y:g.height-100}).length,'real aisles pass both sides of reception');}finally{M.configure(null);}
+  M.configure(g);try{assert.equal(M.free(g.reception.point.x,g.reception.point.y),true);assert.ok(M.path(g.lobby(0),g.reception.point).length);assert.equal(M.free(g.entrance.point.x,(g.reception.deskBounds[1]+g.reception.deskBounds[3])/2),false);for(const x of [750,1110])assert.ok(M.path({x,y:g.height-260},{x,y:g.height-100}).length,'real aisles pass both sides of reception');}finally{M.configure(null);}
 });
 
 
-test('v7 rear cabinets and all38 authored plants preserve whole seated bodies and exact physical bounds',()=>{
+test('compact rear cabinets and all38 authored plants preserve whole seated bodies and exact physical bounds',()=>{
   const golden=require('./office-layout.contract.json'),intersects=(a,b)=>a[0]<b[2]-1e-9&&a[2]>b[0]+1e-9&&a[1]<b[3]-1e-9&&a[3]>b[1]+1e-9;
   for(const count of [0,5,11]){
     const actors=count?[...O.roles,'shared'].flatMap(role=>Array.from({length:count},(_,i)=>({id:`furniture-${role}-${i}`,role:role==='shared'?null:role,working:true}))):[],g=O.layout(actors),radius=16*g.staffScale,plants=g.props.filter(p=>p.kind==='plant'),cabinets=g.decorations.filter(p=>p.kind==='bookcase');
     assert.equal(plants.length,38);assert.equal(cabinets.length,6);
-    const expected=[];for(const room of g.rooms.filter(r=>!r.annex)){for(const [dx,dy]of golden.plants.departmentCorners){const x=room.x+(dx<0?room.width+dx:dx),y=room.y+(dy<0?room.height+dy:dy);expected.push([x-12,y-12,x+12,y+12]);}const cabinet=cabinets.find(p=>p.bounds[0]===room.x+room.width-315&&p.bounds[1]===room.y+5);assert.ok(cabinet);assert.deepEqual(cabinet.bounds,[room.x+room.width-315,room.y+5,room.x+room.width-115,room.y+40]);assert.equal(cabinet.bounds[2]-cabinet.bounds[0],200);assert.equal(cabinet.height,82);}
+    const expected=[];for(const room of g.rooms.filter(r=>!r.annex)){for(const [dx,dy]of golden.plants.departmentCorners){const x=room.x+(dx<0?room.width+dx:dx),y=room.y+(dy<0?room.height+dy:dy);expected.push([x-12,y-12,x+12,y+12]);}const cabinet=cabinets.find(p=>p.bounds[0]===room.x+room.width-150&&p.bounds[1]===room.y+5);assert.ok(cabinet);assert.deepEqual(cabinet.bounds,[room.x+room.width-150,room.y+5,room.x+room.width-30,room.y+40]);assert.equal(cabinet.bounds[2]-cabinet.bounds[0],120);assert.equal(cabinet.height,125);}
     for(const [x,y]of golden.plants.conference){const yy=y+g.topExtra+(y>1000?g.conferenceExtra:0);expected.push([x-12,yy-12,x+12,yy+12]);}
     for(const [x,y]of golden.plants.cafe){const yy=g.cafe.y+y;expected.push([x-12,yy-12,x+12,yy+12]);}
     for(const [x,y]of golden.plants.hall){const yy=y+g.topExtra;expected.push([x-12,yy-12,x+12,yy+12]);}
@@ -451,12 +451,26 @@ test('public Shared counter and hotdesk pods remain distinct, retained and reach
   const intersects=(a,b)=>a[0]<b[2]-1e-9&&a[2]>b[0]+1e-9&&a[1]<b[3]-1e-9&&a[3]>b[1]+1e-9;
   for(const count of [1,5,6,10,11,32]){
     const actors=Array.from({length:count},(_,i)=>({id:`public-${i}`,role:null,working:true,state:'adapter-working'})),assigned=O.assignWorkstations(actors,[]),g=O.layout(actors,assigned),retained=O.layout([],assigned,g.conferenceSeats),shared=g.stations.filter(s=>s.role==='shared'),counter=shared[0],radius=16*g.staffScale;
-    assert.equal(g.topExtra,0,'Shared cannot grow the rear departments');assert.equal(g.sharedExtra,Math.floor((count-1)/5)*500);assert.equal(g.height,2000+g.sharedExtra);assert.equal(g.enclosures.length,7);assert.equal(g.doorways.some(d=>d.roomId==='shared'),false);
-    assert.deepEqual(retained.stations,g.stations);assert.equal(shared.length,count);assert.equal(shared.filter(s=>s.reception).length,1);assert.equal(counter.key,'shared:0');assert.deepEqual(counter.deskBounds,g.reception.deskBounds);assert.deepEqual(counter.desk,{x:1150,y:g.height-195});assert.deepEqual(counter.point,{x:1150,y:g.height-283});assert.deepEqual(counter.approach,{x:1150,y:g.height-316});
+    assert.equal(g.topExtra,0,'Shared cannot grow the rear departments');assert.equal(g.sharedExtra,Math.floor((count-1)/5)*500);assert.equal(g.height,1900+g.sharedExtra);assert.equal(g.enclosures.length,7);assert.equal(g.doorways.some(d=>d.roomId==='shared'),false);
+    assert.deepEqual(retained.stations,g.stations);assert.equal(shared.length,count);assert.equal(shared.filter(s=>s.reception).length,1);assert.equal(counter.key,'shared:0');assert.deepEqual(counter.deskBounds,g.reception.deskBounds);assert.deepEqual(counter.desk,{x:930,y:g.height-195});assert.deepEqual(counter.point,{x:930,y:g.height-285});assert.deepEqual(counter.approach,{x:930,y:g.height-310});
     for(const room of g.rooms.filter(r=>!r.annex)){const base=O.layout().rooms.find(r=>r.role===room.role);assert.deepEqual(room,base,'Shared expansion leaves actual specialist rooms intact');}
-    M.configure(g);try{for(const station of shared){if(station.index){const n=station.index%5,pod=Math.floor(station.index/5);assert.equal(station.reception,undefined);assert.deepEqual(station.desk,{x:[1150,1005,1295,1042,1258][n],y:[1530,1530,1530,1720,1720][n]+pod*500});assert.deepEqual(station.deskBounds,[station.desk.x-61.6,station.desk.y-44,station.desk.x+61.6,station.desk.y+44]);}
+    M.configure(g);try{for(const station of shared){if(station.index){const n=station.index%5,pod=Math.floor(station.index/5);assert.equal(station.reception,undefined);assert.deepEqual(station.desk,{x:[912.5,800,1025,800,1025][n],y:[1410,1300,1300,1520,1520][n]+pod*500});assert.deepEqual(station.deskBounds,[station.desk.x-70,station.desk.y-50,station.desk.x+70,station.desk.y+50]);}
       const body=[station.point.x-radius,station.point.y-radius,station.point.x+radius,station.point.y+radius];for(const other of shared){assert.equal(intersects(body,other.deskBounds),false,`${station.key} seated body clears ${other.key}`);if(other.index>station.index)assert.equal(intersects(station.deskBounds,other.deskBounds),false,'Shared physical desks never overlap');}assert.ok(M.free(station.point.x,station.point.y));assert.ok(M.free(station.approach.x,station.approach.y));}
       for(const station of [counter,shared.at(-1)]){assert.ok(M.path(g.lobby(0),station.point).length,`${station.key} reachable across new public capacity`);assert.ok(M.path(station.point,station.approach).length,`${station.key} helper approach reachable`);}
     }finally{M.configure(null);}
   }
+});
+
+// Compare furniture and cast coverage to the previous sparse floor, without adding synthetic employees.
+test('compact office increases physical occupancy while preserving public circulation clearance',()=>{
+  const g=O.layout(),old={width:2360,height:2000,scale:2.2,hallWidth:600,developmentWidth:1220};
+  const areaRatio=g.width*g.height/(old.width*old.height),deskRatio=(g.stationScale/old.scale)**2;
+  assert.ok(areaRatio<.77,'the complete floor loses at least 23% of empty spread');
+  assert.ok(deskRatio/areaRatio>1.68,'identical computer count has at least 68% greater floor coverage');
+  assert.ok(g.rooms.find(r=>r.role==='builder').width/old.developmentWidth<.65,'Development no longer occupies half the rear wing');
+  const hall=g.corridors.find(c=>c.id==='main'),reception=g.reception.deskBounds;
+  assert.equal(hall.width,440);assert.ok(hall.width<old.hallWidth);
+  assert.ok(reception[0]-hall.x>=80&&hall.x+hall.width-reception[2]>=80,'both reception aisles retain an employee body width');
+  assert.ok(g.ceilingHeight>=64*g.staffScale+50,'full-size chibi heads have real room headroom');
+  assert.ok(O.assignWorkstations([],[]).every(s=>!s.occupant),'compact furniture never creates fake staffing');
 });

@@ -1,5 +1,5 @@
 {
-  "version": 8,
+  "version": 9,
   "circulation": {
     "wallThickness": 10,
     "doorWidth": 130,
@@ -8,15 +8,15 @@
       {
         "id": "cross",
         "x": 45,
-        "y": 560,
-        "width": 2270,
+        "y": 460,
+        "width": 1810,
         "height": 140
       },
       {
         "id": "main",
-        "x": 850,
-        "y": 700,
-        "width": 600,
+        "x": 710,
+        "y": 600,
+        "width": 440,
         "height": 1240
       }
     ],
@@ -24,44 +24,44 @@
       {
         "roomId": "planner",
         "side": "south",
-        "x": 320,
-        "y": 560
+        "x": 310,
+        "y": 460
       },
       {
         "roomId": "designer",
         "side": "south",
-        "x": 830,
-        "y": 560
+        "x": 810,
+        "y": 460
       },
       {
         "roomId": "builder",
         "side": "south",
-        "x": 1690,
-        "y": 560
+        "x": 1450,
+        "y": 460
       },
       {
         "roomId": "reviewer",
         "side": "west",
-        "x": 1450,
-        "y": 900
+        "x": 1150,
+        "y": 800
       },
       {
         "roomId": "qa",
         "side": "west",
-        "x": 1450,
-        "y": 1320
+        "x": 1150,
+        "y": 1220
       },
       {
         "roomId": "security",
         "side": "west",
-        "x": 1450,
-        "y": 1740
+        "x": 1150,
+        "y": 1640
       },
       {
         "roomId": "conference",
         "side": "east",
-        "x": 850,
-        "y": 990
+        "x": 710,
+        "y": 885
       }
     ]
   },
@@ -70,19 +70,19 @@
     "designer": 2,
     "builder": 4,
     "reviewer": 2,
-    "qa": 2,
     "security": 3,
+    "qa": 2,
     "shared": 1
   },
-  "stationScale": 2.2,
-  "staffScale": 2.2,
-  "ceilingHeight": 176,
+  "stationScale": 2.5,
+  "staffScale": 2.5,
+  "ceilingHeight": 210,
   "podPitch": 500,
   "regularPodCapacity": 4,
   "sharedPodCapacity": 5,
   "world": {
-    "width": 2360,
-    "height": 2000
+    "width": 1900,
+    "height": 1900
   },
   "rooms": [
     {
@@ -90,61 +90,61 @@
       "name": "Planning",
       "x": 60,
       "y": 60,
-      "width": 520,
-      "height": 500
+      "width": 500,
+      "height": 400
     },
     {
       "role": "designer",
       "name": "Design",
-      "x": 600,
+      "x": 580,
       "y": 60,
       "width": 460,
-      "height": 500
+      "height": 400
     },
     {
       "role": "builder",
       "name": "Development",
-      "x": 1080,
+      "x": 1060,
       "y": 60,
-      "width": 1220,
-      "height": 500
+      "width": 780,
+      "height": 400
     },
     {
       "role": "reviewer",
       "name": "Code Review",
-      "x": 1450,
-      "y": 700,
-      "width": 850,
+      "x": 1150,
+      "y": 600,
+      "width": 690,
       "height": 400
     },
     {
       "role": "qa",
       "name": "QA Testing",
-      "x": 1450,
-      "y": 1120,
-      "width": 850,
+      "x": 1150,
+      "y": 1020,
+      "width": 690,
       "height": 400
     },
     {
       "role": "security",
       "name": "Security",
-      "x": 1450,
-      "y": 1540,
-      "width": 850,
+      "x": 1150,
+      "y": 1440,
+      "width": 690,
       "height": 400
     },
     {
       "role": "shared",
       "name": "Reception hotdesks",
-      "x": 850,
-      "y": 1400,
-      "width": 600,
-      "height": 540,
+      "x": 710,
+      "y": 1160,
+      "width": 440,
+      "height": 680,
       "annex": true
     }
   ],
   "devops": {
-    "x": 2260,
+    "x": 1800,
     "y": 260,
     "width": 30,
     "height": 60,
@@ -153,84 +153,84 @@
   },
   "conference": {
     "x": 60,
-    "y": 700,
-    "width": 790,
-    "height": 580,
+    "y": 600,
+    "width": 650,
+    "height": 570,
     "name": "Conference",
     "target": {
-      "x": 455,
-      "y": 960
+      "x": 385,
+      "y": 860
     },
     "tableBounds": [
-      300,
-      850,
-      610,
-      1070
+      260,
+      750,
+      510,
+      970
     ]
   },
   "cafe": {
     "x": 60,
-    "y": 1300,
-    "width": 790,
-    "height": 640,
+    "y": 1190,
+    "width": 650,
+    "height": 650,
     "name": "Caf\u00e9",
     "point": {
-      "x": 760,
-      "y": 1550
+      "x": 660,
+      "y": 1510
     }
   },
   "breakout": {
     "x": 100,
-    "y": 1675,
-    "width": 660,
+    "y": 1565,
+    "width": 560,
     "height": 230,
     "name": "Cafe lounge",
     "annex": true,
     "sofa": [
       130,
-      1790,
+      1680,
       360,
-      1850
+      1740
     ],
     "table": [
       175,
-      1690,
+      1580,
       315,
-      1750
+      1640
     ],
     "point": {
       "x": 430,
-      "y": 1810
+      "y": 1700
     }
   },
   "entrance": {
-    "x": 850,
-    "y": 1690,
-    "width": 600,
+    "x": 710,
+    "y": 1590,
+    "width": 440,
     "height": 250,
     "name": "Welcome",
     "point": {
-      "x": 1150,
-      "y": 1943
+      "x": 930,
+      "y": 1843
     }
   },
   "reception": {
     "deskBounds": [
-      1010,
-      1770,
-      1290,
-      1840
+      790,
+      1670,
+      1070,
+      1740
     ],
     "point": {
-      "x": 1150,
-      "y": 1880
+      "x": 930,
+      "y": 1780
     }
   },
   "invariants": [
-    "Reference rear workrooms, left Conference/Cafe and right Review/QA/Security surround a substantial central hall",
+    "Compact rear workrooms, left Conference/Cafe and right Review/QA/Security surround a 440-wide central hall",
     "Shared is a public reception annex; only shared:0 uses the single real reception counter; unknown roles remain unassigned",
     "Seven closed enclosures have exactly one real hall-facing doorway; Cafe and Shared reception are public",
-    "Four-slot regular benches and five-slot shared pods use coherent 2.2 desk and employee proportions and signed seat offsets",
+    "Four-slot regular benches and five-slot shared pods use coherent 2.5 desk and employee proportions and signed 36-unit seat offsets",
     "Rear band and side-wing growth never overlap rooms; conference overflow shifts Cafe",
     "Every desk, conference seat, arrival, idle and departure target is physically reachable",
     "Reception counter, Cafe furnishing and frontage props share collision bounds with rendering",
@@ -247,23 +247,26 @@
     },
     {
       "centerOffset": -28,
-      "regularY": 258
+      "regularY": 270
     },
     {
       "centerOffset": 28,
-      "regularY": 258
+      "regularY": 270
     }
   ],
   "seatOffsets": {
-    "southSlots": [2, 3],
-    "south": 40,
-    "north": -40,
-    "approachDistance": 55
+    "southSlots": [
+      2,
+      3
+    ],
+    "south": 36,
+    "north": -36,
+    "approachDistance": 46
   },
   "conferenceOverflow": {
     "columns": 5,
-    "columnPitch": 120,
-    "firstX": 160,
+    "columnPitch": 104,
+    "firstX": 150,
     "firstYOffset": 500,
     "rowPitch": 90,
     "approachOffset": 45,
@@ -274,9 +277,9 @@
       "kind": "feature-wall",
       "bounds": [
         85,
-        1322,
-        680,
-        1328
+        1212,
+        650,
+        1218
       ],
       "label": "Caf\u00e9",
       "color": "#bd9c6c"
@@ -306,15 +309,15 @@
     "tableCenters": [
       [
         220,
-        1530
+        1420
       ],
       [
         500,
-        1530
+        1420
       ],
       [
-        660,
-        1735
+        570,
+        1635
       ]
     ]
   },
@@ -322,42 +325,42 @@
     "key": "shared:0",
     "reception": true,
     "bounds": [
-      1010,
-      1770,
-      1290,
-      1840
+      790,
+      1670,
+      1070,
+      1740
     ],
     "desk": [
-      1150,
-      1805
+      930,
+      1705
     ],
-    "svgScreenHeight": 105.2,
-    "nativeScreenHeight": 94.2
+    "svgScreenHeight": 110,
+    "nativeScreenHeight": 97.5
   },
   "sharedHotdesks": [
     [
-      1005,
-      1530
+      800,
+      1300
     ],
     [
-      1295,
-      1530
+      1025,
+      1300
     ],
     [
-      1042,
-      1720
+      800,
+      1520
     ],
     [
-      1258,
-      1720
+      1025,
+      1520
     ]
   ],
   "rearCabinet": {
-    "rightInset": 115,
-    "width": 200,
+    "rightInset": 30,
+    "width": 120,
     "top": 5,
     "bottom": 40,
-    "height": 82
+    "height": 125
   },
   "plants": {
     "potHalfExtent": 12,
@@ -386,19 +389,19 @@
     "conference": [
       [
         95,
-        740
+        640
       ],
       [
-        800,
-        740
+        660,
+        640
       ],
       [
         95,
-        1240
+        1130
       ],
       [
-        800,
-        1240
+        660,
+        1130
       ]
     ],
     "cafe": [
@@ -411,39 +414,41 @@
         440
       ],
       [
-        820,
+        680,
         130
       ],
       [
-        820,
+        680,
         480
       ],
       [
         300,
-        600
+        610
       ],
       [
-        740,
-        600
+        640,
+        610
       ]
     ],
     "hall": [
       [
-        900,
-        760
+        755,
+        660
       ],
       [
-        1400,
-        760
+        1105,
+        660
       ],
       [
-        900,
-        1200
+        755,
+        1100
       ],
       [
-        1400,
-        1200
+        1105,
+        1100
       ]
     ]
-  }
+  },
+  "sharedPodCenterY": 1410,
+  "sharedPodCenterX": 912.5
 }

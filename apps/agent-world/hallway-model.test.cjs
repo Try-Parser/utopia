@@ -31,7 +31,7 @@ function checkedPath(g,start,target){
 function withGeometry(g,run){M.configure(g);try{run();}finally{M.configure(null);}}
 
 test('golden circulation has seven closed enclosures with one hallway-facing door each',()=>{
- const g=O.layout();assert.equal(golden.version,8);assert.deepEqual({width:g.width,height:g.height},golden.world);
+ const g=O.layout();assert.equal(golden.version,9);assert.deepEqual({width:g.width,height:g.height},golden.world);
  assert.equal(g.enclosures.length,7);assert.equal(new Set(g.enclosures.map(r=>r.roomId)).size,7);assert.equal(g.doorways.length,7);
  assert.deepEqual(g.corridors,golden.circulation.corridors);
  for(const expected of golden.circulation.doors){const door=g.doorways.find(d=>d.roomId===expected.roomId);assert.ok(door);assert.equal(door.side,expected.side);assert.deepEqual(door.center,{x:expected.x,y:expected.y});assert.equal(door.width,golden.circulation.doorWidth);}

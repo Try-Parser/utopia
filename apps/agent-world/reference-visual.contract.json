@@ -1,8 +1,8 @@
 {
-  "version": 8,
+  "version": 9,
   "reference": "exec-bc79bd86-ae63-4001-a628-39e72e19644c.png",
-  "layoutVersion": 8,
-  "referenceKitVersion": 3,
+  "layoutVersion": 9,
+  "referenceKitVersion": 4,
   "composition": {
     "rear": [
       "planner",
@@ -36,7 +36,7 @@
       "desk-accessories",
       "cafe-equipment"
     ],
-    "polished": "quiet pale oak, cream stone and ivory; smooth native chibi and connected four-place benches"
+    "polished": "compact furnished oak-and-ivory rooms, room-specific wall displays and camera-aware directional shadows"
   },
   "styles": {
     "illustrated": "reference-painted-textures-real-depth-shading-and-ink-illustrated-chibi",
@@ -60,65 +60,65 @@
   },
   "geometry": {
     "rearDevelopmentBounds": [
-      1080,
+      1060,
       60,
-      2300,
-      560
+      1840,
+      460
     ],
     "enclosures": 7,
     "regularDeskRows": [
       170,
       170,
-      258,
-      258
+      270,
+      270
     ],
     "sharedAnnexBounds": [
-      850,
-      1400,
-      1450,
-      1940
+      710,
+      1160,
+      1150,
+      1840
     ],
     "sharedCounter": {
       "key": "shared:0",
       "reception": true,
       "bounds": [
-        1010,
-        1770,
-        1290,
-        1840
+        790,
+        1670,
+        1070,
+        1740
       ],
       "desk": [
-        1150,
-        1805
+        930,
+        1705
       ],
-      "svgScreenHeight": 105.2,
-      "nativeScreenHeight": 94.2
+      "svgScreenHeight": 110,
+      "nativeScreenHeight": 97.5
     },
     "sharedHotdesks": [
       [
-        1005,
-        1530
+        800,
+        1300
       ],
       [
-        1295,
-        1530
+        1025,
+        1300
       ],
       [
-        1042,
-        1720
+        800,
+        1520
       ],
       [
-        1258,
-        1720
+        1025,
+        1520
       ]
     ],
     "sharedPodPitch": 500,
     "rearCabinet": {
-      "rightInset": 115,
-      "width": 200,
+      "rightInset": 30,
+      "width": 120,
       "top": 5,
       "bottom": 40,
-      "height": 82
+      "height": 125
     },
     "plants": {
       "potHalfExtent": 12,
@@ -147,19 +147,19 @@
       "conference": [
         [
           95,
-          740
+          640
         ],
         [
-          800,
-          740
+          660,
+          640
         ],
         [
           95,
-          1240
+          1130
         ],
         [
-          800,
-          1240
+          660,
+          1130
         ]
       ],
       "cafe": [
@@ -172,38 +172,38 @@
           440
         ],
         [
-          820,
+          680,
           130
         ],
         [
-          820,
+          680,
           480
         ],
         [
           300,
-          600
+          610
         ],
         [
-          740,
-          600
+          640,
+          610
         ]
       ],
       "hall": [
         [
-          900,
-          760
+          755,
+          660
         ],
         [
-          1400,
-          760
+          1105,
+          660
         ],
         [
-          900,
-          1200
+          755,
+          1100
         ],
         [
-          1400,
-          1200
+          1105,
+          1100
         ]
       ]
     }

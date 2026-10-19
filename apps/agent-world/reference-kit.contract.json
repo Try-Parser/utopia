@@ -1,7 +1,7 @@
 {
-  "version": 3,
+  "version": 4,
   "reference": "exec-bc79bd86-ae63-4001-a628-39e72e19644c.png",
-  "layoutVersion": 8,
+  "layoutVersion": 9,
   "workstations": {
     "appliesTo": "non-reception desks",
     "localWidth": 56,

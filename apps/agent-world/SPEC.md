@@ -164,7 +164,7 @@ The explicit ?office=reference launch opens polished native 3D at yaw305/elevati
 
 ## Faithful panel-B reconstruction
 
-The user accepted a faithful interactive3D recreation, with no promise of exact raster equality. Layout8 replaces scattered regular stations with touching two-by-two benches, keeping56x40 local desktops, signed outside seats, scale2.2 and real monitor anchors. Regular capacity grows in four-place500unit modules; shared/reception retains its five-slot layout. Room envelopes/doors and actual provider activity remain authoritative. Every seat and approach must remain reachable in retained and expanded layouts.
+The target remains the supplied reference as a fully interactive3D recreation. Exact visual fidelity has not been achieved. Layout8 replaces scattered regular stations with touching two-by-two benches, keeping56x40 local desktops, signed outside seats, scale2.2 and real monitor anchors. Regular capacity grows in four-place500unit modules; shared/reception retains its five-slot layout. Room envelopes/doors and actual provider activity remain authoritative. Every seat and approach must remain reachable in retained and expanded layouts.
 
 Visual7/kit2 use native smooth swept-cap and tapered-lock character meshes, six stable human/robot identities, four warm skin tones,14bounded owned character geometries and up to30expression maps. Interior benches, bucket chairs, branching broad leaves and six differentiated boards replace the repeated original silhouettes. Three cropped gallery plane geometries remain pooled across layout rebuilds.
 
@@ -173,3 +173,9 @@ Fresh visitors default to polished native3D; existing saved modes remain honored
 ## Generated resources used in native 3D
 
 Visual8/kit3 use the built-in imagegen resource pack in assets/reference-resources-v1. Its character/furniture PNGs guide native sculpted geometry; its six-swatch material PNG is actually loaded and mapped to3Dwood/plaster/stone/fabric/polymer/leaves. The model guides are images, not rigged3Dfiles or the office backdrop. Manifest records dimensions, hashes and finalprompts without local account paths. Missing/invalidatlas uses proceduralmaterials; onefixedimage and atmost6reusable512pxmaps are disposed with the renderer. Castgeometrylimit15/gallerygeometrylimit3 remain bounded. ActualHTTP/SHA/loadedmaterialkind assertions supplement independent image comparisons; actual-only agents and full3D interactions remain required.
+
+## Whole-office proportions and furnishing
+
+Layout9/visual9/kit4 reduce the baseline floor to1900x1900, the central hall to440wide and Development to780x400. Desks/chairs/employees share2.5scale with210high walls. The four-place bench uses local56x40desktops, rows170/270, signed36unit seats and46unit approaches. Shared pods stagger the middle desk to retain a real central aisle. Reception remains one physical280x70counter with projected monitor centers110(SVG)/97.5(native3D). Regular/shared capacity growth and conference waiting preserve hallway-only routing.
+
+The six rooms use120wide/125high rear cabinets, larger role-specific wall boards below signs, wall panels following actual doorway gaps, clocks, framed displays and wall-mounted book shelves. New wall ornaments create no untracked floor obstacles. Cafe equipment faces the seating area. Camera-aware walls cast directional shadows and update their shadow map after orbit/cutaway changes. Employees retain their moving contact-shadow planes. All four graphics modes preserve actual source employees, questions, preview ownership and camera controls. Compare full-scene screenshots against the supplied board; this iteration does not establish exact graphic equivalence.
