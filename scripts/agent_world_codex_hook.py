@@ -1,4 +1,4 @@
-"""Project Codex lifecycle hooks to Agent World's local metadata endpoint.
+"""Project Codex lifecycle hooks to Utopia Cyberworld's local metadata endpoint.
 
 This command intentionally ignores prompt, tool input/output, and transcript fields.
 It never changes a Codex tool decision and stays silent when the office is offline.

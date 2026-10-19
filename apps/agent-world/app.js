@@ -1,4 +1,4 @@
-/* Agent World UI. Untrusted text is rendered only through textContent. */
+/* Utopia Cyberworld UI. Untrusted text is rendered only through textContent. */
 'use strict';
 const E = window.AgentWorld;
 const L = window.LiveAgents;
@@ -83,7 +83,7 @@ function render() {
   const codexProcess=S.get().entries.some(e=>e.provider==='Codex'&&e.kind==='process'&&e.status==='running');
   const codexEvents=S.get().entries.some(e=>e.provider==='Codex'&&e.kind==='session'&&['event-working','event-waiting','adapter-working','adapter-waiting','adapter-idle'].includes(e.status));
   codexHelp.hidden=!codexProcess||codexEvents;
-  if(!codexHelp.hidden)codexHelp.textContent='Codex is running, but no session activity has reached the office. In Codex, open /hooks and review or trust the Agent World hooks, then start or resume a session. Until events arrive, the office cannot show that worker’s task.';
+  if(!codexHelp.hidden)codexHelp.textContent='Codex is running, but no session activity has reached the office. In Codex, open /hooks and review or trust the Utopia Cyberworld hooks, then start or resume a session. Until events arrive, the office cannot show that worker’s task.';
   $('activity-connection').textContent=`${connected.length} local sessions/processes · ${reporting.length} reporting activity${S.get().partial?' · partial inventory':''}`;
   $('mobile-flow-count').textContent=`${reporting.length} active reports`;
   $('world-title').textContent='The living office';$('world-count').textContent='AUTOMATIC';

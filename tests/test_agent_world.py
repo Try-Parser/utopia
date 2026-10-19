@@ -85,7 +85,7 @@ class AgentWorldTests(unittest.TestCase):
         try:
             with urlopen(base + "/") as response:
                 self.assertEqual(response.status, 200)
-                self.assertIn(b"Agent World", response.read())
+                self.assertIn(b"Utopia Cyberworld", response.read())
                 self.assertIn("frame-ancestors 'none'", response.headers["Content-Security-Policy"])
             with urlopen(base + "/api/runs") as response:
                 self.assertEqual(len(json.load(response)["runs"]), 1)

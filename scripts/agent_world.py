@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Serve Agent World: simulation, observed checkpoints, and optional native tasks."""
+"""Serve Utopia Cyberworld: simulation, observed checkpoints, and optional native tasks."""
 import argparse
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -373,7 +373,7 @@ def main():
         if manager:
             manager.close()
         raise
-    print(f"Agent World: http://127.0.0.1:{args.port}", flush=True)
+    print(f"Utopia Cyberworld: http://127.0.0.1:{args.port}", flush=True)
     print("Native missions enabled." if manager else "Simulation + read-only checkpoints. Native missions disabled.", flush=True)
     try:
         server.serve_forever()

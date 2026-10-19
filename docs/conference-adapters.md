@@ -1,6 +1,6 @@
 # Conference question adapters
 
-Agent World reads observed Codex and Claude Code questions locally. These sessions use **Copy answer**: the app has no transport into the original CLI or extension. It never injects keystrokes, modifies provider logs, or starts replacement sessions.
+Utopia Cyberworld reads observed Codex and Claude Code questions locally. These sessions use **Copy answer**: the app has no transport into the original CLI or extension. It never injects keystrokes, modifies provider logs, or starts replacement sessions.
 
 An adapter can explicitly opt into the local reply inbox. Use the discovery token from the existing local `/api/sessions` connection as `X-Agent-World-Token`. Keep it private. All requests must use the same local server host; writes also require its exact HTTP `Origin` and `Content-Type: application/json`. The server accepts at most 12,000 request bytes. No remote callback is supported.
 

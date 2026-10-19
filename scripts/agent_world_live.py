@@ -429,7 +429,7 @@ class LiveQueue:
         if job["role"] == "planner":
             guidance = source / "skills" / "frank" / "SKILL.md"
         instructions = guidance.read_text(encoding="utf-8") if guidance.is_file() else "Act as the assigned coordinator."
-        return (f"You are the {role} specialist assigned through the local Agent World interface.\n"
+        return (f"You are the {role} specialist assigned through the local Utopia Cyberworld interface.\n"
                 f"{instructions}\nFollow this workspace's AGENTS.md and applicable native Frank workflow. "
                 "Preserve existing changes. Follow the repository's provider and independent review requirements. "
                 "Run application verification in its development Docker environment. "

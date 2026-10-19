@@ -1,4 +1,4 @@
-# Agent World
+# Utopia Cyberworld
 
 A local game-style control room for the AI Department. Six characters represent planning, design, build, review, QA, and security roles. One office combines native tasks, local sessions and recorded checkpoints. The office is live-only. Use **Office view** to switch between **Isometric** and **Top-down** views of the same agents and computers. Camera choice survives reload when browser storage is available.
 
@@ -90,13 +90,13 @@ To place an adapter-connected worker in conference while it awaits an answer, re
 
 ### Codex lifecycle bridge
 
-To show Codex sessions and subagents from the local Codex user profile, start the single Agent World server and install its lifecycle bridge:
+To show Codex sessions and subagents from the local Codex user profile, start the single Utopia Cyberworld server and install its lifecycle bridge:
 
 ```powershell
 python scripts/install_agent_world_codex_hook.py
 ```
 
-The installer uses the server's default port 8787; pass `--port <port>` if you started Agent World on another port. It preserves other entries in `~/.codex/hooks.json` and installs a copy of the reporter under `~/.codex/hooks/`. Open `/hooks` in Codex to review and trust the new user-level hooks, then start or resume the session. Codex does not run untrusted user hooks. The current turn's earlier work cannot be replayed by this bridge. `SessionStart`, prompt, tool, stop, interrupt, session-end, and subagent lifecycle events update the office immediately when Codex emits them. Known tool names assign a department; unknown tools remain unassigned. The bridge has no access to a task's private contents and sends no prompt, tool input/output, or transcript. An event older than thirty seconds no longer counts as active work, so a long silent tool can temporarily look idle until another event arrives. Hook coverage depends on the Codex client and tool path; process discovery and local event-log observation remain fallback signals.
+The installer uses the server's default port 8787; pass `--port <port>` if you started Utopia Cyberworld on another port. It preserves other entries in `~/.codex/hooks.json` and installs a copy of the reporter under `~/.codex/hooks/`. Open `/hooks` in Codex to review and trust the new user-level hooks, then start or resume the session. Codex does not run untrusted user hooks. The current turn's earlier work cannot be replayed by this bridge. `SessionStart`, prompt, tool, stop, interrupt, session-end, and subagent lifecycle events update the office immediately when Codex emits them. Known tool names assign a department; unknown tools remain unassigned. The bridge has no access to a task's private contents and sends no prompt, tool input/output, or transcript. An event older than thirty seconds no longer counts as active work, so a long silent tool can temporarily look idle until another event arrives. Hook coverage depends on the Codex client and tool path; process discovery and local event-log observation remain fallback signals.
 
 The Claude storage layout follows [official Claude session documentation](https://code.claude.com/docs/en/agent-sdk/sessions). For a Codex integration attached to its owning app-server, [official thread-list and runtime-status APIs](https://learn.chatgpt.com/docs/app-server) can supply authoritative thread metadata; starting a separate app-server does not reveal another instance's loaded threads.
 
@@ -153,7 +153,7 @@ Detected idle/unassigned characters walk reception, corridor and coffee routes a
 
 The live office now reads bounded Claude Code and Codex session event tails automatically. An exact live Claude session with Edit/Write activity goes to a Build computer; Bash and project-reading activity also use Build. Planning, web research and agent coordination use Planning. This department is derived from the tool category, not a claim about a specialist's assigned role. The inspector and computer display identify Local session tool events.
 
-The office feed shows a short timeline of structured actions as they arrive. Each worker's speech bubble automatically shows a short excerpt of the newest instruction, assistant response, tool call or result from that exact local Claude/Codex transcript when the provider writes one. Select the worker or its computer for more of the recorded text. These views may show private code and instructions visible in your CLI or extension, so treat the local office screen as private. Text stays in the local browser session and is not added to the general feed or Agent World history. A provider that exposes only process or session presence cannot supply speech; a reported task label appears only when an adapter actually sent one.
+The office feed shows a short timeline of structured actions as they arrive. Each worker's speech bubble automatically shows a short excerpt of the newest instruction, assistant response, tool call or result from that exact local Claude/Codex transcript when the provider writes one. Select the worker or its computer for more of the recorded text. These views may show private code and instructions visible in your CLI or extension, so treat the local office screen as private. Text stays in the local browser session and is not added to the general feed or Utopia Cyberworld history. A provider that exposes only process or session presence cannot supply speech; a reported task label appears only when an adapter actually sent one.
 
 When a Codex app session updates its local runtime database before writing a fresh rollout file, the office follows the exact thread ID in bounded runtime records. Known runtime turn/tool targets add fixed Turn activity and Tool activity labels to that worker's timeline, placing the recently observed session at a shared computer. The selected output view says when the extension has not written a current transcript; runtime log entries cannot reconstruct its CLI-like text. It does not claim the turn is still working or assign a department; an explicit tool/lifecycle event or adapter report is needed for that state.
 

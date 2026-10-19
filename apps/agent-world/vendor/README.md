@@ -1,6 +1,6 @@
 # Local graphics dependency
 
-Three.js 0.186.1, MIT license (three.LICENSE). The checked-in bundle exposes only exports listed in three.entry.js. No CDN or build tool is needed to run Agent World.
+Three.js 0.186.1, MIT license (three.LICENSE). The checked-in bundle exposes only exports listed in three.entry.js. No CDN or build tool is needed to run Utopia Cyberworld.
 
 Rebuild in a disposable Docker directory with these files mounted or copied:
 

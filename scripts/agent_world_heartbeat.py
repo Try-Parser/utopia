@@ -1,4 +1,4 @@
-"""Report an existing session's metadata to local Agent World; no AI calls."""
+"""Report an existing session's metadata to local Utopia Cyberworld; no AI calls."""
 import argparse
 import json
 from urllib.request import Request, urlopen

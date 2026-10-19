@@ -1,4 +1,4 @@
-"""Install the local Agent World lifecycle reporter into a Codex user profile."""
+"""Install the local Utopia Cyberworld lifecycle reporter into a Codex user profile."""
 import argparse
 import json
 import os
@@ -58,7 +58,7 @@ def main():
     parser.add_argument("--codex-home", type=Path, default=Path.home() / ".codex")
     parser.add_argument("--port", type=int, default=8787)
     args = parser.parse_args()
-    print(f"Installed Agent World Codex hooks in {install(args.codex_home, args.port)}")
+    print(f"Installed Utopia Cyberworld Codex hooks in {install(args.codex_home, args.port)}")
     print("Open /hooks in Codex to review and trust these hooks, then start or resume a session.")
 
 
