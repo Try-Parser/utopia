@@ -36,3 +36,4 @@ Read the [ADR workflow](../../skills/autonomous-development/references/architect
 ADRs describe rationale and intended design. Applicable project instructions and versioned contracts still govern execution; investigate disagreements rather than silently overriding them. Records are not proof of live AI quality or authorization to deploy. Preserve accepted rationale and use reciprocal links when a newer accepted record supersedes one.
 | [0024](0024-faithful-reference-reconstruction.md) | Faithful reference reconstruction | Accepted direction |
 | [0025](0025-resource-driven-office-art.md) | Resource-driven office art | Accepted direction |
+| [0026](0026-provider-aware-missions.md) | Automatic local mission provider detection and selection | Accepted direction |

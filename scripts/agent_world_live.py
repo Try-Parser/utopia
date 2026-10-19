@@ -1,9 +1,10 @@
-"""Local native Codex task queue. No raw tool output or reasoning is stored."""
+"""Provider-aware local native task queue. No raw tool output or reasoning is stored."""
 from copy import deepcopy
 from datetime import datetime, timezone
 import json
 import difflib
 import hashlib
+import importlib.util
 import os
 from pathlib import Path
 import re
@@ -14,6 +15,10 @@ import signal
 import subprocess
 import tempfile
 import threading
+
+_providers_spec = importlib.util.spec_from_file_location("_agent_world_providers", Path(__file__).with_name("agent_world_providers.py"))
+providers = importlib.util.module_from_spec(_providers_spec)
+_providers_spec.loader.exec_module(providers)
 
 
 ROLES = {"planner": "frank", "designer": "frank-designer", "builder": "frank-coder",
@@ -37,7 +42,8 @@ def now():
 
 
 def validate_request(data, allow_edits):
-    if not isinstance(data, dict) or set(data) != {"requestId", "title", "brief", "role", "access"}:
+    fields = {"requestId", "title", "brief", "role", "access"}
+    if not isinstance(data, dict) or set(data) not in (fields, fields | {"provider"}):
         raise LiveError("Invalid mission fields")
     if not isinstance(data["requestId"], str) or not re.fullmatch(r"[a-f0-9]{32}", data["requestId"]):
         raise LiveError("Invalid request ID")
@@ -48,7 +54,10 @@ def validate_request(data, allow_edits):
         raise LiveError("Invalid mission name, brief, role, or access")
     if data["access"] == "workspace-write" and (not allow_edits or data["role"] not in ("planner", "builder")):
         raise LiveError("Workspace edits are unavailable for this specialist", 403)
-    return {key: data[key] for key in ("requestId", "title", "brief", "role", "access")}
+    if "provider" in data and (not isinstance(data["provider"], str) or not re.fullmatch(r"[a-z][a-z0-9-]{0,39}", data["provider"])):
+        raise LiveError("Invalid mission provider")
+    keys = ("requestId", "title", "brief", "role", "access") + (("provider",) if "provider" in data else ())
+    return {key: data[key] for key in keys}
 
 
 def atomic_write(path, value):
@@ -142,7 +151,8 @@ def kill_tree(process):
 
 
 class LiveQueue:
-    def __init__(self, workspace, data_dir, allow_edits=False, command=None, timeout=1800):
+    def __init__(self, workspace, data_dir, allow_edits=False, command=None, timeout=1800,
+                 provider_commands=None, discover_providers=True):
         self.workspace = Path(workspace).resolve(strict=True)
         if not self.workspace.is_dir():
             raise ValueError("Workspace must be a directory")
@@ -155,8 +165,11 @@ class LiveQueue:
         self.history = self.data_dir / f"history-{workspace_id}.json"
         if self.history.is_symlink():
             raise ValueError("History symlink refused")
-        found = shutil.which("codex")
-        self.command = command if command is not None else ([found] if found else [])
+        if command is not None and provider_commands is not None:
+            raise ValueError("Use command or provider_commands, not both")
+        self.providers = providers.ProviderRegistry(
+            {"codex": command} if command else provider_commands,
+            discover=discover_providers if command is None else False)
         self.allow_edits = allow_edits
         self.timeout = timeout
         self.token = secrets.token_urlsafe(32)
@@ -182,7 +195,8 @@ class LiveQueue:
                 raise ValueError()
             ids = set()
             for job in data:
-                request = validate_request({key: job[key] for key in ("requestId", "title", "brief", "role", "access")}, True)
+                request = validate_request({**{key: job[key] for key in ("requestId", "title", "brief", "role", "access")},
+                                            "provider": job.get("provider", "codex")}, True)
                 if (job.get("id") != request["requestId"] or job["id"] in ids
                         or job.get("status") not in TERMINAL | {"queued", "starting", "running"}
                         or not isinstance(job.get("result"), str) or len(job["result"]) > MAX_RESULT
@@ -193,7 +207,8 @@ class LiveQueue:
                 for key in ("createdAt", "updatedAt"):
                     if datetime.fromisoformat(job[key]).tzinfo is None:
                         raise ValueError()
-                clean = {**request, "id": job["id"], "status": job["status"], "result": job["result"],
+                clean = {**request, "providerLabel": providers.provider_label(request["provider"]),
+                         "id": job["id"], "status": job["status"], "result": job["result"],
                          "createdAt": job["createdAt"], "updatedAt": job["updatedAt"], "activity": job["activity"], "events": [], "changes": [],
                          "action": job.get("action") if job.get("action") in ("command", "coding", "tool", "research", "planning", "coordination", "reporting") else None}
                 for change in job.get("changes", [])[:MAX_CHANGES]:
@@ -231,7 +246,9 @@ class LiveQueue:
 
     def view(self):
         with self.lock:
-            return {"enabled": bool(self.command) and not self.closed, "allowEdits": self.allow_edits,
+            detected = self.providers.view()
+            return {"enabled": any(p["available"] for p in detected) and not self.closed,
+                    "providers": detected, "allowEdits": self.allow_edits,
                     "workspace": self.workspace.name, "token": self.token, "warning": self.warning,
                     "jobs": deepcopy([{k: v for k, v in j.items() if k not in ("brief", "requestId")} for j in reversed(self.jobs)])}
 
@@ -353,19 +370,28 @@ class LiveQueue:
     def submit(self, data):
         request = validate_request(data, self.allow_edits)
         with self.lock:
-            if self.closed or not self.command:
-                raise LiveError("Native Codex runner unavailable", 503)
             for job in self.jobs:
                 if job["requestId"] == request["requestId"]:
                     if any(job[k] != request[k] for k in request):
                         raise LiveError("Request ID already used for a different mission", 409)
                     return deepcopy(job)
+            if self.closed:
+                raise LiveError("Native mission runner unavailable", 503)
+            detected = self.providers.view()
+            available = [p["id"] for p in detected if p["available"]]
+            if "provider" not in request:
+                if len(available) != 1:
+                    raise LiveError("Choose an available mission provider" if available else "No native mission provider available", 400 if available else 503)
+                request["provider"] = available[0]
+            if request["provider"] not in available:
+                raise LiveError("Selected mission provider is unavailable", 503)
             if sum(j["status"] not in TERMINAL for j in self.jobs) >= 10:
                 raise LiveError("Live queue is full. Wait for a mission to finish.", 429)
             # Prune completed history only; all unfinished work stays retained.
             while len(self.jobs) >= 100:
                 self.jobs.pop(next(i for i, job in enumerate(self.jobs) if job["status"] in TERMINAL))
-            job = {**request, "id": request["requestId"], "status": "queued", "createdAt": now(),
+            job = {**request, "providerLabel": providers.provider_label(request["provider"]),
+                   "id": request["requestId"], "status": "queued", "createdAt": now(),
                    "updatedAt": now(), "activity": "Queued for the assigned specialist", "result": "", "events": [], "changes": [], "action": None}
             self.jobs.append(job)
             self._event(job, "Queued for the assigned specialist")
@@ -405,9 +431,10 @@ class LiveQueue:
         instructions = guidance.read_text(encoding="utf-8") if guidance.is_file() else "Act as the assigned coordinator."
         return (f"You are the {role} specialist assigned through the local Agent World interface.\n"
                 f"{instructions}\nFollow this workspace's AGENTS.md and applicable native Frank workflow. "
-                "Preserve existing changes. Use native Codex agents when repository workflows require independent review. "
+                "Preserve existing changes. Follow the repository's provider and independent review requirements. "
                 "Run application verification in its development Docker environment. "
-                "No commits, pushes, deployment, external messages, or Claude execution are authorized. "
+                "No commits, pushes, deployment, external messages, or launching other AI providers are authorized. "
+                "If repository instructions disallow this provider or require unavailable capabilities, stop and explain the conflict. "
                 "Your response must describe performed work and verification gaps honestly. "
                 "Do not claim completed review gates merely because your turn ended.\n"
                 f"Access: {job['access']}. In read-only mode, inspect and advise without editing.\n"
@@ -426,7 +453,7 @@ class LiveQueue:
                     continue
                 self.active_id = job["id"]
                 job["status"] = "starting"
-                self._event(job, "Connecting to native Codex")
+                self._event(job, f"Connecting to {job['providerLabel']}")
             try:
                 self._execute(job)
             except Exception:
@@ -434,7 +461,7 @@ class LiveQueue:
                 with self.lock:
                     if job["status"] not in TERMINAL:
                         job["status"] = "failed"
-                        self._event(job, "Runner failed. Check native Codex login and sandbox configuration.")
+                        self._event(job, "Runner failed. Check the selected provider's login and access configuration.")
             finally:
                 with self.lock:
                     if self.process is not None:
@@ -443,8 +470,12 @@ class LiveQueue:
                     self.active_id = None
 
     def _execute(self, job):
-        command = [*self.command, "-c", 'approval_policy="never"', "exec", "--json", "--ephemeral",
-                   "--sandbox", job["access"], "--cd", str(self.workspace), "-"]
+        with self.lock:
+            base_command = self.providers.command(job["provider"])
+        if not base_command:
+            raise ValueError("Selected provider became unavailable")
+        command = providers.launch_command(job["provider"], base_command, job["access"], self.workspace)
+        adapter = providers.EventAdapter(job["provider"], job["access"])
         options = {"cwd": self.workspace, "stdin": subprocess.PIPE, "stdout": subprocess.PIPE,
                    "stderr": subprocess.DEVNULL, "text": True, "encoding": "utf-8", "errors": "replace"}
         if os.name == "nt":
@@ -516,47 +547,34 @@ class LiveQueue:
                     continue
                 if not isinstance(data, dict):
                     continue
-                kind = data.get("type")
                 with self.lock:
                     if job["status"] in TERMINAL:
                         break
-                    if kind == "turn.started":
-                        job["status"] = "running"
-                        self._event(job, "Agent turn started")
-                    elif kind == "turn.completed":
-                        completed = True
-                    elif kind in ("turn.failed", "error"):
-                        failure = True
-                        self._event(job, "Codex reported a run error")
-                    elif kind in ("item.started", "item.updated", "item.completed"):
-                        item = data.get("item")
-                        if not isinstance(item, dict):
-                            continue
-                        item_type = item.get("type")
-                        labels = {"command_execution": "Running a command", "file_change": "Editing workspace files",
-                                  "mcp_tool_call": "Calling a connected tool", "web_search": "Searching the web",
-                                  "plan_update": "Updating the plan", "collab_tool_call": "Coordinating native agents"}
-                        if item_type == "agent_message" and kind == "item.completed" and isinstance(item.get("text"), str):
+                    for event in adapter.events(data):
+                        kind = event["kind"]
+                        if kind == "started":
+                            job["status"] = "running"
+                            self._event(job, "Agent turn started")
+                        elif kind == "completed":
+                            completed = True
+                        elif kind == "failed":
+                            failure = True
+                            self._event(job, "Provider reported a run error")
+                        elif kind == "answer":
                             job["action"] = "reporting"
-                            job["result"] = item["text"][:MAX_RESULT]
+                            job["result"] = event["text"][:MAX_RESULT]
                             self._event(job, "Agent response received")
-                        elif isinstance(item_type, str) and item_type in labels:
-                            job["action"] = {"command_execution": "command", "file_change": "coding", "mcp_tool_call": "tool", "web_search": "research", "plan_update": "planning", "collab_tool_call": "coordination"}[item_type]
-                            if item_type == "file_change" and kind == "item.completed" and isinstance(item.get("changes"), list):
-                                for change in item["changes"][:MAX_CHANGES]:
-                                    if not isinstance(change, dict) or change.get("kind") not in ("add", "update", "delete"):
-                                        continue
-                                    relative = self._change_path(change.get("path"))
-                                    if relative is not None:
-                                        old = next((c for c in job["changes"] if c["path"] == relative), None)
-                                        if old is not None:
-                                            old["kind"] = change["kind"]
-                                        elif len(job["changes"]) < MAX_CHANGES:
-                                            job["changes"].append({"path": relative, "kind": change["kind"]})
-                            text = labels[item_type]
-                            if kind == "item.completed":
-                                text = "Command failed" if item_type == "command_execution" and item.get("exit_code") not in (None, 0) else text.replace("Running", "Finished").replace("Editing", "Updated").replace("Calling", "Finished").replace("Searching", "Searched").replace("Updating", "Updated").replace("Coordinating", "Coordinated")
-                            self._event(job, text)
+                        elif kind == "activity":
+                            job["action"] = event["action"]
+                            self._event(job, event["text"])
+                        elif kind == "change" and event.get("changeKind") in ("add", "update", "delete"):
+                            relative = self._change_path(event.get("path"))
+                            if relative is not None:
+                                old = next((c for c in job["changes"] if c["path"] == relative), None)
+                                if old is not None:
+                                    old["kind"] = event["changeKind"]
+                                elif len(job["changes"]) < MAX_CHANGES:
+                                    job["changes"].append({"path": relative, "kind": event["changeKind"]})
             with self.lock:
                 if job["status"] in TERMINAL:
                     kill_tree(process)
@@ -565,7 +583,7 @@ class LiveQueue:
                 if job["status"] not in TERMINAL:
                     job["status"] = "completed" if completed and not failure and returncode == 0 and job["result"] else "failed"
                     self._event(job, "Agent turn complete; review and verification not certified" if job["status"] == "completed"
-                                else "Agent run failed. Check native Codex login and sandbox configuration.")
+                                else "Agent run failed. Check the selected provider login, version and access configuration.")
         finally:
             timer.cancel()
             stop_reader.set()

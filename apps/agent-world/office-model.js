@@ -101,7 +101,7 @@
     for(const actor of actors){if(assigned.has(actor.id)||!sharedSeatWithoutRole(actor))continue;const seat=seats.findLast(s=>s.role==='shared'&&!s.occupant);if(seat){seat.occupant=actor;assigned.add(actor.id);}}
     for(const old of previous){const job=jobs.find(j=>`job-${j.id}`===old.occupant?.id&&['completed','failed','cancelled','timed-out','interrupted'].includes(j.status)),seat=seats.find(s=>s.key===old.key);if(job&&seat.role===job.role&&!seat.occupant&&!assigned.has(old.occupant.id)){seat.occupant=old.occupant;assigned.add(old.occupant.id);}}
     // Keep the latest native result visible in spare desks; active workers take priority.
-    for(const job of jobs){const id=`job-${job.id}`;if(assigned.has(id)||!['completed','failed','cancelled','timed-out','interrupted'].includes(job.status))continue;const seat=seats.find(s=>s.role===job.role&&!s.occupant);if(seat){seat.occupant={id,sourceId:job.id,role:job.role,provider:'Codex',label:job.title};assigned.add(id);}}
+    for(const job of jobs){const id=`job-${job.id}`;if(assigned.has(id)||!['completed','failed','cancelled','timed-out','interrupted'].includes(job.status))continue;const seat=seats.find(s=>s.role===job.role&&!s.occupant);if(seat){seat.occupant={id,sourceId:job.id,role:job.role,provider:job.provider===undefined?'Codex':job.providerLabel||job.provider,label:job.title};assigned.add(id);}}
     return seats;
   }
   function project(sessions,live,now=Date.now()) {
@@ -114,7 +114,7 @@
         activity:working?(actions[e.action]?.[0]||'Working / activity details not connected'):e.activeChildCount?`${e.activeChildCount} subagent${e.activeChildCount===1?'':'s'} working in this session; parent action unknown`:e.status==='running'?'Session open; no current task event':e.status==='event-waiting'?(e.evidence?.startsWith('Codex local runtime activity observed')?'Activity recently seen':e.evidence?.startsWith('Codex local thread metadata recently updated')?'Session recently updated':'Turn ended'):e.status.replace('adapter-',''),handoff};
     });
     for(const job of live.jobs.filter(j=>['queued','starting','running'].includes(j.status))) {
-      actors.push({id:`job-${job.id}`,sourceId:job.id,provider:'Codex',label:`Codex / ${job.role}`,role:job.role,working:job.status==='running',state:job.status,updatedAt:job.updatedAt,taskRef:job.id,taskLabel:job.title||'',recentEvents:(job.events||[]).slice(-8).map(event=>({at:event.at,label:event.text})),action:job.status==='running'&&actions[job.action]?job.action:null,targetRef:null,note:'Native task runner event',activity:job.activity,handoff:null});
+      actors.push({id:`job-${job.id}`,sourceId:job.id,provider:job.provider===undefined?'Codex':job.providerLabel||job.provider,label:`${job.provider===undefined?'Codex':job.providerLabel||job.provider} / ${job.role}`,role:job.role,working:job.status==='running',state:job.status,updatedAt:job.updatedAt,taskRef:job.id,taskLabel:job.title||'',recentEvents:(job.events||[]).slice(-8).map(event=>({at:event.at,label:event.text})),action:job.status==='running'&&actions[job.action]?job.action:null,targetRef:null,note:'Native task runner event',activity:job.activity,handoff:null});
     }
     return {actors,events};
   }

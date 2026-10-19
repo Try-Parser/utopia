@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "providerFields": ["id", "label", "installed", "available", "accessModes", "reason"],
+  "launchAdapters": ["codex", "claude"],
+  "accessModes": ["read-only", "workspace-write"],
+  "selection": {
+    "oneAvailable": "select automatically",
+    "severalAvailable": "restore available saved choice, otherwise require a choice",
+    "noneAvailable": "disable launch and show detection state",
+    "legacyRequestWithoutProvider": "resolve only when one launch adapter is available",
+    "retry": "reconcile the original request and pinned provider before any new selection",
+    "fallback": "never switch a queued mission to another provider"
+  },
+  "detection": {
+    "method": "read-only PATH and bounded per-user installation entrypoints",
+    "refreshSeconds": 2,
+    "accountProbe": false,
+    "executeForDiscovery": false,
+    "exposeExecutablePaths": false,
+    "unsupportedInstalled": "show installed with adapter-needed reason; unavailable for mission launch"
+  },
+  "normalizedEvents": ["started", "activity", "answer", "completed", "failed", "change"],
+  "invariants": [
+    "Launch commands are trusted server-side argument arrays with shell disabled, never browser-supplied commands",
+    "Provider identity is pinned to a mission, persisted, included in idempotency and preserved in office employees",
+    "A definitive pre-queue rejection returns accepted=false; an unknown outcome stays pinned through unmarked authentication rejections, malformed responses and mismatched acknowledgements until the original request id is reconciled or explicitly rejected",
+    "Executable availability means installed, not authenticated or guaranteed account access",
+    "Access is enforced by each provider adapter; no blanket permission bypass or silent access upgrade",
+    "Raw tool input/output, reasoning, stderr, credentials and executable paths do not enter public snapshots or persisted history",
+    "CLI startup, authentication, protocol, permission and nonzero-exit failures cannot become successful completion",
+    "Existing cancellation, descendant ownership, timeouts, bounded streams and private file-change reads remain enforced",
+    "Existing Codex-only history is migrated as Codex; unknown provider history is not relabeled as Codex"
+  ],
+  "selectionVectors": [
+    {"available": ["claude"], "saved": null, "selected": "claude"},
+    {"available": ["codex", "claude"], "saved": "claude", "selected": "claude"},
+    {"available": ["codex", "claude"], "saved": null, "selected": ""},
+    {"available": ["claude"], "saved": "codex", "selected": "claude"},
+    {"available": [], "saved": "codex", "selected": ""}
+  ],
+  "sources": {
+    "claudeCli": "https://code.claude.com/docs/en/cli-reference",
+    "claudePermissions": "https://code.claude.com/docs/en/permissions"
+  }
+}

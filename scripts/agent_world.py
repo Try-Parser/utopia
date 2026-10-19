@@ -28,6 +28,7 @@ FILES = {"/": ("index.html", "text/html; charset=utf-8"),
          "/index.html": ("index.html", "text/html; charset=utf-8"),
          "/style.css": ("style.css", "text/css; charset=utf-8"),
          "/engine.js": ("engine.js", "text/javascript; charset=utf-8"),
+         "/mission-providers.js": ("mission-providers.js", "text/javascript; charset=utf-8"),
          "/live.js": ("live.js", "text/javascript; charset=utf-8"),
          "/sessions.js": ("sessions.js", "text/javascript; charset=utf-8"),
          "/conference.js": ("conference.js", "text/javascript; charset=utf-8"),
@@ -187,7 +188,7 @@ def make_server(root, port=8787, live_queue=None, session_discovery=None):
                 self.send_body(200, json.dumps(observed_runs(root)).encode("utf-8"), "application/json")
             elif path == "/api/live":
                 self.send_json(200, live_queue.view() if live_queue else {"enabled": False, "allowEdits": False,
-                               "workspace": "", "token": "", "warning": "Start the server with --enable-live to connect native Codex.", "jobs": []})
+                               "workspace": "", "token": "", "warning": "Start the server with --enable-live to connect local AI providers.", "providers": [], "jobs": []})
             elif path == "/api/sessions":
                 if session_discovery is None:
                     self.send_json(503, {"error": "Local session discovery unavailable"})
@@ -279,7 +280,7 @@ def make_server(root, port=8787, live_queue=None, session_discovery=None):
                     return
                 self.send_json(200, {"id": job["id"], "status": job["status"]})
             except live.LiveError as error:
-                self.send_json(error.status, {"error": str(error)})
+                self.send_json(error.status, {"error": str(error), "accepted": False})
             except discovery.ConferenceError as error:
                 self.send_json(error.status, {"error": str(error)})
             except (OSError, ValueError, RecursionError):
@@ -305,15 +306,37 @@ def make_server(root, port=8787, live_queue=None, session_discovery=None):
     return server
 
 
+def provider_overrides(values, codex_binary=None):
+    """Resolve operator-owned executable overrides; browser requests supply IDs only."""
+    commands = {}
+    configured = list(values)
+    if codex_binary is not None:
+        configured.append(f"codex={codex_binary}")
+    for value in configured:
+        if not isinstance(value, str) or "=" not in value:
+            raise ValueError("Provider binary must use provider-id=executable-path")
+        provider_id, filename = value.split("=", 1)
+        if provider_id not in live.providers.ADAPTERS:
+            raise ValueError("Provider binary needs a registered mission adapter")
+        if provider_id in commands:
+            raise ValueError("A provider executable was configured more than once")
+        binary = Path(filename)
+        if not filename or not binary.is_file() or binary.suffix.lower() in (".cmd", ".bat", ".ps1"):
+            raise ValueError("Provider binary must be an installed executable, not a shell wrapper")
+        commands[provider_id] = [str(binary.resolve())]
+    return commands
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runs-root", type=Path, default=Path.home() / ".task-runs")
     parser.add_argument("--port", type=int, default=8787)
-    parser.add_argument("--enable-live", action="store_true", help="Allow browser missions to use native Codex")
+    parser.add_argument("--enable-live", action="store_true", help="Allow browser missions through detected local AI providers")
     parser.add_argument("--workspace", type=Path, default=ASSETS.parents[1])
     parser.add_argument("--allow-edits", action="store_true", help="Allow explicitly selected workspace-write missions")
     parser.add_argument("--data-dir", type=Path, help="Private local mission history directory")
-    parser.add_argument("--codex-binary", type=Path, help="Installed native Codex executable")
+    parser.add_argument("--codex-binary", type=Path, help="Legacy alias for --provider-binary codex=PATH")
+    parser.add_argument("--provider-binary", action="append", default=[], help="Installed mission provider override: provider-id=executable-path")
     parser.add_argument("--task-timeout", type=int, default=1800, help="Seconds allowed per native run")
     parser.add_argument("--codex-sessions-root", type=Path, help="Alternate Codex sessions directory")
     parser.add_argument("--codex-home", type=Path, help="Alternate Codex profile directory containing local runtime databases")
@@ -338,11 +361,12 @@ def main():
         for forbidden in (workspace, args.runs_root.resolve()):
             if resolved_data == forbidden or forbidden in resolved_data.parents:
                 parser.error("Live history must stay outside source and workflow evidence directories")
-        if args.codex_binary and (not args.codex_binary.is_file() or args.codex_binary.suffix.lower() in (".cmd", ".bat")):
-            parser.error("Codex binary must be a native executable, not a shell script")
+        try:
+            commands = provider_overrides(args.provider_binary, args.codex_binary)
+        except ValueError as error:
+            parser.error(str(error))
         manager = live.LiveQueue(workspace, data_dir, args.allow_edits,
-                                 [str(args.codex_binary.resolve())] if args.codex_binary else None,
-                                 args.task_timeout)
+                                 timeout=args.task_timeout, provider_commands=commands)
     try:
         server = make_server(args.runs_root, args.port, manager, sessions)
     except OSError:

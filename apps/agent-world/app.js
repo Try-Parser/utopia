@@ -3,6 +3,11 @@
 const E = window.AgentWorld;
 const L = window.LiveAgents;
 const S = window.LocalSessions;
+const P = window.MissionProviders;
+const PROVIDER_STORAGE='agent-world.mission-provider.v1';
+let savedProvider='';
+try{savedProvider=localStorage.getItem(PROVIDER_STORAGE)||'';}catch(_){/* Detection remains usable without storage. */}
+let submittingMission=false;
 const $ = id => document.getElementById(id);
 const VIEW_STORAGE='agent-world.office-view.v1';
 const ANGLE_STORAGE='agent-world.office-angle.v1';
@@ -64,9 +69,10 @@ function render() {
   window.ConferenceInbox.sync();
   if(mode==='office'&&officeCameraPending&&!officeCameraManual&&$('world').classList.contains('zoomed')&&window.OfficeWorldView.getState().length)focusOfficeCamera();
   window.ComputerScreens.sync(mode,L.get(),S.get(),state);
-  $('new-mission').disabled=!L.get().enabled;
+  $('new-mission').disabled=false;
   $('new-mission').textContent='+ New task';
-  $('new-mission').title=L.get().enabled?'Assign a native Codex task.':L.get().warning||'Native runner unavailable.';
+  $('new-mission').title='Inspect detected local providers and assign a native task.';
+  refreshMissionProviders();
   $('camera-view').value=officeView;
   $('camera-angle').value=`${Math.round(officeAngle)}°`;
   $('camera-elevation').value=`${officeView==='top-down'?90:Math.round(officeElevation)}°`;
@@ -248,11 +254,61 @@ function followActiveWorker(now){
   if(moved)applyOfficeCamera();
 }
 requestAnimationFrame(followActiveWorker);
-function accessOptions() { const canEdit = L.get().allowEdits && ['planner', 'builder'].includes($('mission-role').value); $('mission-access').options[1].disabled = !canEdit; if (!canEdit) $('mission-access').value = 'read-only'; }
-$('mission-role').addEventListener('change', accessOptions);
-$('new-mission').addEventListener('click',()=>{$('mission-role').value=selected;$('mission-access').value='read-only';accessOptions();$('mission-description').textContent=`Assign a native Codex task in ${L.get().workspace}. Choose a specialist and access.`;$('mission-note').textContent='Uses your Codex account. Local edits are possible when selected. Commits, publication, and deployment are not part of task execution.';$('mission-error').textContent='';$('mission-title').setCustomValidity('');$('mission-dialog').showModal();$('mission-title').focus();});$('close-dialog').addEventListener('click',()=>$('mission-dialog').close());
-$('mission-title').addEventListener('input', () => $('mission-title').setCustomValidity(''));
-$('mission-form').addEventListener('submit',async event=>{event.preventDefault();$('launch-mission').disabled=true;$('mission-error').textContent='';try{await L.submit($('mission-title').value,$('mission-brief').value,$('mission-role').value,$('mission-access').value);render();$('mission-dialog').close();event.target.reset();$('work-tray').open=true;setFeedOpen(true);announce('Native task queued.');}catch(error){$('mission-error').textContent=error.message;}finally{$('launch-mission').disabled=false;}});
+function accessOptions() {
+  const pending=L.pending(),provider=L.get().providers.find(p=>p.id===$('mission-provider').value);
+  const editAllowed=L.get().allowEdits&&['planner','builder'].includes($('mission-role').value);
+  for(const option of $('mission-access').options)option.disabled=!provider?.accessModes.includes(option.value)||option.value==='workspace-write'&&!editAllowed;
+  if(!pending&&(!provider?.accessModes.includes($('mission-access').value)||$('mission-access').selectedOptions[0]?.disabled))$('mission-access').value=provider?.accessModes.includes('read-only')?'read-only':'';
+  $('mission-access').disabled=!!pending||submittingMission||!provider?.available;
+  $('mission-role').disabled=!!pending||submittingMission;
+  $('mission-title').readOnly=!!pending||submittingMission;$('mission-brief').readOnly=!!pending||submittingMission;
+  $('mission-provider').disabled=!!pending||submittingMission||!L.get().providers.some(p=>p.available);
+  $('launch-mission').disabled=submittingMission||!(pending?L.get().token:L.get().enabled&&provider?.available&&$('mission-access').value);
+  $('launch-mission').textContent=submittingMission?'Queuing mission...':pending?'Reconcile mission':'Launch mission';
+}
+function refreshMissionProviders() {
+  const providers=L.get().providers,select=$('mission-provider'),pending=L.pending();
+  const chosen=pending?.provider||P.selectProvider(providers,savedProvider,select.value);
+  const signature=JSON.stringify(providers.map(p=>[p.id,p.label,p.available,p.installed]));
+  if(select.dataset.providers!==signature||select.value!==chosen){
+    select.replaceChildren(node('option','',providers.length?'Choose a detected provider':'No available providers'));
+    select.options[0].value='';
+    for(const provider of providers){const option=node('option','',`${provider.label}${provider.available?'':provider.installed?' - installed; adapter needed or unavailable':' - not installed'}`);option.value=provider.id;option.disabled=!provider.available;select.append(option);}
+    if(pending&&!providers.some(p=>p.id===pending.provider)){const option=node('option','',`${pending.provider} - original mission provider`);option.value=pending.provider;option.disabled=true;select.append(option);}
+    select.dataset.providers=signature;select.value=chosen;
+  }
+  const selectedProvider=providers.find(p=>p.id===chosen),available=providers.filter(p=>p.available);
+  const details=providers.filter(p=>p.installed&&!p.available).map(p=>`${p.label}: ${p.reason}`);
+  const summary=selectedProvider?.reason||(!providers.length?L.get().warning||'Detecting local AI providers...':available.length?'Choose which installed provider should run this mission.':'No runnable provider was detected. Install a supported CLI, then detection updates automatically.');
+  $('mission-provider-status').textContent=[pending&&!submittingMission?'The previous request has an unknown outcome. Retry it with the same provider and task before starting another mission.':'',summary,...details].filter(Boolean).join(' ');
+  $('mission-description').textContent=L.get().workspace?`Assign a native task in ${L.get().workspace}. Choose a provider, specialist and access.`:'Detect local AI providers and assign a native task.';
+  $('mission-note').textContent='Uses the selected provider’s local account. Installed does not mean signed in. Local edits are possible when selected; commits, publication and deployment are not part of task execution.';
+  accessOptions();
+}
+$('mission-role').addEventListener('change',accessOptions);
+$('mission-access').addEventListener('change',accessOptions);
+$('mission-provider').addEventListener('change',()=>{
+  savedProvider=$('mission-provider').value;
+  try{if(savedProvider)localStorage.setItem(PROVIDER_STORAGE,savedProvider);else localStorage.removeItem(PROVIDER_STORAGE);}catch(_){/* Keep this visit’s choice in memory. */}
+  refreshMissionProviders();
+});
+$('new-mission').addEventListener('click',()=>{
+  if(!L.pending()){$('mission-role').value=selected;$('mission-access').value='read-only';}
+  refreshMissionProviders();$('mission-error').textContent='';$('mission-title').setCustomValidity('');$('mission-dialog').showModal();$('mission-title').focus();
+});
+$('close-dialog').addEventListener('click',()=>$('mission-dialog').close());
+$('mission-title').addEventListener('input',()=>$('mission-title').setCustomValidity(''));
+$('mission-form').addEventListener('submit',async event=>{
+  event.preventDefault();if(submittingMission)return;submittingMission=true;accessOptions();$('mission-error').textContent='';
+  try{
+    const provider=$('mission-provider').value;
+    await L.submit($('mission-title').value,$('mission-brief').value,$('mission-role').value,$('mission-access').value,provider);
+    savedProvider=provider;try{localStorage.setItem(PROVIDER_STORAGE,provider);}catch(_){}
+    render();$('mission-dialog').close();event.target.reset();$('work-tray').open=true;setFeedOpen(true);announce('Native task queued.');
+  }catch(error){$('mission-error').textContent=error.message;}
+  finally{submittingMission=false;refreshMissionProviders();}
+});
+
 startOffice();
 setInterval(()=>{if(!document.hidden)pollObserved();},5000);
 
