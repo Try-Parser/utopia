@@ -45,21 +45,24 @@ float contact(vec2 offset,float z,vec2 slope){
   return smoothstep(2.0,15.0,delta)*(1.0-smoothstep(55.0,170.0,abs(delta)));
 }
 void main(){
-  vec4 source=antialiasedColor(vUv);
   float z=depthAt(vUv);
   float east=depthAt(vUv+vec2(texel.x,0.0)),west=depthAt(vUv-vec2(texel.x,0.0));
   float north=depthAt(vUv+vec2(0.0,texel.y)),south=depthAt(vUv-vec2(0.0,texel.y));
   // Gradients use target texels, even when the HDR buffer is capped below
   // the final drawing buffer. Screen derivatives would use a different unit.
   vec2 slope=vec2(east-west,north-south)*0.5;
+  float curvature=max(abs(east+west-2.0*z),abs(north+south-2.0*z));
+  float edge=smoothstep(2.0+z*0.0006,11.0+z*0.0012,curvature);
+  // Texture contrast is not a geometry edge. Keep opaque surface details
+  // intact; resolve depth silhouettes and transparent coverage as before.
+  vec4 center=colorAt(vUv);
+  vec4 source=edge>0.0||center.a<1.0?antialiasedColor(vUv):center;
   if(source.a<0.0001){gl_FragColor=vec4(0.0);return;}
   float radius=mix(5.0,3.5,ink);
   float ao=contact(vec2(radius,0.0),z,slope)+contact(vec2(-radius,0.0),z,slope)
     +contact(vec2(0.0,radius),z,slope)+contact(vec2(0.0,-radius),z,slope)
     +contact(vec2(radius,radius)*0.7071,z,slope)+contact(vec2(-radius,radius)*0.7071,z,slope)
     +contact(vec2(radius,-radius)*0.7071,z,slope)+contact(vec2(-radius,-radius)*0.7071,z,slope);
-  float curvature=max(abs(east+west-2.0*z),abs(north+south-2.0*z));
-  float edge=smoothstep(2.0+z*0.0006,11.0+z*0.0012,curvature);
   // Offscreen blending stores premultiplied linear RGB over transparent black.
   // Grade and tone-map straight HDR color once, then restore canvas alpha.
   vec3 color=source.rgb/max(source.a,0.0001);
