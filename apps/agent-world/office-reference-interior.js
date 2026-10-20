@@ -5,7 +5,7 @@ window.OfficeReferenceInterior=(()=>{
   const palette={planner:'#b79a5c',designer:'#ad839d',builder:'#6b9ba1',reviewer:'#a4aa75',qa:'#8c9cbd',security:'#779784',shared:'#91a597'};
   const lightStyles={illustrated:{gain:1,color:'#ffd59a'},polished:{gain:1.08,color:'#ffe1af'},pixel:{gain:.82,color:'#ffd59a'},'low-poly':{gain:0,color:'#fff2d1'}};
   function create(api){
-    const {T,architecture,geometries,boards,box,softBox,mesh,surface,contactShadow,cup,getLayout}=api;
+    const {T,architecture,geometries,boards,box,softBox,mesh,surface,contactShadow,cup,getLayout,roleColor=role=>palette[role]||palette.shared}=api;
     const galleryArt=new Map(),galleryGeometry=new Map(),desks=[],chairs=[],plants=[],galleries=[],lights=[],frontage=[];
     const rodUp=new T.Vector3(0,1,0),rodDirection=new T.Vector3();
     let style='illustrated',disposed=false,decorated=false,frontPlanters=0,cabinetDressings=0,wallPanels=0,wallDisplays=0,clocks=0,displayShelves=0;
@@ -20,7 +20,7 @@ window.OfficeReferenceInterior=(()=>{
       for(let i=0;i<3;i++){const a=i*2.3,leaf=mesh('sphere','#658d47',x+Math.sin(a)*1.7,34.5+i,z+Math.cos(a)*1.7,1.9,.3,2.8,parent);leaf.rotation.set(.55,a,0);leaf.material=surface('leaf','#658d47');}
     }
     function desk(s,parent){
-      if(disposed)return;const role=Object.hasOwn(palette,s.role)?s.role:'shared',accent=palette[role],index=Number.isInteger(s.index)?s.index:0,slot=index%(role==='shared'?5:4),outer=slot===1||slot===3?1:-1,front=s.seatOffset>0?1:-1;
+      if(disposed)return;const role=Object.hasOwn(palette,s.role)?s.role:'shared',accent=roleColor(role),index=Number.isInteger(s.index)?s.index:0,slot=index%(role==='shared'?5:4),outer=slot===1||slot===3?1:-1,front=s.seatOffset>0?1:-1;
       contactShadow(parent,56,40,1.1);
       // The host places touching modules into a real workbench. A continuous
       // honeywood edge and inset supports keep every part inside its own cell.
@@ -33,8 +33,9 @@ window.OfficeReferenceInterior=(()=>{
       softBox('#516976',inner,0,3,28,1.5,.8,parent);softBox('#c9c9b5',0,0,49,4,3,21.5,parent);
       softBox('#a17c4c',0,0,56,40,1.2,24.8,parent);
       const top=softBox('#e4c492',0,0,56,40,2,26,parent);top.material=surface('plank','#e8cca1');
+      const mat=softBox(accent,0,front*8,36,20,.18,28.08,parent);mat.material=surface('fabric',accent);mat.userData.referenceDeskMat=true;
       if(role!=='shared'&&slot<2){
-        const divider=softBox('#293c5a',0,-front*19.4,55,.9,7,28,parent);divider.material=surface('fabric','#293c5a');divider.userData.referenceDeskDivider=true;
+        const divider=softBox(accent,0,-front*19.4,55,.9,7,28,parent);divider.material=surface('fabric',accent);divider.userData.referenceDeskDivider=true;
         softBox('#eee7d6',0,-front*19.4,55,.9,.35,35,parent).material=surface('polymer','#eee7d6');
       }
       // Sparse accessories distinguish a bench without repeating a tiny lamp,
@@ -52,22 +53,22 @@ window.OfficeReferenceInterior=(()=>{
       parent.userData.referenceDesk={role,width:56,depth:40,desktopHeight:28,monitorAnchor:[0,39,0]};desks.push({role,key:s.key});return parent;
     }
     function chair(point,target,parent=architecture,scale=1){
-      if(disposed)return;const value=group(parent);value.position.set(point.x,0,point.y);value.rotation.y=Math.atan2(target.x-point.x,target.y-point.y);value.scale.setScalar(scale);
+      if(disposed)return;const upholstery='#587487',value=group(parent);value.position.set(point.x,0,point.y);value.rotation.y=Math.atan2(target.x-point.x,target.y-point.y);value.scale.setScalar(scale);
       contactShadow(value,36,34,.8);
       mesh('cylinder','#384653',0,5.4,0,1.8,10.8,1.8,value);
       for(let i=0;i<5;i++){
         const a=i*Math.PI*2/5;rod(value,'#3f5665',[0,3,0],[Math.sin(a)*12,2.4,Math.cos(a)*12],.9);
         const wheel=mesh('cylinder','#263b4c',Math.sin(a)*12,2,Math.cos(a)*12,1.8,2.2,1.8,value);wheel.rotation.z=Math.PI/2;
       }
-      mesh('sphere','#293b56',0,10.4,0,12,3.2,12,value);
-      const seat=mesh('sphere','#293c5a',0,12.5,.2,11.9,2.5,11.8,value);seat.material=surface('fabric','#293c5a');seat.userData.referenceChairSeat=true;
+      mesh('sphere','#405568',0,10.4,0,12,3.2,12,value);
+      const seat=mesh('sphere',upholstery,0,12.5,.2,11.9,2.5,11.8,value);seat.material=surface('fabric',upholstery);seat.userData.referenceChairSeat=true;
       // A shallow rectangular upholstered back and thin arm pads read as an
       // office chair even when empty, rather than a head-and-shoulders shape.
-      const back=softBox('#293c5a',0,-9.5,24,5,20,15,value);back.rotation.x=-.05;back.material=surface('fabric','#293c5a');
-      const cushion=softBox('#293c5a',0,-6.4,19,1.4,14,18,value);cushion.material=surface('fabric','#293c5a');
+      const back=softBox(upholstery,0,-9.5,24,5,20,15,value);back.rotation.x=-.05;back.material=surface('fabric',upholstery);
+      const cushion=softBox(upholstery,0,-6.4,19,1.4,14,18,value);cushion.material=surface('fabric',upholstery);
       for(const x of [-10.8,10.8]){
         for(const z of [-6,2])softBox('#465b69',x,z,1.4,1.4,10,13,value);
-        softBox('#293c5a',x,-1.2,3.5,14,3.3,22.8,value).material=surface('fabric','#293c5a');
+        softBox(upholstery,x,-1.2,3.5,14,3.3,22.8,value).material=surface('fabric',upholstery);
       }
       value.userData.referenceChair={seatTop:15,seatBase:10,scale};chairs.push(value);return value;
     }
@@ -215,7 +216,7 @@ window.OfficeReferenceInterior=(()=>{
         frame.userData.referenceDisplayFrame=true;wallDisplays++;
       }
       if(room.role==='designer'){
-        const frame=galleryPanel(room,'north',70,45,room.x+room.width-112,room.y+10,height-28.5);frame.userData.referenceDisplayFrame=true;wallDisplays++;
+        const frame=galleryPanel(room,'east',70,45,room.x+room.width-8,room.y+108,height*.84);frame.userData.referenceDisplayFrame=true;wallDisplays++;
       }else wallClock(room,height);
       galleries.push({role:room.role,north,east});wallDisplays+=2;localLight(room,room.role);
     }

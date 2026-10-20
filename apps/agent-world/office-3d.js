@@ -3,6 +3,7 @@ window.Office3D=(()=>{
   'use strict';
   const T=window.OfficeThree,world=document.getElementById('world');
   if(!T)return {available:false};
+  const lightingStyles={illustrated:{hemisphere:1.15,sun:2.1,fill:.95,exposure:1},polished:{hemisphere:.95,sun:2.6,fill:.8,exposure:1.04},pixel:{hemisphere:1.05,sun:2.25,fill:.85,exposure:1},'low-poly':{hemisphere:.9,sun:2.4,fill:.65,exposure:1}};
   const canvas=document.createElement('canvas');canvas.className='office-3d';canvas.setAttribute('aria-hidden','true');
   let renderer;
   try{const context=canvas.getContext('webgl2',{antialias:true,alpha:true});if(!context)return {available:false};renderer=new T.WebGLRenderer({canvas,context,antialias:true,alpha:true});}
@@ -17,9 +18,9 @@ window.Office3D=(()=>{
   const clippedCamera=camera.clone(),clipMatrix=camera.projectionMatrix.clone(),effectLimits=renderArt?.diagnostics().buffer||{maxPixels:8000000,maxSide:4096};
   clippedCamera.matrixAutoUpdate=clippedCamera.matrixWorldAutoUpdate=false;
   const renderViewport={visibleOnly:false,x:0,y:0,width:1,height:1,guard:0};
-  const hemisphere=new T.HemisphereLight(0xc8dfff,0x8d7660,.95);scene.add(architecture,people,hemisphere);
-  const sun=new T.DirectionalLight(0xffefd6,2.45);sun.position.set(600,1600,400);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.bias=-.0003;sun.shadow.normalBias=1.5;scene.add(sun,sun.target);
-  const fill=new T.DirectionalLight(0xa6c9e3,.75);fill.position.set(-800,900,-600);scene.add(fill);
+  const hemisphere=new T.HemisphereLight(0xe4efff,0xb2a18a,lightingStyles.illustrated.hemisphere);scene.add(architecture,people,hemisphere);
+  const sun=new T.DirectionalLight(0xffefd6,lightingStyles.illustrated.sun);sun.position.set(600,1600,400);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.bias=-.0003;sun.shadow.normalBias=1.5;scene.add(sun,sun.target);
+  const fill=new T.DirectionalLight(0xc5daed,lightingStyles.illustrated.fill);fill.position.set(-800,900,-600);scene.add(fill);
   function roundedGeometry(){const g=new T.BoxGeometry(1,1,1,4,4,4),p=g.attributes.position,n=g.attributes.normal;for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i),cx=Math.max(-.42,Math.min(.42,x)),cy=Math.max(-.42,Math.min(.42,y)),cz=Math.max(-.42,Math.min(.42,z)),dx=x-cx,dy=y-cy,dz=z-cz,length=Math.hypot(dx,dy,dz);p.setXYZ(i,cx+dx/length*.08,cy+dy/length*.08,cz+dz/length*.08);n.setXYZ(i,dx/length,dy/length,dz/length);}g.computeBoundingSphere();return g;}
   function wedgeGeometry(){const g=roundedGeometry(),p=g.attributes.position;for(let i=0;i<p.count;i++)p.setX(i,p.getX(i)*(.65+.35*(p.getY(i)+.5)));g.computeVertexNormals();g.computeBoundingSphere();return g;}
   const jawWidth=(y,profile)=>profile===1?1+Math.max(0,1-Math.abs(y+.2)/.7)*.08-Math.max(0,-y-.2)*.28:1-Math.max(0,-y-.15)*(profile===2?.08:.17);
@@ -120,7 +121,7 @@ window.Office3D=(()=>{
     const next=graphicsStyles.includes(id)?id:'illustrated';if(next===graphicsStyle)return graphicsStyle;graphicsStyle=next;
     if(contextLost||graphicsDisposed)return graphicsStyle;
     applyGraphicsTree(architecture);for(const worker of workers.values())applyWorkerGraphics(worker);for(const asset of castAssets.values())sampleTexture(asset.texture);referenceInterior?.setStyle(next);
-    const soft=graphicsStyle==='polished',matte=graphicsStyle==='low-poly';hemisphere.intensity=soft?.72:matte?.9:.85;sun.intensity=soft?2.8:matte?2.4:2.45;fill.intensity=soft?.48:matte?.65:.65;renderer.toneMappingExposure=soft?1.06:1;
+    const light=lightingStyles[graphicsStyle];hemisphere.intensity=light.hemisphere;sun.intensity=light.sun;fill.intensity=light.fill;renderer.toneMappingExposure=light.exposure;
     canvas.style.imageRendering=graphicsStyle==='pixel'?'pixelated':'';lastSize='';renderer.shadowMap.needsUpdate=true;dirty=true;return graphicsStyle;
   }
   function disposeGraphicsMaterial(original){const variants=graphicsMaterials.get(original);if(variants){for(const value of variants.values())value.dispose();graphicsMaterials.delete(original);}}
@@ -248,7 +249,9 @@ window.Office3D=(()=>{
   // Procedural surfaces remain usable while artwork loads or is unavailable.
   function surface(kind,color){const key=`${kind}:${color}`;if(materials.has(key))return materials.get(key);
     const c=document.createElement('canvas');c.width=c.height=512;const ctx=c.getContext('2d');ctx.scale(4,4);
-    if(kind==='polymer'||kind==='leaf'){ctx.fillStyle=kind==='polymer'?'#f2f1e8':'#548943';ctx.fillRect(0,0,128,128);}
+    // Leaf colors already come from their materials; a second green tint
+    // obscures the individual blades in the whole-office view.
+    if(kind==='polymer'||kind==='leaf'){ctx.fillStyle=kind==='polymer'?'#f2f1e8':'#ffffff';ctx.fillRect(0,0,128,128);}
     else if(kind==='fabric'){ctx.fillStyle='#eeeae1';ctx.fillRect(0,0,128,128);for(let y=0;y<128;y+=4)for(let x=0;x<128;x+=4){ctx.fillStyle=(x+y)%8?'#e7e3db':'#f3efe6';ctx.fillRect(x,y,3,1);ctx.fillStyle='#e3e0d8';ctx.fillRect(x+2,y+1,1,3);}}
     else if(kind==='wall'){ctx.fillStyle='#fff9eb';ctx.fillRect(0,0,128,128);for(let x=0;x<128;x+=8){ctx.fillStyle='#d8cdb527';ctx.fillRect(x,0,1,128);ctx.fillStyle='#ffffff55';ctx.fillRect(x+1,0,1,128);}for(let y=0;y<128;y+=4){ctx.fillStyle='#b8a48609';ctx.fillRect(0,y,128,1);}}
     else if(kind==='plank'){ctx.fillStyle='#a58b68';ctx.fillRect(0,0,128,128);for(let row=0;row<8;row++)for(let col=-1;col<3;col++){const x=col*64+(row%2)*32,y=row*16;ctx.fillStyle=['#f0d8aa','#e9d0a2','#f4dfb7'][(row+col+3)%3];ctx.fillRect(x+.5,y+.5,63,15);ctx.strokeStyle='#9a785133';for(let line=0;line<3;line++){ctx.beginPath();ctx.moveTo(x+4,y+4+line*3);ctx.quadraticCurveTo(x+25,y+line*3+2,x+59,y+5+line*3);ctx.stroke();}}}
@@ -317,10 +320,12 @@ window.Office3D=(()=>{
     return {mesh:m,cap,rail,vertical};
   }
   function sizeWall(wall,height){wall.mesh.scale.y=height;wall.mesh.position.y=height/2;wall.cap.position.y=height-1.5;wall.rail.visible=height>30;}
-  function plaqueMaterial(label){const key=`plaque:${label}`;if(materials.has(key))return materials.get(key);const c=document.createElement('canvas');c.width=768;c.height=128;const ctx=c.getContext('2d');ctx.fillStyle='#203b50';ctx.fillRect(0,0,768,128);ctx.strokeStyle='#ae9c72';ctx.lineWidth=7;ctx.strokeRect(5,5,758,118);ctx.fillStyle='#fff6dd';ctx.textAlign='center';ctx.textBaseline='middle';let size=58;ctx.font=`bold ${size}px sans-serif`;while(ctx.measureText(label).width>708&&size>25)ctx.font=`bold ${--size}px sans-serif`;ctx.fillText(label,384,65);const texture=new T.CanvasTexture(c);texture.colorSpace=T.SRGBColorSpace;const m=new T.MeshBasicMaterial({map:texture,toneMapped:false});materials.set(key,m);return m;}
-  function roomSign(room){const group=new T.Group(),width=Math.min(230,room.width*.7),height=width/5;group.position.set(room.x+room.width/2,(layout.ceilingHeight||85)-height/2-4,room.y+(room===layout.cafe||room===layout.breakout?31:23));group.userData.dynamic=true;group.userData.followCap=true;group.userData.authoredY=group.position.y;architecture.add(group);softBox('#b7a17d',0,0,width+5,4,height+4,-height/2-2,group);const face=mesh('plane','#ffffff',0,0,2.1,width,height,1,group);face.material=plaqueMaterial(room.name);boards.push(group);}
+  function plaqueMaterial(label,accent='#ae9c72'){const key=`plaque:${label}:${accent}`;if(materials.has(key))return materials.get(key);const c=document.createElement('canvas');c.width=768;c.height=128;const ctx=c.getContext('2d');ctx.fillStyle='#173347';ctx.fillRect(0,0,768,128);ctx.strokeStyle='#d6caa6';ctx.lineWidth=4;ctx.strokeRect(5,5,758,118);ctx.fillStyle=accent;ctx.fillRect(11,11,18,106);ctx.fillStyle='#fff9e9';ctx.textAlign='center';ctx.textBaseline='middle';let size=64;ctx.font=`bold ${size}px sans-serif`;while(ctx.measureText(label).width>660&&size>25)ctx.font=`bold ${--size}px sans-serif`;ctx.fillText(label,400,65);const texture=new T.CanvasTexture(c);texture.colorSpace=T.SRGBColorSpace;const m=new T.MeshBasicMaterial({map:texture,toneMapped:false});materials.set(key,m);return m;}
+  // Keep headings in the gallery's wall plane: projecting a sign farther into
+  // the room can cancel its vertical clearance and obscure the board below.
+  function roomSign(room){const group=new T.Group(),width=Math.min(270,room.width*.6),height=width/6;group.position.set(room.x+28+width/2,(layout.ceilingHeight||85)-height/2-4,room.y+9);group.userData.dynamic=true;group.userData.side='north';group.userData.requiredHeight=(layout.ceilingHeight||85)-1;architecture.add(group);softBox('#b7a17d',0,0,width+5,4,height+4,-height/2-2,group);const face=mesh('plane','#ffffff',0,0,2.1,width,height,1,group);face.material=plaqueMaterial(room.name,colors[window.OfficeWorld.roles.indexOf(room.role)]||'#ae9c72');boards.push(group);}
   function framedBoard(bounds,variant='planner'){
-    const [x,z,r,b]=bounds,group=new T.Group(),vertical=b-z>r-x,width=Math.max(r-x,b-z),style=['planner','designer','builder','reviewer','qa','security'].includes(variant)?variant:'planner';group.position.set((x+r)/2,(layout.ceilingHeight||176)*.68,(z+b)/2);if(vertical)group.rotation.y=Math.PI/2;group.userData.dynamic=true;group.userData.vertical=vertical;architecture.add(group);
+    const [x,z,r,b]=bounds,group=new T.Group(),vertical=b-z>r-x,width=Math.max(r-x,b-z),style=['planner','designer','builder','reviewer','qa','security'].includes(variant)?variant:'planner';group.position.set((x+r)/2,(layout.ceilingHeight||176)*.55,(z+b)/2);if(vertical)group.rotation.y=Math.PI/2;group.userData.dynamic=true;group.userData.vertical=vertical;architecture.add(group);
     box('#8e704d',0,0,width,4,55,-27.5,group);box('#e4d4ad',0,2.2,width-4,.6,51,-25.5,group);
     const key=`office-board:${style}`;let value=materials.get(key);
     if(!value){const c=document.createElement('canvas');c.width=512;c.height=256;const ctx=c.getContext('2d');ctx.lineCap='round';ctx.lineJoin='round';ctx.fillStyle=style==='designer'?'#e7e5d9':'#f5eedb';ctx.fillRect(0,0,512,256);
@@ -667,7 +672,7 @@ window.Office3D=(()=>{
   function setActive(value){active=!!value&&!contextLost;canvas.hidden=!active;world.classList.toggle('webgl-office',active);world.dataset.renderer=active?'webgl':'svg';dirty=true;}
   // These kits replace visible models; physical routes and monitor anchors stay
   // in the host. A missing module leaves a functional, explicitly reported fallback.
-  try{referenceInterior=window.OfficeReferenceInterior?.create({T,architecture,geometries,materials,boards,box,softBox,mesh,surface,material,contactShadow,cup,getLayout:()=>layout})||null;}catch(error){referenceKitErrors.push(String(error?.message||error).slice(0,1024));}
+  try{referenceInterior=window.OfficeReferenceInterior?.create({T,architecture,geometries,materials,boards,box,softBox,mesh,surface,material,contactShadow,cup,roleColor:role=>colors[window.OfficeWorld.roles.indexOf(role)]||'#91a597',getLayout:()=>layout})||null;}catch(error){referenceKitErrors.push(String(error?.message||error).slice(0,1024));}
   try{referenceCast=window.OfficeReferenceCast?.create({T,mesh,box,softBox,material,surface,characterFace,geometries,materials,cast})||null;}catch(error){referenceKitErrors.push(String(error?.message||error).slice(0,1024));}
   canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();contextLost=true;disposeCastAssets();disposeGraphics();setActive(false);window.dispatchEvent(new Event('office3dfallback'));});
   window.addEventListener('pagehide',event=>{if(!event.persisted){disposeCastAssets();disposeGraphics();}});
