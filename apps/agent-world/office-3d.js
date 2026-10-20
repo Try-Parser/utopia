@@ -14,6 +14,9 @@ window.Office3D=(()=>{
   let renderArt=null,renderArtError='';
   try{renderArt=window.OfficeRenderArt?.create(T,renderer)||null;}catch(error){renderArtError=String(error?.message||error);}
   const scene=new T.Scene(),camera=new T.PerspectiveCamera(18,1,1,12000),architecture=new T.Group(),people=new T.Group();
+  const clippedCamera=camera.clone(),clipMatrix=camera.projectionMatrix.clone(),effectLimits=renderArt?.diagnostics().buffer||{maxPixels:8000000,maxSide:4096};
+  clippedCamera.matrixAutoUpdate=clippedCamera.matrixWorldAutoUpdate=false;
+  const renderViewport={visibleOnly:false,x:0,y:0,width:1,height:1,guard:0};
   const hemisphere=new T.HemisphereLight(0xc8dfff,0x8d7660,.95);scene.add(architecture,people,hemisphere);
   const sun=new T.DirectionalLight(0xffefd6,2.45);sun.position.set(600,1600,400);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.bias=-.0003;sun.shadow.normalBias=1.5;scene.add(sun,sun.target);
   const fill=new T.DirectionalLight(0xa6c9e3,.75);fill.position.set(-800,900,-600);scene.add(fill);
@@ -26,7 +29,7 @@ window.Office3D=(()=>{
   const geometries={box:new T.BoxGeometry(1,1,1),rounded:roundedGeometry(),wedge:wedgeGeometry(),sphere:new T.SphereGeometry(1,12,8),chibiHair:chibiHairGeometry(),jacket:new T.CylinderGeometry(1,.82,1,12),ring:new T.TorusGeometry(1,.13,6,20),cylinder:new T.CylinderGeometry(1,1,1,12),plane:new T.PlaneGeometry(1,1)};
   for(let profile=0;profile<3;profile++){geometries[`head${profile}`]=chibiHeadGeometry(profile);geometries[`face${profile}`]=chibiFaceGeometry(profile);}
   const materials=new Map(),workers=new Map(),monitors=new Map(),walls=[],roomWalls=[],glazings=[],boards=[],rugs=[],hallways=[],wayfinding=[],floorFinishes=[],receptionCounters=[];
-  let physicalKey='',layout=null,projection=null,active=false,dirty=true,lastRender=0,renderedFrames=0,lastSize='',contextLost=false,referenceInterior=null,referenceCast=null;
+  let physicalKey='',layout=null,projection=null,active=false,dirty=true,lastRender=0,renderedFrames=0,lastSize='',lastViewport='',contextLost=false,referenceInterior=null,referenceCast=null;
   const referenceKitErrors=[];
   const graphicsStyles=['illustrated','polished','pixel','low-poly'],graphicsOriginals=new WeakMap(),graphicsMaterials=new Map(),graphicsGeometries=new Map(),textureSampling=new WeakMap(),polishedTextures=new Map();
   const nearestFilter=1003; // NearestFilter in the checked-in Three.js bundle.
@@ -624,8 +627,43 @@ window.Office3D=(()=>{
     for(const [id,w]of workers)if(!ids.has(id)){people.remove(w.root);w.selection.geometry.dispose();w.selection.material.dispose();w.illustration?.geometry.dispose();workers.delete(id);dirty=true;}
     render(now,animating);
   }
-  function resize(){const width=Math.max(1,Math.round(world.clientWidth)),height=Math.max(1,Math.round(world.clientHeight)),zoom=Number(world.style.getPropertyValue('--camera-scale'))||1,normalRatio=Math.min(3,Math.sqrt(8000000/(width*height)),Math.max(1,devicePixelRatio||1)*zoom),ratio=graphicsStyle==='pixel'?Math.min(normalRatio,1/(2*Math.max(1,zoom))):normalRatio,key=`${width}:${height}:${ratio}`;if(lastSize!==key){renderer.setPixelRatio(ratio);renderer.setSize(width,height,false);lastSize=key;dirty=true;}}
-  function render(now=performance.now(),animating=false){if(!active||contextLost||document.hidden||!projection)return;resize();updateIllustratedWorkers(now);if((dirty||animating)&&now-lastRender>40){if(renderArt){try{renderArt.render(scene,camera,graphicsStyle);}catch(error){renderArtError=String(error?.message||error);renderArt.dispose();renderArt=null;renderer.render(scene,camera);}}else renderer.render(scene,camera);dirty=false;lastRender=now;renderedFrames++;}}
+  function resize(){
+    let width=Math.max(1,Math.round(world.clientWidth)),height=Math.max(1,Math.round(world.clientHeight));
+    const zoom=Number(world.style.getPropertyValue('--camera-scale'))||1,visibleOnly=graphicsStyle==='illustrated';
+    let x=0,y=0,spanX=1,spanY=1,guard=0;
+    if(visibleOnly){
+      const full=world.getBoundingClientRect(),parent=world.parentElement,view=parent.getBoundingClientRect(),left=view.left+parent.clientLeft,top=view.top+parent.clientTop,right=left+parent.clientWidth,bottom=top+parent.clientHeight;
+      if(full.width<=0||full.height<=0||Math.min(full.right,right)<=Math.max(full.left,left)||Math.min(full.bottom,bottom)<=Math.max(full.top,top))return null;
+      // Keep the existing pixel budgets on the visible office, rather than
+      // spreading them over the enlarged floor outside the clipped viewport.
+      // A bounded margin keeps depth/AA sampling seams outside the viewport.
+      guard=12/Math.min(1,Math.sqrt(effectLimits.maxPixels/Math.max(1,parent.clientWidth*parent.clientHeight)),effectLimits.maxSide/Math.max(1,parent.clientWidth),effectLimits.maxSide/Math.max(1,parent.clientHeight));
+      const cropLeft=Math.max(full.left,left-guard),cropTop=Math.max(full.top,top-guard),cropRight=Math.min(full.right,right+guard),cropBottom=Math.min(full.bottom,bottom+guard);
+      x=(cropLeft-full.left)/full.width;y=(cropTop-full.top)/full.height;spanX=(cropRight-cropLeft)/full.width;spanY=(cropBottom-cropTop)/full.height;
+      width=Math.max(1,Math.round(cropRight-cropLeft));height=Math.max(1,Math.round(cropBottom-cropTop));
+      // Compose with the fitted projection, including its framing offset.
+      // Public world/monitor projections continue to use the original camera.
+      clippedCamera.position.copy(camera.position);clippedCamera.quaternion.copy(camera.quaternion);clippedCamera.scale.copy(camera.scale);
+      clippedCamera.matrix.copy(camera.matrix);clippedCamera.matrixWorld.copy(camera.matrixWorld);clippedCamera.matrixWorldInverse.copy(camera.matrixWorldInverse);
+      clippedCamera.near=camera.near;clippedCamera.far=camera.far;
+      clipMatrix.set(1/spanX,0,0,(1-2*x-spanX)/spanX,0,1/spanY,0,(spanY-1+2*y)/spanY,0,0,1,0,0,0,0,1);
+      clippedCamera.projectionMatrix.multiplyMatrices(clipMatrix,camera.projectionMatrix);clippedCamera.projectionMatrixInverse.copy(clippedCamera.projectionMatrix).invert();
+    }
+    const normalRatio=Math.min(3,Math.sqrt(8000000/(width*height)),Math.max(1,devicePixelRatio||1)*(visibleOnly?1:zoom)),ratio=graphicsStyle==='pixel'?Math.min(normalRatio,1/(2*Math.max(1,zoom))):normalRatio;
+    const viewportKey=`${visibleOnly}:${x}:${y}:${spanX}:${spanY}`,sizeKey=`${width}:${height}:${ratio}`;
+    if(lastViewport!==viewportKey){
+      if(visibleOnly){canvas.style.left=`${x*100}%`;canvas.style.top=`${y*100}%`;canvas.style.width=`${spanX*100}%`;canvas.style.height=`${spanY*100}%`;canvas.style.right=canvas.style.bottom='auto';}
+      else for(const property of ['left','top','right','bottom','width','height'])canvas.style.removeProperty(property);
+      Object.assign(renderViewport,{visibleOnly,x,y,width:spanX,height:spanY,guard});lastViewport=viewportKey;dirty=true;
+    }
+    if(lastSize!==sizeKey){
+      // Update dimensions and DPR together, avoiding a large intermediate
+      // drawing buffer when resizing from a large viewport to a small one.
+      renderer.setDrawingBufferSize(width,height,ratio);lastSize=sizeKey;dirty=true;
+    }
+    return visibleOnly?clippedCamera:camera;
+  }
+  function render(now=performance.now(),animating=false){if(!active||contextLost||document.hidden||!projection)return;const viewCamera=resize();if(!viewCamera)return;updateIllustratedWorkers(now);if((dirty||animating)&&now-lastRender>40){if(renderArt){try{renderArt.render(scene,viewCamera,graphicsStyle);}catch(error){renderArtError=String(error?.message||error);renderArt.dispose();renderArt=null;renderer.render(scene,viewCamera);}}else renderer.render(scene,viewCamera);dirty=false;lastRender=now;renderedFrames++;}}
   function setActive(value){active=!!value&&!contextLost;canvas.hidden=!active;world.classList.toggle('webgl-office',active);world.dataset.renderer=active?'webgl':'svg';dirty=true;}
   // These kits replace visible models; physical routes and monitor anchors stay
   // in the host. A missing module leaves a functional, explicitly reported fallback.
@@ -638,7 +676,7 @@ window.Office3D=(()=>{
   function graphicsDiagnostics(){
     const faceted=new Set(graphicsGeometries.values());let geometryVariantMeshes=0,softFurnitureMeshes=0,texturedSurfaceMeshes=0,matteSurfaceMeshes=0;
     architecture.traverse(object=>{if(!object.isMesh)return;const original=graphicsOriginals.get(object);if(faceted.has(object.geometry))geometryVariantMeshes++;if(original&&object.userData.graphicsRounded&&object.geometry===geometries.rounded&&original.geometry!==object.geometry)softFurnitureMeshes++;if(original?.material.userData.graphicsSurface){if(object.material.map)texturedSurfaceMeshes++;else matteSurfaceMeshes++;}});
-    return {renderArt:renderArt?renderArt.diagnostics():{supported:false,active:false,reason:renderArtError||'helper-unavailable'},atlas:'assets/office-surfaces-v2.png',surfaceState,employees:graphicsStyle==='low-poly'?'faceted':graphicsStyle==='polished'?'volumetric':'illustrated',finish:graphicsStyle==='low-poly'?'matte':graphicsStyle==='polished'?'soft':graphicsStyle==='pixel'?'pixel':'painted',pixelated:graphicsStyle==='pixel',buffer:{width:canvas.width,height:canvas.height,pixelRatio:renderer.getPixelRatio()},materialVariants:[...graphicsMaterials.values()].reduce((n,v)=>n+v.size,0),polishedSurfaceMaps:polishedTextures.size,resourceMaterials:{atlas:'assets/reference-resources-v1/materials.png',state:resourceMaterialState,loaded:resourceMaterialState==='ready',maps:polishedTextures.size,kinds:[...polishedTextures.keys()]},geometryVariants:graphicsGeometries.size,geometryVariantMeshes,softFurnitureMeshes,texturedSurfaceMeshes,matteSurfaceMeshes,lighting:{hemisphere:hemisphere.intensity,sun:sun.intensity,fill:fill.intensity},interior:{floors:floorFinishes.map(({id,kind,mesh})=>({id,kind,textured:!!mesh.material.map,color:mesh.material.color.getHexString()})),reception:receptionCounters.map(({bounds})=>({bounds:[...bounds]})),frontage:glazings.filter(g=>g.facade).map(g=>({bounds:[...g.bounds]})),sconces:boards.filter(b=>b.userData.sconce).length},spriteFilters:Object.fromEntries([...castAssets].filter(([,a])=>a.texture).map(([id,a])=>[id,{mag:a.texture.magFilter,min:a.texture.minFilter}]))};
+    return {renderArt:renderArt?renderArt.diagnostics():{supported:false,active:false,reason:renderArtError||'helper-unavailable'},atlas:'assets/office-surfaces-v2.png',surfaceState,employees:graphicsStyle==='low-poly'?'faceted':graphicsStyle==='polished'?'volumetric':'illustrated',finish:graphicsStyle==='low-poly'?'matte':graphicsStyle==='polished'?'soft':graphicsStyle==='pixel'?'pixel':'painted',pixelated:graphicsStyle==='pixel',buffer:{width:canvas.width,height:canvas.height,pixelRatio:renderer.getPixelRatio()},renderViewport:{...renderViewport},materialVariants:[...graphicsMaterials.values()].reduce((n,v)=>n+v.size,0),polishedSurfaceMaps:polishedTextures.size,resourceMaterials:{atlas:'assets/reference-resources-v1/materials.png',state:resourceMaterialState,loaded:resourceMaterialState==='ready',maps:polishedTextures.size,kinds:[...polishedTextures.keys()]},geometryVariants:graphicsGeometries.size,geometryVariantMeshes,softFurnitureMeshes,texturedSurfaceMeshes,matteSurfaceMeshes,lighting:{hemisphere:hemisphere.intensity,sun:sun.intensity,fill:fill.intensity},interior:{floors:floorFinishes.map(({id,kind,mesh})=>({id,kind,textured:!!mesh.material.map,color:mesh.material.color.getHexString()})),reception:receptionCounters.map(({bounds})=>({bounds:[...bounds]})),frontage:glazings.filter(g=>g.facade).map(g=>({bounds:[...g.bounds]})),sconces:boards.filter(b=>b.userData.sconce).length},spriteFilters:Object.fromEntries([...castAssets].filter(([,a])=>a.texture).map(([id,a])=>[id,{mag:a.texture.magFilter,min:a.texture.minFilter}]))};
   }
   function workerDiagnostics(id,w){let nativeMeshCount=0,facetedMeshCount=0;const faceted=new Set(graphicsGeometries.values());w.body.traverse(object=>{if(object.isMesh){nativeMeshCount++;if(w.body.visible&&faceted.has(object.geometry))facetedMeshCount++;}});return {id,pose:w.pose,x:w.root.position.x,y:w.root.position.z,height:w.body.position.y,appearance:{...w.appearance},visualKind:w.visualKind,geometryStyle:w.body.visible?(graphicsStyle==='low-poly'?'faceted':'sculpted'):'illustrated',bodyVisible:w.body.visible,illustrationVisible:!!w.illustration?.visible,nativeMeshCount,facetedMeshCount,frame:w.frame,direction:w.direction,motion:w.motion,workingPose:w.workingPose};}
   function diagnostics(){
