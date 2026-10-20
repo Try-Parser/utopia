@@ -397,3 +397,11 @@ body[data-graphics-style=low-poly] .world:not(.webgl-office) svg.office [data-de
 #project-floor{width:210px;max-width:100%;min-height:34px;padding:6px 9px;border:1px solid #78909a99;border-radius:9px;background:#19323e;color:#e2edf0;font:inherit;font-size:11px;line-height:1.4;text-overflow:ellipsis;box-shadow:0 6px 22px #071a2750}
 #project-floor:focus-visible{outline:2px solid #e9c58b;outline-offset:3px}#project-floor:disabled{opacity:.75}
 @media(max-width:560px){.project-floors{display:inline-flex;margin:5px 0 0 6px;vertical-align:top;max-width:calc(100vw - 16px)}#project-floor{width:155px;min-height:31px;font-size:10px}}
+
+/* Cafeteria speech is ambient simulation; reported work keeps its existing styles. */
+.character.at-cafe-seat:not(.office-walking) .person{transform:translateY(-8px);animation:none}
+.office-character[data-bubble=social] .character-bubble{display:grid;background:#eef7ed;border-color:#84aa8a}
+.office-character[data-bubble=social] .worker-task{display:-webkit-box;-webkit-line-clamp:3;max-width:none}
+.office-character[data-bubble=social] .worker-action{font-size:10px;white-space:normal}
+.office-character[data-bubble=social] .character-bubble[popover=manual]{width:174px;max-width:174px}
+@media(max-width:560px){.office-character[data-bubble=social] .character-bubble[popover=manual]{width:144px;max-width:144px;max-height:100px}}

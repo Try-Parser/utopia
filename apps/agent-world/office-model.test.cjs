@@ -44,8 +44,8 @@ test('reference office preserves versioned golden room vectors and targets',()=>
 test('reference furniture and every destination share reachable authoritative geometry',()=>{
   const g=O.layout();M.configure(g);
   try{
-    for(const prop of g.props){const [x,y,r,b]=prop.bounds;assert.equal(M.free((x+r)/2,(y+b)/2),false,`${prop.kind} has a matching collider`);}
-    const targets=[...g.stations.flatMap(s=>[s.point,s.approach]),...g.conferenceSeats.flatMap(s=>[s.point,s.approach]),O.departureTarget(g,'exit'),O.departureTarget(g,'breakout'),g.cafe.point];
+    for(const prop of g.props){const [x,y,r,b]=prop.bounds;assert.equal(M.free((x+r)/2,(y+b)/2),prop.blocking===false,`${prop.kind} is blocked unless explicitly designated a reachable seat`);}
+    const targets=[...g.stations.flatMap(s=>[s.point,s.approach]),...g.conferenceSeats.flatMap(s=>[s.point,s.approach]),...g.cafeSeats.map(s=>s.point),O.departureTarget(g,'exit'),O.departureTarget(g,'breakout'),g.cafe.point];
     for(const target of targets){assert.ok(M.free(target.x,target.y),`${JSON.stringify(target)} is clear`);assert.ok(M.path(g.lobby(0),target).length,`${JSON.stringify(target)} reachable`);}
     for(let i=0;i<32;i++){const start=g.lobby(i);assert.ok(M.free(start.x,start.y));assert.ok(M.path(start,g.entrance.point).length,`arrival ${i} reaches open front door`);}
   }finally{M.configure(null);}
@@ -318,8 +318,8 @@ test('only explicit fresh handoffs transfer work; completion never invents a nex
   const native=O.project({entries:[]},{jobs:[{id:'f'.repeat(32),role:'qa',status:'running',activity:'Running tests'},{id:'e'.repeat(32),role:'builder',status:'completed'}]});
   assert.equal(native.actors.length,1);assert.equal(native.actors[0].working,true);assert.deepEqual(O.destination(native.actors[0],0),O.desks.qa);assert.equal(native.events.length,0);
 });
-test('only explicitly role-reported idle sessions take cosmetic walks',()=>{
-  const actor=O.project({entries:[{...base,kind:'session',status:'adapter-idle',role:'builder'}]},{jobs:[]}).actors[0];assert.equal(O.canRoam(actor),true);assert.equal(O.canRoam({...actor,role:null}),false);assert.equal(O.canRoam({...actor,state:'running'}),false);
+test('only explicitly idle sessions or confirmed finished turns take cafeteria breaks',()=>{
+  const actor=O.project({entries:[{...base,kind:'session',status:'adapter-idle',role:'builder'}]},{jobs:[]}).actors[0];assert.equal(O.canRoam(actor),true);assert.equal(O.canRoam({...actor,role:null}),true);assert.equal(O.canRoam({...actor,state:'running'}),false);
   for(let i=0;i<12;i++){let p=O.lobby(i);for(const q of O.idleStops(actor,i)){assert.notDeepEqual(q,O.lobby(i),'the lobby is transit only');assert.equal(M.free(q.x,q.y),true);assert.ok(M.path(p,q).length>0);p=q;}}
   assert.equal(actor.working,false);assert.equal(actor.role,'builder');
   assert.equal(O.canRoam({...actor,working:true}),false);assert.equal(O.canRoam({...actor,handoff:{toRole:'qa'}}),false);assert.equal(O.canRoam({...actor,state:'adapter-ended'}),false);

@@ -6,7 +6,7 @@ window.OfficeReferenceInterior=(()=>{
   const lightStyles={illustrated:{gain:1,color:'#ffd59a'},polished:{gain:1.08,color:'#ffe1af'},pixel:{gain:.82,color:'#ffd59a'},'low-poly':{gain:0,color:'#fff2d1'}};
   function create(api){
     const {T,architecture,geometries,boards,box,softBox,mesh,surface,contactShadow,cup,getLayout,roleColor=role=>palette[role]||palette.shared}=api;
-    const galleryArt=new Map(),galleryGeometry=new Map(),desks=[],chairs=[],plants=[],galleries=[],lights=[],frontage=[];
+    const galleryArt=new Map(),galleryGeometry=new Map(),desks=[],chairs=[],plants=[],galleries=[],lights=[],frontage=[],occupiedRooms=new Set();
     const rodUp=new T.Vector3(0,1,0),rodDirection=new T.Vector3();
     let style='illustrated',disposed=false,decorated=false,frontPlanters=0,cabinetDressings=0,wallPanels=0,wallDisplays=0,clocks=0,displayShelves=0;
     function group(parent=architecture){const value=new T.Group();parent.add(value);return value;}
@@ -224,7 +224,9 @@ window.OfficeReferenceInterior=(()=>{
       const height=getLayout()?.ceilingHeight||176,value=new T.PointLight('#ffd59a',11000,Math.min(720,Math.max(400,room.width*.8,room.height*.95)),2);
       value.position.set(room.x+room.width-65,height*.78,room.y+28);value.castShadow=false;value.userData.referenceRoom=id;value.userData.referenceBaseIntensity=11000;architecture.add(value);lights.push(value);
       const fixture=group();fixture.position.set(value.position.x,height*.82,room.y+7);fixture.userData.dynamic=true;fixture.userData.side='north';fixture.userData.requiredHeight=height*.91;fixture.userData.referenceSconce=true;
-      softBox('#947340',0,0,8,4,17,-9,fixture);mesh('sphere','#ffe7ac',0,-3,5.5,6,5,4,fixture);mesh('sphere','#b68d4f',0,2,4,8,2.3,6,fixture);boards.push(fixture);
+      softBox('#947340',0,0,8,4,17,-9,fixture);const bulb=mesh('sphere','#ffe7ac',0,-3,5.5,6,5,4,fixture),key=`reference-bulb:${id}`;
+      if(!api.materials.has(key))api.materials.set(key,new T.MeshBasicMaterial({color:'#424b59',toneMapped:false}));bulb.material=api.materials.get(key);value.userData.referenceBulb=bulb;
+      mesh('sphere','#b68d4f',0,2,4,8,2.3,6,fixture);boards.push(fixture);
     }
     function frontGreenery(bounds){
       const [x,z,r,b]=bounds,span=r-x,count=Math.max(1,Math.floor((span-36)/135));frontage.push([...bounds]);
@@ -262,13 +264,15 @@ window.OfficeReferenceInterior=(()=>{
       for(const bounds of strips){if(frontage.some(b=>b.every((n,i)=>n===bounds[i])))continue;frontGreenery(bounds);}
       setStyle(style);
     }
-    function setStyle(id){
-      style=Object.hasOwn(lightStyles,id)?id:'illustrated';const config=lightStyles[style];for(const light of lights){light.intensity=light.userData.referenceBaseIntensity*config.gain;light.color.set(config.color);}return style;
+    function applyRoomLights(){
+      const config=lightStyles[style];for(const light of lights){const lit=occupiedRooms.has(light.userData.referenceRoom);light.intensity=lit?light.userData.referenceBaseIntensity*config.gain:0;light.color.set(config.color);light.userData.referenceBulb.material.color.set(lit?config.color:'#424b59');}
     }
-    function reset(){desks.length=0;chairs.length=0;plants.length=0;galleries.length=0;for(const light of lights)light.dispose?.();lights.length=0;frontage.length=0;frontPlanters=0;cabinetDressings=0;wallPanels=0;wallDisplays=0;clocks=0;displayShelves=0;decorated=false;}
+    function setRoomOccupancy(rooms){occupiedRooms.clear();for(const room of rooms)if(room.lit)occupiedRooms.add(room.id);applyRoomLights();}
+    function setStyle(id){style=Object.hasOwn(lightStyles,id)?id:'illustrated';applyRoomLights();return style;}
+    function reset(){occupiedRooms.clear();desks.length=0;chairs.length=0;plants.length=0;galleries.length=0;for(const light of lights)light.dispose?.();lights.length=0;frontage.length=0;frontPlanters=0;cabinetDressings=0;wallPanels=0;wallDisplays=0;clocks=0;displayShelves=0;decorated=false;}
     function dispose(){if(disposed)return;disposed=true;reset();for(const art of galleryArt.values()){art.texture.dispose();art.material.dispose();}galleryArt.clear();for(const [key,value]of galleryGeometry){value.dispose();if(geometries[key]===value)delete geometries[key];}galleryGeometry.clear();}
-    function diagnostics(){return {kit:'reference-interior-v1',resourceGuide:'reference-resources-v1/furniture.png',disposed,style,desks:desks.length,chairs:chairs.length,plants:plants.length,plantStyle:'rounded-broadleaf',models:{desk:'paired-bench',chair:'bucket-shell',plant:'branching-broadleaf'},galleryFamilies:galleryArt.size,galleryRoles:[...galleryArt.keys()],galleryClusters:galleries.length,galleryPanels:galleries.length*2,wallPanels,wallDisplays,clocks,displayShelves,localLights:lights.length,shadowedLocalLights:lights.filter(l=>l.castShadow).length,lightIntensity:lights.map(l=>l.intensity),frontPlanterStrips:frontage.map(b=>[...b]),frontPlanters,cabinetDressings,ownedArtTextures:galleryArt.size,ownedArtMaterials:galleryArt.size,ownedGalleryGeometries:galleryGeometry.size};}
-    return {desk,chair,plant,decorate,setStyle,reset,dispose,diagnostics};
+    function diagnostics(){return {kit:'reference-interior-v1',resourceGuide:'reference-resources-v1/furniture.png',disposed,style,desks:desks.length,chairs:chairs.length,plants:plants.length,plantStyle:'rounded-broadleaf',models:{desk:'paired-bench',chair:'bucket-shell',plant:'branching-broadleaf'},galleryFamilies:galleryArt.size,galleryRoles:[...galleryArt.keys()],galleryClusters:galleries.length,galleryPanels:galleries.length*2,wallPanels,wallDisplays,clocks,displayShelves,localLights:lights.length,shadowedLocalLights:lights.filter(l=>l.castShadow).length,lightIntensity:lights.map(l=>l.intensity),roomLights:lights.map(l=>({id:l.userData.referenceRoom,intensity:l.intensity,bulbColor:l.userData.referenceBulb.material.color.getHexString()})),frontPlanterStrips:frontage.map(b=>[...b]),frontPlanters,cabinetDressings,ownedArtTextures:galleryArt.size,ownedArtMaterials:galleryArt.size,ownedGalleryGeometries:galleryGeometry.size};}
+    return {desk,chair,plant,decorate,setStyle,setRoomOccupancy,reset,dispose,diagnostics};
   }
   return {create};
 })();
