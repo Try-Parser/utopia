@@ -18,6 +18,37 @@ providers = live.providers
 FIXTURES = Path(__file__).parent / "fixtures"
 
 
+class WorkspaceIdentityTests(unittest.TestCase):
+    def test_identity_normalizes_absolute_paths_without_filesystem_access(self):
+        equivalent = (("C:/Projects/Team/../Team/Sample/", "c:\\projects\\team\\sample", "C:\\Projects\\Team\\.\\Sample\\"),
+                      ("\\\\SERVER\\Share\\Project\\", "//server/share/project", "\\\\server\\share\\nested\\..\\project"),
+                      ("/work/team/../sample/", "/work/./sample", "/work/sample"),
+                      ("C:/", "c:\\"), ("\\\\SERVER\\Share\\", "//server/share"))
+        with patch.object(Path, "resolve", side_effect=AssertionError("No filesystem probes")), \
+                patch("os.stat", side_effect=AssertionError("No filesystem probes")):
+            for paths in equivalent:
+                with self.subTest(paths=paths):
+                    identities = [providers.workspace_identity(path) for path in paths]
+                    self.assertEqual(len({item["workspaceId"] for item in identities}), 1)
+                    self.assertRegex(identities[0]["workspaceId"], r"^[a-f0-9]{32}$")
+                    self.assertNotIn(paths[0], json.dumps(identities))
+
+    def test_same_name_projects_and_posix_case_keep_separate_opaque_ids(self):
+        paths = ("/work/first/sample", "/work/second/sample", "/work/First/sample", "C:/work/first/sample")
+        identities = [providers.workspace_identity(path) for path in paths]
+        self.assertEqual({item["workspace"] for item in identities}, {"sample"})
+        self.assertEqual(len({item["workspaceId"] for item in identities}), len(paths))
+        for path in paths:
+            self.assertNotIn(path, json.dumps(identities))
+
+    def test_unknown_or_invalid_workspace_never_fabricates_an_id(self):
+        for value in (None, 123, "", "Unknown", "sample", "../sample", "C:sample", "\\sample",
+                      "\\\\server", "\\\\server\\", "\\\\?\\C:\\sample", "C:/sample:other", "C:/sample*", "/work/\nsecret",
+                      "/work/\0sample", "/work/\x7fsample", "/work/\ud800", "/" + "x" * 2048):
+            with self.subTest(value=repr(value)):
+                self.assertEqual(providers.workspace_identity(value), {"workspace": "Unknown", "workspaceId": None})
+
+
 class DiscoveryTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()

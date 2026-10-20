@@ -188,7 +188,7 @@ def make_server(root, port=8787, live_queue=None, session_discovery=None):
                 self.send_body(200, json.dumps(observed_runs(root)).encode("utf-8"), "application/json")
             elif path == "/api/live":
                 self.send_json(200, live_queue.view() if live_queue else {"enabled": False, "allowEdits": False,
-                               "workspace": "", "token": "", "warning": "Start the server with --enable-live to connect local AI providers.", "providers": [], "jobs": []})
+                               "workspace": "", "workspaceId": None, "token": "", "warning": "Start the server with --enable-live to connect local AI providers.", "providers": [], "jobs": []})
             elif path == "/api/sessions":
                 if session_discovery is None:
                     self.send_json(503, {"error": "Local session discovery unavailable"})

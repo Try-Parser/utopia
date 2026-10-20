@@ -13,6 +13,9 @@ const VIEW_STORAGE='agent-world.office-view.v1';
 const ANGLE_STORAGE='agent-world.office-angle.v1';
 const ELEVATION_STORAGE='agent-world.office-elevation.v1';
 const GRAPHICS_STORAGE='agent-world.graphics.v1',GRAPHICS_STYLES=['illustrated','polished','pixel','low-poly'];
+const FLOOR_STORAGE='agent-world.project-floor.v1';
+let projectFloor='all',rememberedFloor=null,floorsReady=false,floorOptions=[];
+try{const saved=localStorage.getItem(FLOOR_STORAGE);if(/^project:[a-f0-9]{32}$/.test(saved)||saved==='unassigned')projectFloor=saved;}catch(_){/* Floor navigation works without storage. */}
 const REFERENCE_CAMERA={yaw:290,elevation:35};
 let officeGraphics='polished';
 try{const saved=localStorage.getItem(GRAPHICS_STORAGE);if(GRAPHICS_STYLES.includes(saved))officeGraphics=saved;}catch(_){/* Preferences remain usable in memory when storage is blocked. */}
@@ -32,43 +35,66 @@ function node(tag, className, text) { const n = document.createElement(tag); if 
 const codexHelp=node('p','connection-help');codexHelp.id='codex-activity-help';codexHelp.hidden=true;$('office-sidebar').querySelector('.sidebar-body').prepend(codexHelp);
 function announce(text) { $('announcement').textContent = text; }
 function renderCrew(){document.body.dataset.mode='office';$('office-characters').hidden=false;$('office-roster').hidden=false;$('office-hud').hidden=false;$('crew-title').textContent='Employee profile';$('team-close').textContent='Close profile';}
-function renderMissions() {
+function renderMissions(sessions=S.get(),live=L.get()) {
   const target = $('missions');
-  $('local-section').hidden=mode!=='office'; $('checkpoint-section').hidden=mode!=='office';
+  $('local-section').hidden=mode!=='office'; $('checkpoint-section').hidden=mode!=='office'||projectFloor!=='all';
   if(mode==='office') {
-    L.renderMissions(target); S.renderMissions($('local-missions'));
-    $('board-label').textContent='LIVE WORKSPACE'; $('mission-count').textContent=String(L.get().jobs.length); $('local-count').textContent=String(S.count());
+    L.renderMissions(target,live); S.renderMissions($('local-missions'),sessions);
+    $('board-label').textContent=projectFloor==='all'?'ALL PROJECTS':rememberedFloor?.label||'PROJECT FLOOR'; $('mission-count').textContent=String(live.jobs.length); $('local-count').textContent=String(S.count(sessions));
     const checkpoints=$('checkpoint-list'); checkpoints.replaceChildren();
     if(!observed.length)checkpoints.append(node('div','empty',observedMessage));
     for(const run of observed){const card=node('article','checkpoint-card'); card.append(node('strong','',run.name),node('span','mission-meta',`${run.phase} / ${run.tier} / ${new Date(run.updatedAt).toLocaleString()}`),node('span','status',run.stale?'Stale checkpoint':run.status));checkpoints.append(card);}
     return;
   }
 }
-function renderActivity() {
+function renderActivity(sessions=S.get(),live=L.get()) {
   const list = $('activity'); list.replaceChildren();
   if(mode==='office') {
-    L.renderActivity(list);
-    const entries=S.get().entries.filter(e=>['event-working','event-waiting','adapter-working','adapter-waiting'].includes(e.status)).slice(0,24);
+    L.renderActivity(list,live);
+    const entries=sessions.entries.filter(e=>['event-working','event-waiting','adapter-working','adapter-waiting'].includes(e.status)).slice(0,24);
     const events=entries.flatMap(e=>(e.recentEvents||[]).map(event=>({...event,provider:e.provider,session:e.label}))).sort((a,b)=>Date.parse(b.at)-Date.parse(a.at)).slice(0,24);
     for(const event of events.reverse())list.prepend(node('li','activity-event',`${new Date(event.at).toLocaleTimeString()} · ${event.session} · ${event.label}`));
     for(const e of entries.filter(e=>!e.recentEvents?.length).reverse())list.prepend(node('li','activity-event',`${e.provider} · ${e.workspace} · ${e.taskLabel||e.action||e.status} · ${new Date(e.updatedAt).toLocaleTimeString()}`));
-    for(const e of (S.get().handoffs||[]).slice(-8).reverse())list.prepend(node('li','activity-event',`Reported handoff / ${e.fromRole} → ${e.toRole} / ${e.taskRef.slice(0,8)}`));
+    for(const e of (sessions.handoffs||[]).slice(-8).reverse())list.prepend(node('li','activity-event',`Reported handoff / ${e.fromRole} → ${e.toRole} / ${e.taskRef.slice(0,8)}`));
     for(const warning of S.get().warnings)list.prepend(node('li','empty',warning));
-    if(!entries.length&&!(S.get().handoffs||[]).length)list.prepend(node('li','empty','No current local session task or tool events are visible. Open processes may be idle; workers appear when a linked session reports activity.'));
+    if(!entries.length&&!(sessions.handoffs||[]).length)list.prepend(node('li','empty','No current local session task or tool events are visible on this floor. Open processes may be idle; workers appear when a linked session reports activity.'));
     return;
   }
 }
+function renderFloors(sessions,live){
+  floorOptions=window.OfficeWorld.projectFloors(sessions,live);
+  if(!floorsReady&&sessions.scannedAt&&L.ready()){
+    if(projectFloor==='all'||floorOptions.some(f=>f.key===projectFloor))floorsReady=true;
+    else if(!sessions.partial){floorsReady=true;projectFloor='all';rememberedFloor=null;try{localStorage.removeItem(FLOOR_STORAGE);}catch(_){}announce('The saved project is not currently available. Showing all projects.');}
+  }
+  const current=floorOptions.find(f=>f.key===projectFloor);if(current)rememberedFloor=current;
+  if(projectFloor!=='all'&&!current)floorOptions.push({...rememberedFloor,key:projectFloor,label:rememberedFloor?.label||'Saved project',count:0});
+  const choices=[{key:'all',label:'All projects',count:floorOptions.reduce((sum,f)=>sum+f.count,0)},...floorOptions],select=$('project-floor');
+  if([...select.options].map(o=>o.value).join('|')!==choices.map(f=>f.key).join('|'))select.replaceChildren(...choices.map(f=>{const option=node('option','');option.value=f.key;return option;}));
+  choices.forEach((f,index)=>{const text=`${f.label} · ${f.count}`;if(select.options[index].textContent!==text)select.options[index].textContent=text;});select.value=projectFloor;
+  select.disabled=choices.length===1;
+  const status=projectFloor==='all'?`${choices[0].count} workers across ${floorOptions.length} project floors.`:`${rememberedFloor?.label||'Saved project'}: ${current?.count||0} workers. Questions from all floors remain in the conference inbox.`;
+  if($('project-floor-status').textContent!==status)$('project-floor-status').textContent=status;
+}
+$('project-floor').addEventListener('change',event=>{
+  const key=event.target.value;if(key!=='all'&&!floorOptions.some(f=>f.key===key))return;
+  projectFloor=key;rememberedFloor=floorOptions.find(f=>f.key===key)||null;floorsReady=true;
+  try{if(/^project:[a-f0-9]{32}$/.test(key)||key==='unassigned')localStorage.setItem(FLOOR_STORAGE,key);else localStorage.removeItem(FLOOR_STORAGE);}catch(_){storageAvailable=false;}
+  render();announce(key==='all'?'Showing all project floors.':`Showing ${rememberedFloor.label} project floor.`);
+});
 function render() {
-  renderCrew(); renderMissions(); renderActivity();
+  renderFloors(S.get(),L.get());
+  const scoped=window.OfficeWorld.scopeFloor(projectFloor,S.get(),L.get());
+  renderCrew(); renderMissions(scoped.sessions,scoped.live); renderActivity(scoped.sessions,scoped.live);
   window.OfficeWorldView.setGraphicsStyle(officeGraphics);
-  window.OfficeWorldView.sync(mode,S.get(),L.get(),state);
+  window.OfficeWorldView.sync(mode,scoped.sessions,scoped.live,state,projectFloor);
   document.body.dataset.graphicsStyle=officeGraphics;
   $('graphics-style').value=officeGraphics;
   const graphicsFallback=!window.Office3D?.available||window.Office3D.diagnostics().contextLost||officeView==='top-down';
   $('graphics-fallback').hidden=!graphicsFallback||!['polished','low-poly'].includes(officeGraphics);
   window.ConferenceInbox.sync();
   if(mode==='office'&&officeCameraPending&&!officeCameraManual&&$('world').classList.contains('zoomed')&&window.OfficeWorldView.getState().length)focusOfficeCamera();
-  window.ComputerScreens.sync(mode,L.get(),S.get(),state);
+  window.ComputerScreens.sync(mode,scoped.live,scoped.sessions,state,projectFloor,{sessions:S.get(),live:L.get()});
   $('new-mission').disabled=false;
   $('new-mission').textContent='+ New task';
   $('new-mission').title='Inspect detected local providers and assign a native task.';
@@ -78,7 +104,7 @@ function render() {
   $('camera-elevation').value=`${officeView==='top-down'?90:Math.round(officeElevation)}°`;
   if(!storageAvailable)$('storage-note').textContent='Browser storage unavailable. View choices last only for this visit.';
   $('connection-health').textContent=S.get().scannedAt?S.get().partial?'Live / partial':'Live':S.get().warnings.length?'Reader offline':'Connecting';
-  const connected=S.get().entries.filter(e=>['running','event-working','event-waiting','adapter-working','adapter-waiting'].includes(e.status));
+  const connected=scoped.sessions.entries.filter(e=>['running','event-working','event-waiting','adapter-working','adapter-waiting'].includes(e.status));
   const reporting=connected.filter(e=>e.action||e.taskLabel);
   const codexProcess=S.get().entries.some(e=>e.provider==='Codex'&&e.kind==='process'&&e.status==='running');
   const codexEvents=S.get().entries.some(e=>e.provider==='Codex'&&e.kind==='session'&&['event-working','event-waiting','adapter-working','adapter-waiting','adapter-idle'].includes(e.status));
@@ -86,7 +112,7 @@ function render() {
   if(!codexHelp.hidden)codexHelp.textContent='Codex is running, but no session activity has reached the office. In Codex, open /hooks and review or trust the Utopia Cyberworld hooks, then start or resume a session. Until events arrive, the office cannot show that worker’s task.';
   $('activity-connection').textContent=`${connected.length} local sessions/processes · ${reporting.length} reporting activity${S.get().partial?' · partial inventory':''}`;
   $('mobile-flow-count').textContent=`${reporting.length} active reports`;
-  $('world-title').textContent='The living office';$('world-count').textContent='AUTOMATIC';
+  $('world-title').textContent=projectFloor==='all'?'The living office':rememberedFloor?.label||'Project floor';$('world-count').textContent='AUTOMATIC';
   $('source-note').textContent=`${S.note()} ${L.get().enabled?'Native runner connected. '+L.get().workspace:L.get().warning} Claude live session events are read when available. Codex activity requires a trusted local hook or a fresh readable turn log. Recorded runs are read-only journal entries.`;
   $('world-status').textContent='Observing local agents';$('game-prompt').textContent='Automatic office / Select a coworker or computer to inspect their work';
 
@@ -281,7 +307,8 @@ function refreshMissionProviders() {
   const details=providers.filter(p=>p.installed&&!p.available).map(p=>`${p.label}: ${p.reason}`);
   const summary=selectedProvider?.reason||(!providers.length?L.get().warning||'Detecting local AI providers...':available.length?'Choose which installed provider should run this mission.':'No runnable provider was detected. Install a supported CLI, then detection updates automatically.');
   $('mission-provider-status').textContent=[pending&&!submittingMission?'The previous request has an unknown outcome. Retry it with the same provider and task before starting another mission.':'',summary,...details].filter(Boolean).join(' ');
-  $('mission-description').textContent=L.get().workspace?`Assign a native task in ${L.get().workspace}. Choose a provider, specialist and access.`:'Detect local AI providers and assign a native task.';
+  const otherFloor=projectFloor!=='all'&&projectFloor!==window.OfficeWorld.projectKey(L.get().workspace,L.get().workspaceId);
+  $('mission-description').textContent=L.get().workspace?`${otherFloor?`Viewing ${rememberedFloor?.label||'another project'}. `:''}Native tasks run in ${L.get().workspace}. Choose a provider, specialist and access.`:'Detect local AI providers and assign a native task.';
   $('mission-note').textContent='Uses the selected provider’s local account. Installed does not mean signed in. Local edits are possible when selected; commits, publication and deployment are not part of task execution.';
   accessOptions();
 }

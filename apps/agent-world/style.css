@@ -393,3 +393,7 @@ body[data-graphics-style=pixel] .world:not(.webgl-office) svg.office{shape-rende
 body[data-graphics-style=polished] .world:not(.webgl-office) svg.office{filter:saturate(.85) brightness(1.08)}
 body[data-graphics-style=low-poly] .world:not(.webgl-office) svg.office [data-department] polygon{stroke:#d9e5e3;stroke-width:.7}
 @media(max-width:560px){.office-graphics{display:inline-flex;margin-left:6px;vertical-align:top;max-width:calc(100vw - 16px)}#graphics-style{width:145px;min-height:31px;font-size:10px}#graphics-fallback{font-size:8px;padding:3px}}
+.project-floors{display:flex;flex-shrink:0;align-items:center;max-width:210px;pointer-events:auto}
+#project-floor{width:210px;max-width:100%;min-height:34px;padding:6px 9px;border:1px solid #78909a99;border-radius:9px;background:#19323e;color:#e2edf0;font:inherit;font-size:11px;line-height:1.4;text-overflow:ellipsis;box-shadow:0 6px 22px #071a2750}
+#project-floor:focus-visible{outline:2px solid #e9c58b;outline-offset:3px}#project-floor:disabled{opacity:.75}
+@media(max-width:560px){.project-floors{display:inline-flex;margin:5px 0 0 6px;vertical-align:top;max-width:calc(100vw - 16px)}#project-floor{width:155px;min-height:31px;font-size:10px}}

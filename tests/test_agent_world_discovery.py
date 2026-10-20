@@ -46,6 +46,51 @@ class DiscoveryTests(unittest.TestCase):
         with path.open("a") as stream:
             stream.write(json.dumps(row) + "\n")
 
+    def test_cross_provider_workspace_identity_survives_process_and_heartbeat_projection(self):
+        self.record("Codex")
+        self.record("Claude Code")
+        scanner = self.scanner([{"pid": 23, "name": "codex", "args": ["codex", "--session-id", SESSION]},
+                                {"pid": 24, "name": "gemini", "args": ["gemini"]}])
+        scanner.heartbeat({"provider": "Other AI", "sessionId": "same-project", "state": "idle",  # ai-department-allow: session-export (synthetic workspace fixture)
+                           "workspace": "/work/./sample/", "pid": None})
+        scanner.heartbeat({"provider": "Other AI", "sessionId": "different-project", "state": "idle",  # ai-department-allow: session-export (synthetic workspace fixture)
+                           "workspace": "/other/sample", "pid": None})
+        view = scanner.view()
+        expected = D.providers.workspace_identity("/work/sample")["workspaceId"]
+        known = [entry for entry in view["entries"] if entry.get("workspaceId") == expected]
+        self.assertEqual({entry["provider"] for entry in known}, {"Codex", "Claude Code", "Other AI"})
+        self.assertEqual(len({entry["workspaceId"] for entry in view["entries"] if entry["workspace"] == "sample"}), 2)
+        process = next(entry for entry in known if entry["provider"] == "Codex")
+        self.assertEqual((process["status"], process["pid"]), ("running", 23))
+        self.assertIsNone(next(entry for entry in view["entries"] if entry["provider"] == "Gemini CLI")["workspaceId"])
+        self.assertNotIn("/work/", json.dumps(view))
+        self.assertNotIn("/other/", json.dumps(view))
+        with patch.object(D.time, "monotonic", return_value=time.monotonic() + 31):
+            expired = scanner.view()
+        self.assertTrue(all(entry["workspaceId"] == expected for entry in expired["entries"]
+                            if entry["status"] == "adapter-stale" and entry["id"] == D.opaque("Other AI", "same-project")))
+        scanner.heartbeat({"provider": "Other AI", "sessionId": "same-project", "state": "idle",  # ai-department-allow: session-export (synthetic workspace fixture)
+                           "workspace": "Unknown", "pid": None})
+        unknown = next(entry for entry in scanner.view()["entries"] if entry["id"] == D.opaque("Other AI", "same-project"))
+        self.assertEqual((unknown["workspace"], unknown["workspaceId"]), ("Unknown", None))
+
+    def test_runtime_workspace_merge_preserves_known_identity_and_enriches_live_events(self):
+        path = self.record("Codex")
+        scanner = self.scanner()
+        key = D.opaque("Codex", SESSION)
+        runtime = {"id": key, "provider": "Codex", "status": "event-waiting", "updatedAt": D.timestamp(),
+                   **D.providers.workspace_identity(None)}
+        expected = D.providers.workspace_identity("/work/sample")
+        with patch.object(scanner, "_codex_runtime", return_value=[runtime]):
+            entry = scanner.view()["entries"][0]
+        self.assertEqual({name: entry[name] for name in expected}, expected)
+        path.write_text(json.dumps({"type": "session_meta", "payload": {"id": SESSION, "cwd": "Unknown"}}) + "\n")
+        self.append_event(path, {"type": "event_msg", "timestamp": D.timestamp(), "payload": {"type": "task_started"}})
+        with patch.object(scanner, "_codex_runtime", return_value=[{**runtime, **expected}]):
+            entry = scanner.view()["entries"][0]
+        self.assertEqual(entry["status"], "event-working")
+        self.assertEqual({name: entry[name] for name in expected}, expected)
+
     def test_selected_transcript_exposes_exact_session_text_only_through_token_endpoint(self):
         path = self.record("Claude Code")
         now = D.timestamp()
@@ -427,6 +472,7 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual((entry["kind"], entry["status"], entry["role"], entry["action"]),
                          ("session", "event-waiting", "qa", None))
         self.assertEqual(entry["workspace"], "sample")
+        self.assertEqual(entry["workspaceId"], D.providers.workspace_identity("/work/sample")["workspaceId"])
         self.assertNotIn("PRIVATE", json.dumps(result))
         self.assertNotIn(SESSION, json.dumps(result))
         path = self.record("Codex")
@@ -450,6 +496,7 @@ class DiscoveryTests(unittest.TestCase):
             self.assertEqual(portable.codex_home, home)
             entry = next(e for e in portable.view()["entries"] if e["provider"] == "Codex")
             self.assertEqual((entry["workspace"], entry["role"]), ("Unknown", None))
+            self.assertIsNone(entry["workspaceId"])
         with closing(sqlite3.connect(home / "state_99.sqlite")) as incompatible:
             incompatible.execute("CREATE TABLE unrelated (value TEXT)")
         fallback = D.Discovery(codex_home=home, codex_root=self.codex,
@@ -531,6 +578,7 @@ class DiscoveryTests(unittest.TestCase):
         entry = next(e for e in scanner.view()["entries"] if e["provider"] == "Codex")
         self.assertEqual((entry["status"], entry["role"], entry["action"]), ("event-waiting", "qa", None))
         self.assertEqual(entry["recentEvents"][0]["label"], "Session updated")
+        self.assertEqual(entry["workspaceId"], D.providers.workspace_identity("/work/sample")["workspaceId"])
         self.assertNotIn(SESSION, json.dumps(entry))
         self.assertNotIn("/root/", json.dumps(entry))
         with patch.object(D.time, "monotonic", return_value=time.monotonic() + 1), \

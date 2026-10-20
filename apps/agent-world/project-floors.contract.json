@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "identity": {"field": "workspaceId", "format": "32 lowercase hexadecimal characters or null", "source": "Provider-neutral hash of a validated lexical absolute workspace path; no filesystem probing or full path in snapshots"},
+  "default": "all",
+  "unknown": "unassigned",
+  "savedProjectPattern": "^project:[a-f0-9]{32}$",
+  "previewLimit": 24,
+  "vectors": [
+    {"workspace":"demo", "workspaceId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "key":"project:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+    {"workspace":"demo", "workspaceId":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "key":"project:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},
+    {"workspace":"demo", "key":"legacy:demo"},
+    {"workspace":"Unknown", "workspaceId":null, "key":"unassigned"},
+    {"workspace":"/private/full/path", "key":"unassigned"},
+    {"workspace":"demo", "workspaceId":"not-an-id", "key":"legacy:demo"}
+  ]
+}

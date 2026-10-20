@@ -3,6 +3,7 @@ from copy import deepcopy
 from contextlib import ExitStack, closing
 from datetime import datetime, timezone
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -14,6 +15,10 @@ import subprocess
 import sys
 import threading
 import time
+
+_providers_spec = importlib.util.spec_from_file_location("_agent_world_providers", Path(__file__).with_name("agent_world_providers.py"))
+providers = importlib.util.module_from_spec(_providers_spec)
+_providers_spec.loader.exec_module(providers)
 
 PROVIDERS = {
     "Codex": {"names": {"codex", "codex-cli"}, "packages": ("/@openai/codex/", "/openai.chatgpt-")},
@@ -54,9 +59,7 @@ def basename(value):
 
 
 def workspace_label(value):
-    if not isinstance(value, str) or len(value) > 2048 or not (value.startswith("/") or re.match(r"^[A-Za-z]:[\\/]", value)):
-        return "Unknown"
-    return basename(value)[:80] or "Unknown"
+    return providers.workspace_identity(value)["workspace"]
 
 
 def opaque(provider, identity):
@@ -785,7 +788,7 @@ def session_records(provider, root):
     records = []
     for modified, path in sorted(candidates, key=lambda pair: pair[0], reverse=True)[:RECORD_LIMIT]:
         try:
-            identity, cwd = None, "Unknown"
+            identity, workspace = None, providers.workspace_identity(None)
             flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_NOFOLLOW", 0)
             descriptor = os.open(path, flags)
             with os.fdopen(descriptor, "rb") as stream:
@@ -806,11 +809,11 @@ def session_records(provider, root):
                         if row.get("type") != "session_meta" or not isinstance(payload, dict):
                             continue
                         candidate = payload.get("id") or payload.get("session_id")
-                        cwd = workspace_label(payload.get("cwd"))
+                        workspace = providers.workspace_identity(payload.get("cwd"))
                     elif provider == "Claude Code":
                         candidate = row.get("sessionId")
-                        if cwd == "Unknown":
-                            cwd = workspace_label(row.get("cwd"))
+                        if workspace["workspaceId"] is None:
+                            workspace = providers.workspace_identity(row.get("cwd"))
                     elif provider == "Gemini CLI":
                         if path.parent.name != "chats" or path.parent.parent.parent != root or not path.name.startswith("session-"):
                             break
@@ -819,7 +822,7 @@ def session_records(provider, root):
                         break
                     if isinstance(candidate, str) and UUID.fullmatch(candidate):
                         identity = candidate.lower()
-                    if identity and (provider in ("Codex", "Gemini CLI") or cwd != "Unknown"):
+                    if identity and (provider in ("Codex", "Gemini CLI") or workspace["workspaceId"] is not None):
                         break
             if identity:
                 child = False
@@ -830,7 +833,7 @@ def session_records(provider, root):
                     child = True
                 elif provider == "Claude Code" and "subagents" in path.parts:
                     continue
-                records.append({"key": identity, "provider": provider, "workspace": cwd,
+                records.append({"key": identity, "provider": provider, **workspace,
                                 "modified": modified, "path": path,
                                 "session": identity, "child": child})
                 if child:
@@ -925,14 +928,14 @@ class Discovery:
                                 metadata = state.execute("SELECT cwd, agent_role FROM threads WHERE id=?", (identity,)).fetchone()
                         except sqlite3.Error:
                             state = None  # Older/newer state schemas may not expose thread metadata.
-                    workspace = workspace_label(metadata[0]) if metadata else "Unknown"
+                    workspace = providers.workspace_identity(metadata[0] if metadata else None)
                     role = metadata[1] if metadata and metadata[1] in ROLES else codex_agent_role(metadata[2]) if metadata and len(metadata) > 2 else None
                     recent = [{"at": timestamp(at), "label": "Tool activity" if target == "codex_core::tools::parallel" else "Turn activity"}
                               for at, target in reversed(events[:8])]
                     self._codex_live.append({"id": opaque("Codex", identity.lower()), "provider": "Codex",
                                              "label": "Codex session " + opaque("Codex", identity.lower())[:8],
                                              "kind": "session", "status": "event-waiting",
-                                             "workspace": workspace, "pid": None, "parentPid": None,
+                                             **workspace, "pid": None, "parentPid": None,
                                              "role": role, "action": None,
                                              "recentEvents": recent,
                                              "updatedAt": timestamp(events[0][0]),
@@ -952,7 +955,7 @@ class Discovery:
                         self._codex_live.append({"id": opaque("Codex", identity.lower()), "provider": "Codex",
                                                  "label": "Codex session " + opaque("Codex", identity.lower())[:8],
                                                  "kind": "session", "status": "event-waiting",
-                                                 "workspace": workspace_label(cwd), "pid": None, "parentPid": None,
+                                                 **providers.workspace_identity(cwd), "pid": None, "parentPid": None,
                                                  "role": role, "action": None,
                                                  "recentEvents": [{"at": timestamp(updated_ms / 1000), "label": "Session updated"}],
                                                  "updatedAt": timestamp(updated_ms / 1000),
@@ -1034,7 +1037,7 @@ class Discovery:
                                        ["heartbeat", question["id"]], now)
             else:
                 self._questions.pop(key, None)
-            self.heartbeats[key] = {"provider": provider, "state": data["state"], "workspace": workspace_label(data["workspace"]),
+            self.heartbeats[key] = {"provider": provider, "state": data["state"], **providers.workspace_identity(data["workspace"]),
                                     "pid": data["pid"], "seen": now, "updatedAt": timestamp(), "role": data.get("role"), "taskRef": task_ref,
                                     "taskLabel": data.get("taskLabel"), "action": data.get("action"), "targetRef": target_ref, "targetKind": target_kind,
                                     "awaitingHuman": data.get("awaitingHuman", False)}
@@ -1071,7 +1074,7 @@ class Discovery:
             label = record["provider"] + (" agent " if record.get("child") else " session ") + key[:8]
             entries[key] = {"id": key, "provider": record["provider"], "label": label,
                             "kind": "session", "status": "recent" if 0 <= now - record["modified"] < 300 else "recorded",
-                            "workspace": record["workspace"], "pid": None, "parentPid": None,
+                            "workspace": record["workspace"], "workspaceId": record.get("workspaceId"), "pid": None, "parentPid": None,
                             "updatedAt": timestamp(record["modified"]), "evidence": "Local session metadata; runtime activity unknown"}
             if record.get("child"):
                 entries[key]["parentId"] = opaque(record["provider"], record["session"])
@@ -1086,6 +1089,7 @@ class Discovery:
             entry = entries.get(key, {})
             entries[key] = {"id": key, "provider": provider, "label": entry.get("label", provider + " process " + str(process["pid"])),
                             "kind": "session" if identity else "process", "status": "running", "workspace": entry.get("workspace", "Unknown"),
+                            "workspaceId": entry.get("workspaceId"),
                             "pid": process["pid"], "parentPid": process.get("parent") if type(process.get("parent")) is int else None,
                             "updatedAt": timestamp(now), "evidence": "Session ID matched a live process" if identity else "OS process exists; its internal session count and task activity are unknown"}
         base = deepcopy(entries)
@@ -1296,8 +1300,12 @@ class Discovery:
             entries = {entry["id"]: entry for entry in result["entries"]}
             for runtime in self._codex_runtime(time.time()):
                 previous = entries.get(runtime["id"], {})
+                if previous and previous.get("workspaceId") is None and runtime["workspaceId"] is not None:
+                    previous.update({key: runtime[key] for key in ("workspace", "workspaceId")})
                 if previous.get("status") in ("event-working", "event-waiting"):
                     continue  # Structured lifecycle events have more specific state.
+                if runtime["workspaceId"] is None and previous.get("workspaceId") is not None:
+                    runtime = {**runtime, **{key: previous[key] for key in ("workspace", "workspaceId")}}
                 entries[runtime["id"]] = {**previous, **runtime,
                                           "pid": previous.get("pid"), "parentPid": previous.get("parentPid")}
             for key, beat in self.heartbeats.items():
@@ -1309,7 +1317,7 @@ class Discovery:
                     continue
                 state = "stale" if age > 30 else beat["state"]
                 entries[key] = {"id": key, "provider": beat["provider"], "label": old.get("label", beat["provider"] + " session " + key[:8]),
-                                "kind": "session", "status": "adapter-" + state, "workspace": beat["workspace"], "pid": beat["pid"],
+                                "kind": "session", "status": "adapter-" + state, "workspace": beat["workspace"], "workspaceId": beat["workspaceId"], "pid": beat["pid"],
                                 "role": beat["role"] if age <= 30 else None, "taskRef": beat["taskRef"] if age <= 30 else None,
                                 "awaitingHuman": beat.get("awaitingHuman", False) if age <= 30 else False,
                                 "taskLabel": beat.get("taskLabel") if age <= 30 else None, "action": beat.get("action") if age <= 30 else None,

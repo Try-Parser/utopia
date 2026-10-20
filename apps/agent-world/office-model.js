@@ -118,6 +118,39 @@
     }
     return {actors,events};
   }
+  function projectName(value){return typeof value==='string'&&value.trim()&&value.trim().toLowerCase()!=='unknown'&&!/[\\/]/.test(value)?value.trim().slice(0,150):'';}
+  function projectKey(workspace,workspaceId){return typeof workspaceId==='string'&&/^[a-f0-9]{32}$/.test(workspaceId)?`project:${workspaceId}`:projectName(workspace)?`legacy:${projectName(workspace)}`:'unassigned';}
+  function entryProject(entry,entries){
+    const seen=new Set();let current=entry;
+    while(current&&!seen.has(current.id)){
+      seen.add(current.id);const key=projectKey(current.workspace,current.workspaceId);
+      if(key!=='unassigned')return {key,name:projectName(current.workspace)||'Project'};
+      current=current.parentId?entries.find(e=>e.id===current.parentId):null;
+    }
+    return {key:'unassigned',name:'Unassigned'};
+  }
+  function actorProject(id,sessions,live){
+    const entry=sessions.entries.find(e=>id===`session-${e.id}`);
+    if(entry)return entryProject(entry,sessions.entries);
+    return live.jobs.some(j=>id===`job-${j.id}`)?{key:projectKey(live.workspace,live.workspaceId),name:projectName(live.workspace)||'Unassigned'}:{key:'unassigned',name:'Unassigned'};
+  }
+  function projectFloors(sessions,live){
+    const floors=new Map(),add=(info,count)=>{const floor=floors.get(info.key)||{...info,count:0};floor.count+=count;floors.set(info.key,floor);};
+    for(const actor of project(sessions,live).actors){
+      add(actorProject(actor.id,sessions,live),1);
+    }
+    if(projectKey(live.workspace,live.workspaceId)!=='unassigned')add({key:projectKey(live.workspace,live.workspaceId),name:projectName(live.workspace)||'Project'},0);
+    const result=[...floors.values()].sort((a,b)=>a.name.localeCompare(b.name)||a.key.localeCompare(b.key));
+    for(const floor of result){const peers=result.filter(f=>f.name===floor.name);floor.label=peers.length>1?`${floor.name} · ${peers.indexOf(floor)+1}`:floor.name;}
+    return result;
+  }
+  function scopeFloor(key,sessions,live){
+    if(key==='all')return {sessions,live};
+    const entries=sessions.entries.filter(e=>entryProject(e,sessions.entries).key===key),ids=new Set(entries.map(e=>e.id));
+    const jobs=projectKey(live.workspace,live.workspaceId)===key?live.jobs:[],jobIds=new Set(jobs.map(j=>j.id));
+    const handoffs=(sessions.handoffs||[]).filter(e=>ids.has(e.sourceId)&&(!e.targetRef||(e.targetKind==='job'?jobIds:ids).has(e.targetRef)));
+    return {sessions:{...sessions,entries,handoffs},live:{...live,jobs}};
+  }
   function destination(actor,index,geometry) {
     if(actor.visitPoint)return actor.visitPoint;
     if(actor.conferenceSeat)return actor.conferenceSeat.point;
@@ -190,5 +223,5 @@
   }
   function motionSpeed(geometry,kind='worker'){return ({worker:105,idle:70,packet:155}[kind]||105)*(geometry?.staffScale||1);}
   function packetLifetime(route,geometry){const distance=route.reduce((sum,p,index)=>sum+(index?Math.hypot(p.x-route[index-1].x,p.y-route[index-1].y):0),0);return Math.max(12,distance/motionSpeed(geometry,'packet')+4);}
-  return {roles,roleNames,actions,desks,workstations,layout,isPlanning,sceneLayout,assignWorkstations,lobby,project,destination,departureTarget,sceneActors,presentation,workerLabel,transcriptBubble,activityBubble,focusActor,canRoam,idleStops,motionSpeed,packetLifetime};
+  return {roles,roleNames,actions,desks,workstations,layout,isPlanning,sceneLayout,assignWorkstations,lobby,project,projectKey,actorProject,projectFloors,scopeFloor,destination,departureTarget,sceneActors,presentation,workerLabel,transcriptBubble,activityBubble,focusActor,canRoam,idleStops,motionSpeed,packetLifetime};
 });

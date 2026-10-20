@@ -3,11 +3,44 @@
 Discovery never executes a CLI, reads account settings, or treats a shell shim as
 an executable. Commands remain private server-side argument arrays.
 """
+import hashlib
+import ntpath
 import os
 from pathlib import Path
 import platform
+import posixpath
 import re
 import time
+
+
+def workspace_identity(value):
+    """Project a bounded reported absolute path without accessing its filesystem."""
+    unknown = {"workspace": "Unknown", "workspaceId": None}
+    if (not isinstance(value, str) or not value or len(value) > 2048
+            or any(ord(char) < 32 or ord(char) == 127 or 0xD800 <= ord(char) <= 0xDFFF for char in value)):
+        return unknown
+    windows = bool(re.match(r"^[A-Za-z]:[\\/]", value)) or value.startswith(("\\\\", "//"))
+    if windows:
+        path = value.replace("/", "\\")
+        drive, tail = ntpath.splitdrive(path)
+        if (not drive or not tail.startswith("\\") and not drive.startswith("\\\\")
+                or any(char in '<>"|?*' for char in path) or ":" in path[len(drive):]):
+            return unknown
+        if drive.startswith("\\\\"):
+            parts = drive[2:].split("\\")
+            if len(parts) != 2 or any(part in ("", ".", "..") or ":" in part for part in parts):
+                return unknown
+        path = ntpath.normpath(path)
+        label = ntpath.basename(path) or drive.rsplit("\\", 1)[-1]
+        canonical = "windows:" + path.rstrip("\\").casefold()
+    elif value.startswith("/"):
+        path = posixpath.normpath(value)
+        label = posixpath.basename(path) or "/"
+        canonical = "posix:" + path
+    else:
+        return unknown
+    return {"workspace": label[:80],
+            "workspaceId": hashlib.sha256(("agent-world-workspace:" + canonical).encode("utf-8")).hexdigest()[:32]}
 
 
 ACCESS_MODES = ("read-only", "workspace-write")

@@ -46,7 +46,7 @@ class EventStream:
             if self.discovery:
                 frames["sessions"] = json.dumps(self.discovery.view(), separators=(",", ":")).encode("utf-8")
             frames["native"] = json.dumps(self.native.view() if self.native else {
-                "enabled": False, "allowEdits": False, "workspace": "", "token": "",
+                "enabled": False, "allowEdits": False, "workspace": "", "workspaceId": None, "token": "",
                 "warning": "Native task runner unavailable.", "providers": [], "jobs": []}, separators=(",", ":")).encode("utf-8")
             if any(len(payload) > self.MAX_BYTES for payload in frames.values()):
                 self.stop.set()

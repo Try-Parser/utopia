@@ -249,7 +249,7 @@ class LiveQueue:
             detected = self.providers.view()
             return {"enabled": any(p["available"] for p in detected) and not self.closed,
                     "providers": detected, "allowEdits": self.allow_edits,
-                    "workspace": self.workspace.name, "token": self.token, "warning": self.warning,
+                    **providers.workspace_identity(str(self.workspace)), "token": self.token, "warning": self.warning,
                     "jobs": deepcopy([{k: v for k, v in j.items() if k not in ("brief", "requestId")} for j in reversed(self.jobs)])}
 
     def _change_path(self, value):

@@ -5,7 +5,7 @@ window.OfficeWorldView=(()=>{
   const actors=new Map(),packets=new Map(),seen=new Set(),routeQueue=new Map(),reduced=matchMedia('(prefers-reduced-motion: reduce)');
   const viewportBubbles=typeof HTMLElement.prototype.showPopover==='function'&&typeof HTMLElement.prototype.hidePopover==='function';
   let view='isometric',angle=0,cameraElevation=Math.asin(1/Math.sqrt(3))*180/Math.PI,mode='',selected=null,selectedPinned=false,last=performance.now(),lastStage=null,sequence=0,paused=false,transcriptGeneration=0;
-  let graphicsStyle='illustrated';
+  let graphicsStyle='illustrated',activeFloor='all';
   let motionOverride=null,workstations=[],geometry=O.layout(),geometryKey='',physicalGeometryKey='',sceneGeometry=O.sceneLayout(geometry),sceneWithOccupants=null;
   const svg=document.querySelector('svg.office'),original=document.createElementNS('http://www.w3.org/2000/svg','g');
   for(const child of [...svg.children])if(child.tagName.toLowerCase()!=='defs')original.append(child);
@@ -393,8 +393,10 @@ window.OfficeWorldView=(()=>{
     $('task-flow-count').textContent=`${known.length} task-linked / ${observed.length} activity observed / ${(sessions.handoffs||[]).length} reported transfers`;
     if(focus)for(const b of list.querySelectorAll('button'))if(b.dataset.flowAgent===focus)b.focus({preventScroll:true});
   }
-  function sync(nextMode,sessions,live,state) {
+  function sync(nextMode,sessions,live,state,floorKey='all') {
     paused=false;
+    const floorChanged=floorKey!==activeFloor;
+    if(floorChanged){clear();selected=null;selectedPinned=false;transcriptGeneration++;geometryKey='';activeFloor=floorKey;}
     if(nextMode!==mode){clear();mode='office';}
     const currentTime=performance.now();
     for(const [id,actor] of actors)if(actor.departure&&currentTime-actor.departure.started>60000)removeActor(id,actor);
@@ -428,7 +430,7 @@ window.OfficeWorldView=(()=>{
       a.ambient=O.canRoam(actor);a.element.classList.toggle('ambient',a.ambient);
       if(assignment!==a.assignment) {
         a.assignment=assignment;a.goal=key;a.route=[];a.rest=0;a.roamStep=0;
-        if(motionEnabled())queueRoute(a,a.ambient?O.idleStops(actor,a.index,mode==='office'?geometry:null)[a.roamStep++]:goal);
+        if(motionEnabled()&&!floorChanged)queueRoute(a,a.ambient?O.idleStops(actor,a.index,mode==='office'?geometry:null)[a.roamStep++]:goal);
         else {routeQueue.delete(a.data.id);a.position={...goal};}
       }
       a.element.classList.toggle('at-desk',atHomeComputer(actor)&&Math.hypot(a.position.x-actor.station.point.x,a.position.y-actor.station.point.y)<2);
@@ -449,7 +451,7 @@ window.OfficeWorldView=(()=>{
       const roster=$('office-roster'),focus=document.activeElement?.dataset?.officeRow;roster.replaceChildren();
       for(const actor of data) {const view=O.presentation(actor),row=node('button','roster-row');row.type='button';row.dataset.officeRow=actor.id;row.setAttribute('aria-label',`Inspect ${actor.label}`);row.setAttribute('aria-pressed',String(actor.id===selected));const r=window.AgentWorld.ROLES.find(r=>r.id===actor.role);row.style.setProperty('--agent',r?.color||'#8999aa');const info=node('span','person-info');info.append(node('strong','',view.title),node('span','',`${O.workerLabel(actor,r?.role)} / ${actor.provider} ${actor.sourceId.slice(0,4)}`));row.append(node('span','portrait',actor.provider.slice(0,2)),info,node('span','role-state',view.word));row.addEventListener('click',()=>inspect(actor,true));roster.append(row);}
       if(focus)roster.querySelector(`[data-office-row="${focus}"]`)?.focus({preventScroll:true});
-      if(!data.length){delete $('agent-detail').dataset.profileId;$('agent-detail').replaceChildren(node('h3','','The office is quiet'),node('p','','Start your local agents. Process sightings appear in Local sessions; identified sessions, task roles and handoffs appear here when their events are connected.'));}
+      if(!data.length){delete $('agent-detail').dataset.profileId;$('agent-detail').replaceChildren(node('h3','',activeFloor==='all'?'The office is quiet':'This floor is quiet'),node('p','',activeFloor==='all'?'Start your local agents. Process sightings appear in Local sessions; identified sessions, task roles and handoffs appear here when their events are connected.':'No workers are currently reporting on this project floor. It stays selected while waiting for activity; use All projects to see the whole team.'));}
       else {if(selectedPinned&&!data.some(a=>a.id===selected))selectedPinned=false;inspect(O.focusActor(data,selected,selectedPinned));}
       updateBubbleDensity();
       const processOnly=sessions.entries.filter(e=>e.kind==='process'&&e.status==='running').length;
@@ -480,5 +482,5 @@ window.OfficeWorldView=(()=>{
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
-  return {sync,setGraphicsStyle:next=>{const valid=['illustrated','polished','pixel','low-poly'].includes(next)?next:'illustrated';if(valid!==graphicsStyle){graphicsStyle=valid;geometryKey='';}window.Office3D?.setGraphicsStyle?.(valid);return valid;},setView:next=>{if(['isometric','top-down'].includes(next))view=next;},setAngle:next=>{if(Number.isFinite(next))angle=((next%360)+360)%360;},setElevation:next=>{if(Number.isFinite(next))cameraElevation=Math.max(15,Math.min(70,next));},getWorkstations:()=>workstations,getSceneLayout:()=>mode==='office'?(sceneWithOccupants||sceneGeometry):sceneGeometry,getLayout:()=>mode==='office'?geometry:{width:1280,height:610,stations:O.workstations},getState:()=>Array.from(actors.values()).map(a=>({id:a.data.id,role:a.data.role,station:a.data.station?.key||null,conferenceSeat:a.data.conferenceSeat?.key||null,action:a.data.action,taskLabel:a.data.taskLabel,colleague:a.data.colleague?.id||null,handoffTo:a.data.handoff?.toRole||null,state:a.data.state,working:a.data.working,awaitingHuman:!!a.data.awaitingHuman,departure:a.departure?.kind||null,ambient:a.ambient,motionEnabled:motionEnabled(),x:a.position.x,y:a.position.y,z:elevation(a),goal:a.goal}))};
+  return {sync,getFloor:()=>activeFloor,setGraphicsStyle:next=>{const valid=['illustrated','polished','pixel','low-poly'].includes(next)?next:'illustrated';if(valid!==graphicsStyle){graphicsStyle=valid;geometryKey='';}window.Office3D?.setGraphicsStyle?.(valid);return valid;},setView:next=>{if(['isometric','top-down'].includes(next))view=next;},setAngle:next=>{if(Number.isFinite(next))angle=((next%360)+360)%360;},setElevation:next=>{if(Number.isFinite(next))cameraElevation=Math.max(15,Math.min(70,next));},getWorkstations:()=>workstations,getSceneLayout:()=>mode==='office'?(sceneWithOccupants||sceneGeometry):sceneGeometry,getLayout:()=>mode==='office'?geometry:{width:1280,height:610,stations:O.workstations},getState:()=>Array.from(actors.values()).map(a=>({id:a.data.id,role:a.data.role,station:a.data.station?.key||null,conferenceSeat:a.data.conferenceSeat?.key||null,action:a.data.action,taskLabel:a.data.taskLabel,colleague:a.data.colleague?.id||null,handoffTo:a.data.handoff?.toRole||null,state:a.data.state,working:a.data.working,awaitingHuman:!!a.data.awaitingHuman,departure:a.departure?.kind||null,ambient:a.ambient,motionEnabled:motionEnabled(),x:a.position.x,y:a.position.y,z:elevation(a),goal:a.goal}))};
 })();

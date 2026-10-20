@@ -65,6 +65,23 @@ class LiveTests(unittest.TestCase):
             manager.submit(self.request(title="Different"))
         self.assertEqual(error.exception.status, 409)
 
+    def test_native_snapshot_identifies_configured_workspace_without_exposing_its_path(self):
+        manager = self.manager()
+        initial = manager.view()
+        expected = world.discovery.providers.workspace_identity(str(self.workspace))
+        self.assertEqual({key: initial[key] for key in expected}, expected)
+        other = self.root / "other" / self.workspace.name
+        other.mkdir(parents=True)
+        other_manager = live.LiveQueue(other, self.root / "private-other", discover_providers=False)
+        self.managers.append(other_manager)
+        self.assertEqual(initial["workspace"], other_manager.view()["workspace"])
+        self.assertNotEqual(initial["workspaceId"], other_manager.view()["workspaceId"])
+        self.assertEqual(manager.workspace, self.workspace.resolve())
+        job = manager.submit(self.request())
+        self.wait(manager, job["id"])
+        self.assertEqual(manager.view()["workspaceId"], initial["workspaceId"])
+        self.assertNotIn(str(self.root), json.dumps(manager.view()))
+
     def test_missing_completion_and_cli_failure_never_become_success(self):
         manager = self.manager()
         for title, key in (("FAIL", "a"), ("NO_COMPLETE", "b")):

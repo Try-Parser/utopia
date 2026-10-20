@@ -31,12 +31,12 @@ window.LiveAgents = (() => {
   'use strict';
   const statuses = ['queued', 'starting', 'running', 'completed', 'failed', 'cancelled', 'timed-out', 'interrupted'];
   let snapshot = {providers:[],enabled:false,allowEdits:false,workspace:'',token:'',warning:'Connecting to native task runner…',jobs:[]};
-  let active = false, generation = 0, onChange = () => {}, pending = null;
+  let active = false, generation = 0, onChange = () => {}, pending = null, received = false;
   const operationErrors = new Map();
   const element = (tag, cls, text) => { const n=document.createElement(tag);n.className=cls||'';if(text!==undefined)n.textContent=text;return n; };
   const terminal = status => ['completed','failed','cancelled','timed-out','interrupted'].includes(status);
   function valid(data) {
-    return data && window.MissionProviders.validProviders(data.providers) && typeof data.enabled==='boolean' && typeof data.allowEdits==='boolean' && ['workspace','token','warning'].every(k=>typeof data[k]==='string'&&data[k].length<=1000) && Array.isArray(data.jobs) && data.jobs.length<=100 && data.jobs.every(j=>j&&(j.provider===undefined||typeof j.provider==='string'&&/^[a-z][a-z0-9-]{0,39}$/.test(j.provider)&&typeof j.providerLabel==='string'&&j.providerLabel.length>0&&j.providerLabel.length<=80)&&typeof j.id==='string'&&/^[a-f0-9]{32}$/.test(j.id)&&window.AgentWorld.ROLES.some(r=>r.id===j.role)&&statuses.includes(j.status)&&['read-only','workspace-write'].includes(j.access)&&typeof j.title==='string'&&j.title.length<=100&&typeof j.activity==='string'&&j.activity.length<=100&&(j.action==null||['command','coding','tool','research','planning','coordination','reporting'].includes(j.action))&&typeof j.result==='string'&&j.result.length<=16000&&['createdAt','updatedAt'].every(k=>typeof j[k]==='string'&&Number.isFinite(Date.parse(j[k])))&&Array.isArray(j.events)&&j.events.length<=80&&j.events.every(e=>e&&typeof e.text==='string'&&e.text.length<=100&&Number.isFinite(Date.parse(e.at))));
+    return data && (data.workspaceId==null||typeof data.workspaceId==='string'&&/^[a-f0-9]{32}$/.test(data.workspaceId)) && window.MissionProviders.validProviders(data.providers) && typeof data.enabled==='boolean' && typeof data.allowEdits==='boolean' && ['workspace','token','warning'].every(k=>typeof data[k]==='string'&&data[k].length<=1000) && Array.isArray(data.jobs) && data.jobs.length<=100 && data.jobs.every(j=>j&&(j.provider===undefined||typeof j.provider==='string'&&/^[a-z][a-z0-9-]{0,39}$/.test(j.provider)&&typeof j.providerLabel==='string'&&j.providerLabel.length>0&&j.providerLabel.length<=80)&&typeof j.id==='string'&&/^[a-f0-9]{32}$/.test(j.id)&&window.AgentWorld.ROLES.some(r=>r.id===j.role)&&statuses.includes(j.status)&&['read-only','workspace-write'].includes(j.access)&&typeof j.title==='string'&&j.title.length<=100&&typeof j.activity==='string'&&j.activity.length<=100&&(j.action==null||['command','coding','tool','research','planning','coordination','reporting'].includes(j.action))&&typeof j.result==='string'&&j.result.length<=16000&&['createdAt','updatedAt'].every(k=>typeof j[k]==='string'&&Number.isFinite(Date.parse(j[k])))&&Array.isArray(j.events)&&j.events.length<=80&&j.events.every(e=>e&&typeof e.text==='string'&&e.text.length<=100&&Number.isFinite(Date.parse(e.at))));
   }
   async function poll() {
     const current=++generation;
@@ -45,14 +45,14 @@ window.LiveAgents = (() => {
       if(!response.ok)throw new Error();
       const data=await response.json();if(!valid(data)||data.jobs.some(j=>j.changes!==undefined&&(!Array.isArray(j.changes)||j.changes.length>20||j.changes.some(c=>!c||typeof c.path!=='string'||c.path.length>200||!['add','update','delete'].includes(c.kind)))))throw new Error();
       if(current!==generation||!active)return;
-      snapshot=data;
+      snapshot=data;received=true;
     } catch (_) { if(current!==generation||!active)return;snapshot={providers:[],enabled:false,allowEdits:false,workspace:'',token:'',warning:'Native task reader unavailable. Reconnect to see actual outcomes. Existing runs may continue.',jobs:[]}; }
     onChange();
   }
   let unsubscribe=null;
   function unavailable(){generation++;snapshot={providers:[],enabled:false,allowEdits:false,workspace:'',token:'',warning:'Live task stream unavailable. Existing runs may continue.',jobs:[]};onChange();}
   function activate(value,callback){active=value;onChange=callback;generation++;unsubscribe?.();unsubscribe=null;
-    if(active){snapshot={providers:[],enabled:false,allowEdits:false,workspace:'',token:'',warning:'Connecting to live task stream...',jobs:[]};unsubscribe=window.LiveFeed.subscribe('native',data=>{if(!active)return;if(!valid(data)||data.jobs.some(j=>j.changes!==undefined&&(!Array.isArray(j.changes)||j.changes.length>20||j.changes.some(c=>!c||typeof c.path!=='string'||c.path.length>200||!['add','update','delete'].includes(c.kind))))){unavailable();return false;}generation++;snapshot=data;onChange();return true;},()=>{if(active)unavailable();});}}
+    if(active){snapshot={providers:[],enabled:false,allowEdits:false,workspace:'',token:'',warning:'Connecting to live task stream...',jobs:[]};unsubscribe=window.LiveFeed.subscribe('native',data=>{if(!active)return;if(!valid(data)||data.jobs.some(j=>j.changes!==undefined&&(!Array.isArray(j.changes)||j.changes.length>20||j.changes.some(c=>!c||typeof c.path!=='string'||c.path.length>200||!['add','update','delete'].includes(c.kind))))){unavailable();return false;}generation++;snapshot=data;received=true;onChange();return true;},()=>{if(active)unavailable();});}}
   async function request(url,data) {
     let response;
     try { response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-Agent-World-Token':snapshot.token},body:JSON.stringify(data),signal:AbortSignal.timeout(7000)}); }
@@ -84,13 +84,13 @@ window.LiveAgents = (() => {
     if(pending===submission)pending=null;await poll();return result;
   }
   function activity(role) { return snapshot.jobs.find(j=>j.role===role&&j.status==='running'); }
-  function renderMissions(target) {
+  function renderMissions(target,view=snapshot) {
     const expanded = new Set(Array.from(target.querySelectorAll('details[open]')).map(e=>e.dataset.job));
     const focused = document.activeElement?.dataset?.cancel, focusedResult = document.activeElement?.dataset?.result;
     const scrollPositions = new Map(Array.from(target.querySelectorAll('details')).map(e=>[e.dataset.job,e.querySelector('pre')?.scrollTop||0]));
     target.replaceChildren();
-    if(!snapshot.jobs.length){const empty=element('div','empty');empty.append(element('strong','',snapshot.enabled?'Ready for real work.':'Native runner unavailable'),element('span','',snapshot.warning||'Assign a mission to a specialist. Activity comes from the selected provider session.'));target.append(empty);}
-    for(const job of snapshot.jobs){
+    if(!view.jobs.length){const empty=element('div','empty');empty.append(element('strong','',view.enabled?'Ready for real work.':'Native runner unavailable'),element('span','',view.warning||'Assign a mission to a specialist. Activity comes from the selected provider session.'));target.append(empty);}
+    for(const job of view.jobs){
       const card=element('article','mission-card live-card'),content=element('div');
       const role=window.AgentWorld.ROLES.find(r=>r.id===job.role);
       content.append(element('div','mission-title',job.title),element('div','mission-meta',`${window.MissionProviders.jobProvider(job)} · ${role.name} / ${role.role} · ${job.access} · ${job.activity}`));
@@ -104,12 +104,12 @@ window.LiveAgents = (() => {
     if(focused)target.querySelector(`[data-cancel="${focused}"]`)?.focus({preventScroll:true});
     if(focusedResult)target.querySelector(`[data-result="${focusedResult}"]`)?.focus({preventScroll:true});
   }
-  function renderActivity(list) {
+  function renderActivity(list,view=snapshot) {
     list.replaceChildren();
-    const notes=snapshot.jobs.flatMap(j=>j.events.map(e=>({...e,role:`${window.MissionProviders.jobProvider(j)} / ${window.AgentWorld.ROLES.find(r=>r.id===j.role).name}`}))).sort((a,b)=>Date.parse(b.at)-Date.parse(a.at)).slice(0,10);
+    const notes=view.jobs.flatMap(j=>j.events.map(e=>({...e,role:`${window.MissionProviders.jobProvider(j)} / ${window.AgentWorld.ROLES.find(r=>r.id===j.role).name}`}))).sort((a,b)=>Date.parse(b.at)-Date.parse(a.at)).slice(0,10);
     if(!notes.length){list.append(element('li','empty',snapshot.warning||'Recorded native activity will appear here.'));return;}
     for(const note of notes){const item=element('li'),stamp=element('time','',new Date(note.at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));item.append(stamp,element('span','',`${note.role} · ${note.text}`));list.append(item);}
   }
 
-  return {get:()=>snapshot,pending:()=>pending?.payload||null,activate,poll,submit,activity,renderMissions,renderActivity};
+  return {get:()=>snapshot,ready:()=>received,pending:()=>pending?.payload||null,activate,poll,submit,activity,renderMissions,renderActivity};
 })();
