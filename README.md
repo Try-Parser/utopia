@@ -16,6 +16,10 @@ Context loads only when needed. One QA owner coordinates affected checks; small 
 
 ## Utopia Cyberworld
 
+![Utopia Cyberworld: a 3D AI office with agent departments and a docked chat panel for project memory, attachments and voice input](docs/utopia-feature.png)
+
+Development preview with example agent activity. Open the [full-size feature image](docs/utopia-feature.png) to explore the office and chat controls.
+
 Open the local [full-screen Utopia Cyberworld office](docs/agent-world.md) to watch detected sessions and assigned native AI tasks move through their departments. Activity, workers, computers, and the work journal open over the floor when needed. Start with `python scripts/agent_world.py --enable-live`, then open **http://127.0.0.1:8787**. Native missions default to read-only; `--allow-edits` makes explicitly selected coordinator/builder workspace edits available. A completed native turn does not certify review or test approval.
 
 **Local sessions** automatically discovers recognizable AI processes across terminal, desktop and IDE launch surfaces. It reads bounded local Codex and Claude Code session records, separate Claude subagent activity, and Gemini CLI JSONL session metadata from its user profile (`GEMINI_CLI_HOME` is supported). Custom executable rules and local metadata heartbeats extend coverage to other runtimes. Process presence, stored records and adapter-reported activity remain distinct; an app process does not reveal every internal conversation or task, and opaque app/browser/cloud sessions require a provider activity source.
